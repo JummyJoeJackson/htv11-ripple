@@ -8,39 +8,39 @@ struct MainTabView: View {
     @Environment(WearerStore.self) private var store
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var selection: AppTab = .home
+    /// Room left under each screen's content for the floating bar, plus a gap.
+    /// Grows with the text size, like the bar does.
+    @ScaledMetric(relativeTo: .footnote) private var barClearance: CGFloat = 96
 
     var body: some View {
         // Read the revision so the bar hides and shows as the alarm changes.
         let _ = store.revision
         let inAlarm = store.coordinator.display(phoneAvailable: !store.inOutage).mode.isAlarm
-        // The bar sits below the screens rather than over them, so every screen
-        // (including long lists like Settings) ends above it and nothing is hidden.
-        VStack(spacing: 0) {
-            Group {
-                switch selection {
-                case .home:
-                    HomeView()
-                case .contacts:
-                    NavigationStack { ContactsView() }
-                case .session:
-                    NavigationStack { SessionView() }
-                case .settings:
-                    NavigationStack { SettingsView() }
-                }
-            }
-            .frame(maxHeight: .infinity)
-            .overlay(alignment: .bottom) {
-                FeedbackBar()
-                    .padding(.bottom, 12)
-            }
-
-            if !inAlarm {
-                TabBar(selection: $selection)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+        // The glass bar floats over the screens, so backgrounds run to the bottom
+        // edge. Every scrolling screen gets a bottom margin the height of the bar,
+        // so its last item always scrolls fully above it.
+        Group {
+            switch selection {
+            case .home:
+                HomeView()
+            case .contacts:
+                NavigationStack { ContactsView() }
+            case .session:
+                NavigationStack { SessionView() }
+            case .settings:
+                NavigationStack { SettingsView() }
             }
         }
-        // The waves show behind the glass bar.
-        .background(RippleBackgroundView(background: .one))
+        .contentMargins(.bottom, inAlarm ? 16 : barClearance, for: .scrollContent)
+        .overlay(alignment: .bottom) {
+            VStack(spacing: 8) {
+                FeedbackBar()
+                if !inAlarm {
+                    TabBar(selection: $selection)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+        }
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: inAlarm)
         .onChange(of: inAlarm) { _, alarm in
             if alarm { selection = .home }
@@ -136,15 +136,27 @@ private struct TabBar: View {
     private var glass: some View {
         if reduceTransparency {
             Capsule().fill(Theme.card).shadow(color: .black.opacity(0.12), radius: 12, y: 4)
-        } else if #available(iOS 26.0, *) {
-            Capsule().fill(.clear).glassEffect(.regular, in: Capsule())
         } else {
-            Capsule()
-                .fill(.ultraThinMaterial)
-                .overlay(Capsule().fill(.white.opacity(0.25)))
-                .overlay(Capsule().strokeBorder(.white.opacity(0.7), lineWidth: 1))
-                .shadow(color: .black.opacity(0.12), radius: 16, y: 6)
+            // glassEffect only exists in the iOS 26 SDK (Xcode 26, Swift 6.2), so
+            // older Xcode, including CI, builds the frosted version instead.
+            #if compiler(>=6.2)
+            if #available(iOS 26.0, *) {
+                Capsule().fill(.clear).glassEffect(.regular, in: Capsule())
+            } else {
+                frosted
+            }
+            #else
+            frosted
+            #endif
         }
+    }
+
+    private var frosted: some View {
+        Capsule()
+            .fill(.ultraThinMaterial)
+            .overlay(Capsule().fill(.white.opacity(0.25)))
+            .overlay(Capsule().strokeBorder(.white.opacity(0.7), lineWidth: 1))
+            .shadow(color: .black.opacity(0.12), radius: 16, y: 6)
     }
 }
 

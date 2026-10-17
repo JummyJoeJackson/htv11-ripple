@@ -40,7 +40,7 @@ struct HomeView: View {
                             .fixedSize(horizontal: false, vertical: true)
                             .accessibilityAddTraits(.isHeader)
                         if !display.mode.isAlarm {
-                            Text("Your care at a glance")
+                            Text("Your check-ins and help, in one place")
                                 .font(Theme.body)
                                 .foregroundStyle(Theme.secondaryText)
                         }
@@ -65,7 +65,7 @@ struct HomeView: View {
                             NavigationLink {
                                 SessionView(isTabRoot: false)
                             } label: {
-                                NavRow(title: "Session details", systemImage: "list.bullet.rectangle", detail: "Texts and connections")
+                                NavRow(title: "Session details", systemImage: "list.bullet.rectangle", detail: "Who was texted and when")
                             }
                         }
                         .buttonStyle(.plain)
@@ -100,7 +100,7 @@ struct HomeView: View {
                 Label("Start monitoring", systemImage: "play.fill")
             }
             .buttonStyle(.ripplePrimary)
-            .accessibilityHint("Your Watch will start checking in with you.")
+            .accessibilityHint("Your Watch will buzz and ask if you're okay.")
         case .monitoring:
             Button {
                 store.stopMonitoring()
@@ -156,13 +156,13 @@ struct HomeStatus {
         switch display.mode {
         case .off:
             headline = "Monitoring is off"
-            detail = "Start it here or on your Watch."
+            detail = "Your Watch won't check on you. Turn it on here or on your Watch."
         case .monitoring:
             headline = "Monitoring is active"
             detail = nextCheckIn.map { "Next check-in at \($0.shortTime)." }
         case .checkIn:
-            headline = "Answer on your Watch"
-            detail = nil
+            headline = "Your Watch is asking if you're okay"
+            detail = "Tap the circle on your Watch, or \"I'm okay\" below. If time runs out, your contacts get a text."
         case .alertSent:
             let texted = (alarm?.alertedAt ?? alarm?.startedAt).map { "Your contacts were texted at \($0.shortTime)." }
             if alarm?.helpRequestedAt != nil {
@@ -213,12 +213,21 @@ private struct MonitoringCard: View {
         }
     }
 
+    /// What monitoring actually does, in plain words: how often the Watch
+    /// buzzes, how long there is to answer, and what happens if there's no answer.
     private var detail: String? {
-        if status.mode == .monitoring {
-            let watch = watchConnected ? "Your Watch is connected and checking in with you." : "Your Watch will check in with you."
-            return [watch, status.detail].compactMap { $0 }.joined(separator: " ")
+        guard status.mode == .monitoring else { return status.detail }
+        let config = store.config
+        let answer = "Tap it within \(config.countdownSeconds) s, or your contacts get a text."
+        var parts: [String]
+        if config.checkInIntervalMinutes > 0 {
+            parts = ["Every \(config.checkInIntervalMinutes) min your Watch buzzes and asks if you're okay.", answer]
+            if let next = store.coordinator.nextCheckInAt { parts.append("Next: \(next.shortTime).") }
+        } else {
+            parts = ["Automatic check-ins are off. If an alarm starts, your Watch buzzes.", answer]
         }
-        return status.detail
+        if !watchConnected { parts.append("Open Ripple on your Watch.") }
+        return parts.joined(separator: " ")
     }
 
     var body: some View {
@@ -257,7 +266,7 @@ private struct MonitoringCard: View {
                             CountdownText(deadline: deadline)
                                 .font(.title.weight(.bold))
                                 .foregroundStyle(Theme.checkIn)
-                            Text("left")
+                            Text("left to answer")
                                 .font(Theme.body)
                                 .foregroundStyle(Theme.secondaryText)
                         }
@@ -291,7 +300,7 @@ private struct MonitoringCard: View {
 private struct HomeCardGrid: View {
     @Environment(WearerStore.self) private var store
     @Environment(\.dynamicTypeSize) private var typeSize
-    @State private var confirmHelp = false
+    @State private var showEmergency = false
 
     var body: some View {
         let columns = typeSize.isAccessibilitySize
@@ -305,12 +314,12 @@ private struct HomeCardGrid: View {
                      title: "Daily Symptom Check-in", subtitle: "Share how you're feeling today.") {
                 ComingSoonTag()
             }
-            HomeCard(icon: "calendar", tint: Theme.safe, title: "Next Appointment", subtitle: "Your upcoming visits.") {
+            HomeCard(icon: "calendar", tint: Theme.safe, title: "Next Appointment", subtitle: "Doctor visits and reminders.") {
                 ComingSoonTag()
             }
-            HomeCard(icon: "phone.fill", tint: Theme.alert, title: "Emergency Help", subtitle: "Text your contacts now.") {
+            HomeCard(icon: "phone.fill", tint: Theme.alert, title: "Emergency Help", subtitle: "Call a contact, text everyone, or call 911.") {
                 Button {
-                    confirmHelp = true
+                    showEmergency = true
                 } label: {
                     Label("Call for Help", systemImage: "phone.fill")
                         .font(Theme.labelBold)
@@ -319,14 +328,13 @@ private struct HomeCardGrid: View {
                         .background(Theme.alert.opacity(0.10), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
                 .buttonStyle(.plain)
-                .accessibilityHint("Asks first, then texts your contacts that you need help.")
+                .accessibilityHint("Shows ways to get help: call a contact, text everyone, or call 911.")
             }
         }
-        .confirmationDialog("Text your contacts for help now?", isPresented: $confirmHelp, titleVisibility: .visible) {
-            Button("Send help alert", role: .destructive) { store.requestHelpFromPhone() }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Your contacts get an alert right away, even if monitoring is off.")
+        .sheet(isPresented: $showEmergency) {
+            EmergencyOptionsSheet()
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
         }
     }
 }

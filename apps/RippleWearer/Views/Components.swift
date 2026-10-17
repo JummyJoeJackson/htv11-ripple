@@ -367,6 +367,8 @@ extension View {
             .environment(\.defaultMinListRowHeight, Theme.minTarget)
             .scrollContentBackground(.hidden)
             .rippleScreen(background: background)
+            .scrollDismissesKeyboard(.interactively)
+            .keyboardDismissControl()
     }
 }
 

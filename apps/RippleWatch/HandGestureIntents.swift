@@ -2,10 +2,10 @@ import AppIntents
 import RippleKit
 
 /// Four parameterless actions keep AssistiveTouch assignments stable when the
-/// wearer changes the accepted sequence. No action opens an app or returns UI.
+/// wearer changes either accepted sequence. No action opens an app or returns UI.
 struct RipplePinchIntent: AppIntent {
     static let title: LocalizedStringResource = "Ripple Pinch"
-    static let description = IntentDescription("Record a pinch in Ripple on Apple Watch. Only a complete configured sequence dismisses an active alarm.")
+    static let description = IntentDescription("Record a pinch in Ripple on Apple Watch. Only a complete configured sequence dismisses an alarm or asks for help.")
     static var openAppWhenRun: Bool { false }
 
     @MainActor
@@ -17,7 +17,7 @@ struct RipplePinchIntent: AppIntent {
 
 struct RippleClenchIntent: AppIntent {
     static let title: LocalizedStringResource = "Ripple Clench"
-    static let description = IntentDescription("Record a clench in Ripple on Apple Watch. Only a complete configured sequence dismisses an active alarm.")
+    static let description = IntentDescription("Record a clench in Ripple on Apple Watch. Only a complete configured sequence dismisses an alarm or asks for help.")
     static var openAppWhenRun: Bool { false }
 
     @MainActor
@@ -29,7 +29,7 @@ struct RippleClenchIntent: AppIntent {
 
 struct RippleDoublePinchIntent: AppIntent {
     static let title: LocalizedStringResource = "Ripple Double Pinch"
-    static let description = IntentDescription("Record a double pinch as one input in Ripple on Apple Watch. Only a complete configured sequence dismisses an active alarm.")
+    static let description = IntentDescription("Record a double pinch as one input in Ripple on Apple Watch. Only a complete configured sequence dismisses an alarm or asks for help.")
     static var openAppWhenRun: Bool { false }
 
     @MainActor
@@ -41,7 +41,7 @@ struct RippleDoublePinchIntent: AppIntent {
 
 struct RippleDoubleClenchIntent: AppIntent {
     static let title: LocalizedStringResource = "Ripple Double Clench"
-    static let description = IntentDescription("Record a double clench as one input in Ripple on Apple Watch. Only a complete configured sequence dismisses an active alarm.")
+    static let description = IntentDescription("Record a double clench as one input in Ripple on Apple Watch. Only a complete configured sequence dismisses an alarm or asks for help.")
     static var openAppWhenRun: Bool { false }
 
     @MainActor

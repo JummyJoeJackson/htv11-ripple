@@ -1,8 +1,8 @@
 import Foundation
 
 // Request and response bodies for the backend. The backend connects the admin
-// phone to the wearer phone, hosts the temporary-contact consent page, and holds the backup
-// deadline. The wearer's iPhone always sends first.
+// phone to the wearer phone, records temporary-contact replies, and holds
+// the backup deadline. The wearer's iPhone always sends first.
 
 public struct APIErrorBody: Codable, Sendable {
     public var code: String
@@ -140,7 +140,7 @@ public struct SyncResponse: Codable, Sendable {
     public var commands: [DeviceCommand]
     public var temporaryContacts: [TemporaryContactView]
     public var feedback: AlarmFeedback?
-    /// Base for temporary-contact consent links, for example http://192.168.1.20:8080.
+    /// Public server address, also used for provider callbacks.
     public var publicBaseURL: String
     public var pairingCode: String
     public init(serverTime: Date, runId: String, resetRequired: Bool, commands: [DeviceCommand], temporaryContacts: [TemporaryContactView], feedback: AlarmFeedback?, publicBaseURL: String, pairingCode: String) {
@@ -168,39 +168,39 @@ public struct InviteTemporaryRequest: Codable, Sendable {
 
 public struct InviteTemporaryResponse: Codable, Sendable {
     public var contact: TemporaryContactView
-    /// Opens the consent page. Show it as a QR code or share it.
-    public var inviteURL: String
-    public init(contact: TemporaryContactView, inviteURL: String) {
+    public var joinCode: String
+    /// Sent through the same Ripple Alert shortcut as alarm messages.
+    public var invitationText: String
+    public init(contact: TemporaryContactView, joinCode: String, invitationText: String) {
         self.contact = contact
-        self.inviteURL = inviteURL
+        self.joinCode = joinCode
+        self.invitationText = invitationText
+    }
+}
+
+public struct JoinTemporaryRequest: Codable, Hashable, Sendable {
+    public var runId: String
+    public var code: String
+    public var from: String?
+    public init(runId: String, code: String, from: String? = nil) {
+        self.runId = runId
+        self.code = code
+        self.from = from
+    }
+}
+
+public struct JoinTemporaryResponse: Codable, Sendable {
+    public var contact: TemporaryContactView
+    public var contacts: [TemporaryContactView]
+    public init(contact: TemporaryContactView, contacts: [TemporaryContactView]) {
+        self.contact = contact
+        self.contacts = contacts
     }
 }
 
 public struct TemporaryContactsResponse: Codable, Sendable {
     public var contacts: [TemporaryContactView]
     public init(contacts: [TemporaryContactView]) { self.contacts = contacts }
-}
-
-// MARK: - Web pages
-
-/// The consent page for a one-hour temporary contact.
-public struct TemporaryInviteView: Codable, Sendable {
-    public var wearerName: String
-    public var contactName: String
-    public var phoneHint: String
-    public var shareLocation: Bool
-    public var state: TemporaryContactState
-    public var durationMinutes: Int
-    public var expiresAt: Date?
-    public init(wearerName: String, contactName: String, phoneHint: String, shareLocation: Bool, state: TemporaryContactState, durationMinutes: Int, expiresAt: Date?) {
-        self.wearerName = wearerName
-        self.contactName = contactName
-        self.phoneHint = phoneHint
-        self.shareLocation = shareLocation
-        self.state = state
-        self.durationMinutes = durationMinutes
-        self.expiresAt = expiresAt
-    }
 }
 
 // MARK: - Demo admin

@@ -6,9 +6,9 @@ Ripple Alert   Ripple opens shortcuts://x-callback-url/run-shortcut with JSON
                each text to its own recipient with Send Message (Show When Run
                off), so nobody is in a group text.
 
-Ripple Accept  A Messages automation ("Message contains Ripple accept") runs it
+Ripple Accept  Messages automations for "Ripple accept" and "Ripple join" run it
                with the incoming message. It opens ripple://accept?text=<reply>,
-               and Ripple records who is responding from "RIPPLE ACCEPT 4821".
+               and Ripple handles alarm acknowledgements or temporary-contact joins.
 
 Both only use built-in Shortcuts actions and Ripple's URL scheme, so unlike
 the hand-gesture wrappers they work with any Ripple bundle identifier.
@@ -144,7 +144,7 @@ def ripple_accept() -> dict:
             "is.workflow.actions.gettext", ids["url"],
             WFTextActionText=token_string("ripple://accept?text=", output(ids["encode"], "URL Encoded Text")),
         ),
-        # Opens Ripple, which checks the code against the open alert.
+        # Opens Ripple, which routes alarm replies and temporary-contact joins.
         action("is.workflow.actions.openurl", ids["open"], WFInput=attachment(output(ids["url"], "Text")), **{"Show-WFInput": True}),
     ]
     return workflow("Ripple Accept", actions, glyph=59511, color=463140863)
@@ -220,17 +220,22 @@ python3 scripts/build_ripple_shortcuts.py --sign
 | Shortcut | What runs it | What it does |
 | --- | --- | --- |
 | Ripple Alert | Ripple, through the Shortcuts URL scheme | Sends each alert text to its own recipient with Send Message, Show When Run off |
-| Ripple Accept | A Messages automation: Message contains "Ripple accept", Run Immediately | Opens `ripple://accept?text=<the reply>`; Ripple checks the code and marks that person as responding |
+| Ripple Accept | Messages automations: "Ripple accept" or "Ripple join", Run Immediately | Opens `ripple://accept?text=<the reply>`; Ripple validates an alarm reply or activates a one-hour invitation |
 
 ## Set up on the wearer's iPhone
 
 1. AirDrop both signed files to the iPhone and tap **Add Shortcut** for each. Keep their names.
 2. In Ripple, open **Settings → Messaging shortcuts** and send a test message. Approve anything Shortcuts asks for.
 3. In Shortcuts, open **Automation**, tap **+**, choose **Message**, set **Message Contains** to `Ripple accept`, choose **Run Immediately**, tap **Next**, and pick **Ripple Accept**.
+4. Add another **Message** automation for `Ripple join`, also **Run Immediately** and using the same **Ripple Accept** shortcut. Keep the accept automation.
 
 Alert texts ask contacts to reply "Ripple accept 4821", with a different code
 for each person. Their reply runs the automation, Ripple shows "[Name] is
 responding" on the iPhone and Watch, texts the others, and stops Tier 2.
+
+Temporary-contact invitations use the same sender. Replying "Ripple join 583921"
+with the invitation's six-digit code starts one hour on the backend. Joining
+and expiration send no follow-up texts. Existing shortcut files are unchanged.
 
 Each `.source.json` is the readable version of its shortcut and
 `.unsigned.shortcut` is the same thing as a binary property list. Neither

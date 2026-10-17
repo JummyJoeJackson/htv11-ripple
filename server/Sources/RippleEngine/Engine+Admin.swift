@@ -170,7 +170,7 @@ extension Engine {
     }
 
     /// Starts a new demo run and deletes the old run's alarms, messages,
-    /// links, commands and temporary contacts, so nothing old can fire.
+    /// commands and temporary contacts, so nothing old can fire.
     public func resetDemo(adminId: String, userId: String, key: String?) throws -> AdminWearerView {
         _ = try requireAssignment(adminId, userId)
         return try once(key, scope: "\(adminId):reset") {
@@ -178,12 +178,10 @@ extension Engine {
             db.alarms = db.alarms.filter { $0.value.userId != userId }
             db.backups = db.backups.filter { !alarmIds.contains($0.value.message.alarmId) }
             db.commands = db.commands.filter { $0.value.userId != userId }
-            let contactIds = Set(db.temporaryContacts.values.filter { $0.userId == userId }.map { $0.id })
             db.temporaryContacts = db.temporaryContacts.filter { $0.value.userId != userId }
-            db.inviteTokens = db.inviteTokens.filter { !contactIds.contains($0.value) }
             db.events = db.events.filter { $0.userId != userId }
             db.users[userId]?.runId = newId()
-            log(userId, "Demo reset by \(adminName(adminId)). Old alarms, timers, links and temporary contacts were deleted.")
+            log(userId, "Demo reset by \(adminName(adminId)). Old alarms, timers and temporary contacts were deleted.")
             dirty = true
             return buildAdminView(db.users[userId]!)
         }

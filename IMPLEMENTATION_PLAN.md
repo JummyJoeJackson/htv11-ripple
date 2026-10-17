@@ -12,7 +12,7 @@ The MVP is all Swift: three SwiftUI apps for iPhone and Apple Watch (Series 9 ta
 | Apple Watch app | SwiftUI, watchOS 10+ (double tap on watchOS 11) | The one-circle interface; embedded in the wearer app |
 | Demo admin app | SwiftUI, iOS 17+ | Triggers and inspects demo alarms through the backend |
 | Shared code | `RippleKit` Swift package | Models, message templates, tier rules, `AlarmCoordinator`, API client. Used by all three apps and the server, so phone and backend apply the same rules. |
-| Backend | Swift + Vapor, one process | Alarm mirror, backup sender, temporary-contact consent page, admin relay. State is a single actor saved to a JSON file, so it survives restarts with nothing to install. |
+| Backend | Swift + Vapor, one process | Alarm mirror, backup sender, temporary-contact joins by text, admin relay. State is a single actor saved to a JSON file, so it survives restarts with nothing to install. |
 | Phone texting | Apple Shortcuts ("Ripple Alert") | PRD's chosen demo path: real texts from the wearer's own messaging account |
 | Backup texting | Twilio, or the Mac's Messages app, behind one adapter | PRD's declared backup sender |
 | Watch link | WatchConnectivity | Display, configuration and circle actions |
@@ -28,7 +28,6 @@ flowchart LR
     admin["Demo admin iPhone"] -->|"commands"| server
     server -->|"backup SMS"| twilio["Twilio or Messages"]
     contacts["Contacts' phones"] -->|"Ripple accept + code via Messages automation"| phone
-    contacts -->|"/t/token temporary-contact consent"| server
 ```
 
 **The phone owns the alarm.** `AlarmCoordinator` (in RippleKit) holds monitoring on/off, the current alarm, its countdown, the duress flag, tiers, and every message with its status and sending path. The Watch only shows what the iPhone tells it and sends taps.
@@ -48,7 +47,7 @@ flowchart LR
 | "I'm okay now" | Texts "okay now" to everyone already texted, cancels unsent texts, closes | Sees it closed; no further backup |
 | Hold after texts went out | Duress: looks like a dismissal, escalation continues hidden | Keeps backing up as needed |
 | Admin "Disable alarm" | Closes when the command arrives | Closes the mirror at once, so no backup fires even without the phone |
-| Admin "Reset demo" | Clears the alarm on the next sync (new run id) | Deletes the wearer's alarms, messages, links, commands and temporary contacts |
+| Admin "Reset demo" | Clears the alarm on the next sync (new run id) | Deletes the wearer's alarms, messages, commands and temporary contacts |
 
 A duress alarm is never shown on the Watch or the wearer's iPhone, and its texts use the normal alert wording. The demo admin app does show it, labelled as hidden from the wearer.
 
@@ -58,9 +57,8 @@ A duress alarm is never shown on the Watch or the wearer's iPhone, and its texts
 | --- | --- |
 | `RippleKit/Sources/RippleKit` | `Config.swift` (contacts, tiers, settings), `Alarm.swift` (alarm, messages, `RecipientRules`, `MessageTemplates`), `AlarmCoordinator.swift`, `WatchMessages.swift`, `API.swift`, `RippleAPI.swift` |
 | `RippleKit/Tests` | Coordinator scenarios: safe, timeout, privacy, tiers, acknowledgment, okay now, duress, backup hand-off, guards, reset, check-in timer |
-| `server/Sources/RippleEngine` | `Engine+Wearer` (setup, sync, temporary contacts), `Engine+Backup` (backup sender rules), `Engine+Web` (temporary-contact consent page), `Engine+Admin` (pairing, commands, expire, reset) |
+| `server/Sources/RippleEngine` | `Engine+Wearer` (setup, sync, temporary contacts), `Engine+Backup` (backup sender rules), `Engine+Temporary` (invitations, join replies, one-hour expiry), `Engine+Admin` (pairing, commands, expire, reset) |
 | `server/Sources/RippleServer` | Vapor routes, Twilio and Messages senders, worker loop, configuration |
-| `server/Public` | `invite.html` (consent for a one-hour session) |
 | `server/Tests` | Backup scenarios driven by a real `AlarmCoordinator` as the phone |
 | `apps/RippleWearer` | `WearerStore` (coordinator, sync loop, outage simulation), `ShortcutSender`, `PhoneConnectivity`, `LocationProvider`, screens for home, contacts, settings, shortcut setup |
 | `apps/RippleWatch` | `CircleScreen` (circle, hold, double tap, voice), `WatchStore` (stored config, haptics), `WatchLink` |

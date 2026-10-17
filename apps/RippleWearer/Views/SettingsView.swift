@@ -286,7 +286,7 @@ struct HandGestureSetupView: View {
 }
 
 /// One-time setup for the two shortcuts: "Ripple Alert" sends the texts, and
-/// "Ripple Accept" passes a contact's "RIPPLE ACCEPT 4821" reply back to Ripple.
+/// "Ripple Accept" passes both alarm and invitation replies back to Ripple.
 struct ShortcutSetupView: View {
     @Environment(WearerStore.self) private var store
     @State private var name = ""
@@ -314,14 +314,15 @@ struct ShortcutSetupView: View {
                 SetupStep(number: 2, text: "Set Message Contains to \"Ripple accept\". Leave Sender as anyone, or pick your contacts.")
                 SetupStep(number: 3, text: "Choose Run Immediately, then tap Next.")
                 SetupStep(number: 4, text: "Pick the Ripple Accept shortcut, so the message is passed to it.")
+                SetupStep(number: 5, text: "Add a second Message automation containing \"Ripple join\", also Run Immediately and using Ripple Accept. Keep the first automation too.")
             } header: {
-                SectionHeader("Let contacts reply to accept")
+                SectionHeader("Let contacts reply")
             } footer: {
                 FormNote("Alert texts ask contacts to reply \"Ripple accept 4821\", with a different code for each person. When a reply arrives, the automation runs Ripple Accept, which opens Ripple with the reply. Your Watch shows who is responding and Tier 2 isn't texted. The reply itself still appears in Messages.")
             }
 
             Section {
-                TextField("RIPPLE ACCEPT 4821", text: $replyText)
+                TextField("Ripple accept 4821 or Ripple join 583921", text: $replyText)
                     .textInputAutocapitalization(.characters)
                     .autocorrectionDisabled()
                 Button("Use this reply") {
@@ -330,11 +331,11 @@ struct ShortcutSetupView: View {
                 }
                 .frame(minHeight: Theme.minTarget)
                 .buttonStyle(.rippleLink)
-                .disabled(ReplyCode.acceptCode(in: replyText) == nil)
+                .disabled(ReplyCode.acceptCode(in: replyText) == nil && JoinCode.code(in: replyText) == nil)
             } header: {
                 SectionHeader("Try a reply")
             } footer: {
-                FormNote("Does what the automation does, for testing during an alert. The code must belong to someone who was already texted.")
+                FormNote("Does what the automations do. Accept uses an active alert's four-digit code. Join uses a pending invitation's six-digit code and starts its one hour on the backend. Joining and expiration send no follow-up texts.")
             }
 
             Section {

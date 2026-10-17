@@ -58,19 +58,3 @@ extension Request {
         return value
     }
 }
-
-/// Serves one of the web pages in Public/. They load their data from the API
-/// with the token in the path, so the HTML itself holds nothing private.
-func page(_ fileName: String, publicDirectory: String) -> Response {
-    let path = publicDirectory + "/" + fileName
-    guard let data = FileManager.default.contents(atPath: path) else {
-        return Response(status: .notFound, body: .init(string: "Page not found. Is RIPPLE_PUBLIC_DIR set correctly?"))
-    }
-    var headers = HTTPHeaders()
-    headers.add(name: .contentType, value: "text/html; charset=utf-8")
-    headers.add(name: .cacheControl, value: "no-store")
-    headers.add(name: "Referrer-Policy", value: "no-referrer")
-    headers.add(name: "X-Robots-Tag", value: "noindex, nofollow")
-    headers.add(name: "X-Content-Type-Options", value: "nosniff")
-    return Response(status: .ok, headers: headers, body: .init(data: data))
-}

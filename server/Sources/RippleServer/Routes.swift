@@ -4,11 +4,8 @@ import RippleEngine
 import RippleKit
 import Vapor
 
-func routes(_ app: Application, engine: Engine, publicDirectory: String, twilioAuthToken: String?, baseURL: String) throws {
+func routes(_ app: Application, engine: Engine, twilioAuthToken: String?, baseURL: String) throws {
     app.get("health") { _ in "ok" }
-
-    // Temporary-contact consent. No app, account or login.
-    app.get("t", ":token") { _ in page("invite.html", publicDirectory: publicDirectory) }
 
     let v1 = app.grouped("v1")
 
@@ -38,14 +35,10 @@ func routes(_ app: Application, engine: Engine, publicDirectory: String, twilioA
         return try json(try await engine.removeTemporary(userId: userId, contactId: try req.pathValue("id")))
     }
 
-    // MARK: Temporary contact consent page
-
-    v1.get("temporary", ":token") { req async throws -> Response in
-        try json(try await engine.invitePage(token: try req.pathValue("token")))
-    }
-
-    v1.post("temporary", ":token", "accept") { req async throws -> Response in
-        try json(try await engine.acceptInvite(token: try req.pathValue("token")))
+    wearer.post("temporary", "join") { req async throws -> Response in
+        let userId = try await engine.authenticateWearer(token: req.bearerToken)
+        let body = try decodeBody(JoinTemporaryRequest.self, req)
+        return try json(try await engine.joinTemporary(userId: userId, body))
     }
 
     // MARK: Demo admin

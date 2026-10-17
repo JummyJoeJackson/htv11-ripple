@@ -10,7 +10,6 @@ func configure(_ app: Application) async throws {
     app.http.server.configuration.port = port
 
     let serverDirectory = ServerPaths.serverDirectory()
-    let publicDirectory = env["RIPPLE_PUBLIC_DIR"] ?? serverDirectory + "/Public"
     let dataFile = env["RIPPLE_DATA_FILE"] ?? serverDirectory + "/.data/ripple.json"
 
     let lanAddress = LANAddress.ipv4()
@@ -19,7 +18,7 @@ func configure(_ app: Application) async throws {
     if let tunnel {
         app.lifecycle.use(TunnelLifecycle(tunnel: tunnel))
     }
-    // Temporary-contact invitations use this address, so contacts must be able to open it.
+    // Apps and provider callbacks can use this public address.
     let baseURL = env["RIPPLE_PUBLIC_BASE_URL"] ?? tunnel?.url ?? localURL
     let adminSecret = env["RIPPLE_ADMIN_SECRET"] ?? "ripple-demo"
     let grace = TimeInterval(env["RIPPLE_BACKUP_GRACE_SECONDS"] ?? "") ?? 30
@@ -35,7 +34,7 @@ func configure(_ app: Application) async throws {
 
     app.middleware = Middlewares()
     app.middleware.use(RippleErrorMiddleware())
-    try routes(app, engine: engine, publicDirectory: publicDirectory, twilioAuthToken: env["TWILIO_AUTH_TOKEN"], baseURL: baseURL)
+    try routes(app, engine: engine, twilioAuthToken: env["TWILIO_AUTH_TOKEN"], baseURL: baseURL)
 
     let worker = Worker(engine: engine, sender: sender, logger: app.logger)
     app.lifecycle.use(WorkerLifecycle(worker: worker))
@@ -45,10 +44,6 @@ func configure(_ app: Application) async throws {
         app.logger.notice("Enter this server address in the iPhone apps: \(localURL) on this Wi-Fi, or \(tunnel.url) from anywhere (it changes each time the server starts)")
     } else {
         app.logger.notice("Enter this server address in the iPhone apps: \(baseURL)")
-    }
-    app.logger.notice("Temporary-contact invitations will start with: \(baseURL)/t/…")
-    if !baseURL.hasPrefix("https://") {
-        app.logger.warning("Temporary-contact invitations only open on phones on this Wi-Fi. For contacts on cellular, install cloudflared (brew install cloudflared) and restart, or set RIPPLE_PUBLIC_BASE_URL.")
     }
     app.logger.notice("Backup SMS route: \(sender.name)\(recipients.map { " (demo recipients only: \($0.count))" } ?? "")")
     app.logger.notice("Backup grace period: \(Int(grace)) s")
@@ -66,13 +61,13 @@ func configure(_ app: Application) async throws {
 func startTunnel(env: [String: String], port: Int, logger: Logger) async -> QuickTunnel? {
     guard env["RIPPLE_PUBLIC_BASE_URL"] == nil, env["RIPPLE_TUNNEL"]?.lowercased() != "off" else { return nil }
     guard let cloudflared = QuickTunnel.cloudflaredPath(env: env) else { return nil }
-    logger.notice("Starting a Cloudflare quick tunnel, so temporary-contact invitations open on any phone…")
+    logger.notice("Starting a Cloudflare quick tunnel, for app connections and provider callbacks…")
     do {
         let tunnel = try await QuickTunnel.start(executable: cloudflared, port: port)
         logger.notice("Tunnel ready: \(tunnel.url)")
         return tunnel
     } catch {
-        logger.error("The tunnel didn't start, so temporary-contact invitations will only open on this Wi-Fi. \(error)")
+        logger.error("The tunnel didn't start, so apps will need the local server address. \(error)")
         return nil
     }
 }

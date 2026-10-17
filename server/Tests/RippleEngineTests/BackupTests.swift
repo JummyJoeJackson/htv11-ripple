@@ -205,6 +205,32 @@ final class BackupTests: XCTestCase {
         XCTAssertTrue(backups.isEmpty)
     }
 
+    func testTextReplyAcceptReachesTheBackendAndStopsTierTwo() async throws {
+        phone.startAlarm(source: .admin)
+        try await sync()
+        await advance(15)
+        phone.tick()
+        phoneSubmits()
+        try await sync()
+
+        // Sam texts back the code; the Ripple Accept shortcut hands it to the app.
+        let sam = phone.alarm!.recipients.first { $0.id == "sam" }!
+        XCTAssertTrue(sam.alertText.contains("or reply RIPPLE ACCEPT \(sam.acceptCode!)"))
+        let result = phone.acceptReply(text: "Ripple accept \(sam.acceptCode!)", from: "+14165550101")
+        XCTAssertTrue(result.ok)
+        phoneSubmits()
+        try await sync() // the backend learns about it, then the phone goes quiet
+
+        let joToken = phone.alarm!.recipients.first { $0.id == "jo" }!.ackToken
+        let page = try await engine.ackPage(token: joToken)
+        XCTAssertEqual(page.responderName, "Sam", "The link page shows Sam is already checking")
+
+        let out = await advance(60)
+        XCTAssertTrue(out.isEmpty, "No Tier 2 backup once someone accepted by text")
+        let view = try await adminView()
+        XCTAssertEqual(view.acknowledgment?.name, "Sam")
+    }
+
     func testRespondingTextComesFromBackupWhenThePhoneIsQuiet() async throws {
         phone.startAlarm(source: .admin)
         try await sync()

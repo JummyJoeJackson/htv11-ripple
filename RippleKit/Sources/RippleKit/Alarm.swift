@@ -88,8 +88,12 @@ public struct AlarmRecipient: Codable, Hashable, Identifiable, Sendable {
     /// Prebuilt texts, so the backend can send exactly the same words as backup.
     public var alertText: String
     public var escalationText: String
+    /// 4-digit code this recipient can text back ("RIPPLE ACCEPT 4821") instead
+    /// of tapping the link. Unique within the alarm, so it also says who replied.
+    /// Nil for alarms saved before reply codes existed.
+    public var acceptCode: String?
 
-    public init(id: String, name: String, phone: String, tier: Tier, shareLocation: Bool, temporary: Bool, ackToken: String, alertText: String, escalationText: String) {
+    public init(id: String, name: String, phone: String, tier: Tier, shareLocation: Bool, temporary: Bool, ackToken: String, alertText: String, escalationText: String, acceptCode: String? = nil) {
         self.id = id
         self.name = name
         self.phone = phone
@@ -99,6 +103,7 @@ public struct AlarmRecipient: Codable, Hashable, Identifiable, Sendable {
         self.ackToken = ackToken
         self.alertText = alertText
         self.escalationText = escalationText
+        self.acceptCode = acceptCode
     }
 }
 
@@ -273,34 +278,40 @@ public enum MessageTemplates {
         return formatter.string(from: date)
     }
 
-    public static func alert(name: String, checkInTime: String, locationURL: String?, helpCard: String?, ackLink: String) -> String {
+    public static func alert(name: String, checkInTime: String, locationURL: String?, helpCard: String?, ackLink: String, acceptCode: String? = nil) -> String {
         var text = "Ripple alert: \(name) did not respond to their Watch check-in at \(checkInTime). Please call or check on them."
         if let locationURL { text += " Location: \(locationURL)" }
         if let helpCard, !helpCard.isEmpty { text += " Note from \(name): \(helpCard)" }
-        text += " Tap if you're checking: \(ackLink)"
+        text += " Tap if you're checking: \(ackLink)" + replyInstruction(acceptCode)
         return text
     }
 
-    public static func escalation(name: String, checkInTime: String, locationURL: String?, ackLink: String) -> String {
+    public static func escalation(name: String, checkInTime: String, locationURL: String?, ackLink: String, acceptCode: String? = nil) -> String {
         var text = "Ripple alert: \(name) did not respond at \(checkInTime) and no one has confirmed yet. Please call or check on them."
         if let locationURL { text += " Location: \(locationURL)" }
-        text += " \(ackLink)"
+        text += " \(ackLink)" + replyInstruction(acceptCode)
         return text
     }
 
-    public static func help(name: String, time: String, locationURL: String?, helpCard: String?, ackLink: String) -> String {
+    public static func help(name: String, time: String, locationURL: String?, helpCard: String?, ackLink: String, acceptCode: String? = nil) -> String {
         var text = "Ripple alert: \(name) asked for help from their Watch at \(time). Please call or check on them."
         if let locationURL { text += " Location: \(locationURL)" }
         if let helpCard, !helpCard.isEmpty { text += " Note from \(name): \(helpCard)" }
-        text += " Tap if you're checking: \(ackLink)"
+        text += " Tap if you're checking: \(ackLink)" + replyInstruction(acceptCode)
         return text
     }
 
-    public static func helpEscalation(name: String, time: String, locationURL: String?, ackLink: String) -> String {
+    public static func helpEscalation(name: String, time: String, locationURL: String?, ackLink: String, acceptCode: String? = nil) -> String {
         var text = "Ripple alert: \(name) asked for help at \(time) and no one has confirmed yet. Please call or check on them."
         if let locationURL { text += " Location: \(locationURL)" }
-        text += " \(ackLink)"
+        text += " \(ackLink)" + replyInstruction(acceptCode)
         return text
+    }
+
+    /// " or reply RIPPLE ACCEPT 4821", or nothing without a code.
+    static func replyInstruction(_ acceptCode: String?) -> String {
+        guard let acceptCode, !acceptCode.isEmpty else { return "" }
+        return " or reply \(ReplyCode.keyword) \(acceptCode)"
     }
 
     public static func responding(contact: String, name: String) -> String {
@@ -315,5 +326,36 @@ public enum MessageTemplates {
         var base = baseURL
         while base.hasSuffix("/") { base.removeLast() }
         return base + "/a/" + token
+    }
+}
+
+/// Text replies that acknowledge an alert: "RIPPLE ACCEPT 4821". The wearer's
+/// iPhone receives them through a Messages automation and the Ripple Accept
+/// shortcut, which opens ripple://accept?text=<the reply>.
+public enum ReplyCode {
+    public static let keyword = "RIPPLE ACCEPT"
+
+    /// The 4-digit code in a reply, ignoring case, spacing and punctuation,
+    /// for example "ripple accept 4821", "Ripple  Accept: 4821!" or
+    /// "RIPPLE-ACCEPT 4821 on my way". Nil if there is none.
+    public static func acceptCode(in text: String) -> String? {
+        let pattern = "ripple[^a-z0-9]*accept[^0-9]*([0-9]{4})(?![0-9])"
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else { return nil }
+        let range = NSRange(text.startIndex..<text.endIndex, in: text)
+        guard let match = regex.firstMatch(in: text, options: [], range: range),
+              let codeRange = Range(match.range(at: 1), in: text)
+        else { return nil }
+        return String(text[codeRange])
+    }
+
+    /// Distinct 4-digit codes, one per recipient of an alarm.
+    public static func makeCodes(count: Int) -> [String] {
+        var generator = SystemRandomNumberGenerator()
+        var codes: [String] = []
+        while codes.count < count {
+            let code = String(Int.random(in: 1000...9999, using: &generator))
+            if !codes.contains(code) { codes.append(code) }
+        }
+        return codes
     }
 }

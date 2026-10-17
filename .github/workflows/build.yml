@@ -3,9 +3,9 @@ name: Build
 # Compiles the server, runs the engine tests, and builds the iPhone and Apple
 # Watch apps for the simulator, so nobody pulls code that doesn't build.
 on:
+  # Every branch, so feature branches are checked before they become PRs.
   push:
-    branches: [main, mvp]
-  pull_request:
+    branches: ["**"]
   workflow_dispatch:
 
 jobs:
@@ -78,3 +78,40 @@ jobs:
           bash .github/scripts/annotate.sh "$RUNNER_TEMP/wearer.log" "Wearer app"
           bash .github/scripts/annotate.sh "$RUNNER_TEMP/watch.log" "Watch app"
           bash .github/scripts/annotate.sh "$RUNNER_TEMP/admin.log" "Admin app"
+
+  shortcuts:
+    name: Messaging shortcuts
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Committed shortcuts match the generator
+        run: |
+          python3 scripts/build_ripple_shortcuts.py --output-dir "$RUNNER_TEMP/fresh"
+          for name in "Ripple Alert" "Ripple Accept"; do
+            diff "$RUNNER_TEMP/fresh/$name.source.json" "shortcuts/$name.source.json"
+          done
+      - name: Read them with Apple's Shortcuts parser
+        id: native
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          python3 scripts/build_ripple_shortcuts.py --output-dir "$RUNNER_TEMP/native" --validate-native 2>&1 | tee "$RUNNER_TEMP/native.log"
+      - name: Sign them
+        id: sign
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          python3 scripts/build_ripple_shortcuts.py --output-dir "$RUNNER_TEMP/signed" --sign 2>&1 | tee "$RUNNER_TEMP/sign.log"
+      - name: Report
+        if: always()
+        run: |
+          echo "::notice title=Apple Shortcuts parser (${{ steps.native.outcome }})::$(tail -4 "$RUNNER_TEMP/native.log" 2>/dev/null | paste -sd ' ' -)"
+          echo "::notice title=Signing (${{ steps.sign.outcome }})::$(tail -4 "$RUNNER_TEMP/sign.log" 2>/dev/null | paste -sd ' ' -)"
+      - name: Upload signed shortcuts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ripple-shortcuts
+          path: ${{ runner.temp }}/signed
+          if-no-files-found: ignore

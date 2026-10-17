@@ -9,6 +9,9 @@ public enum AlarmSource: String, Codable, Sendable {
     case phone
     /// The wearer asked for help with a swipe combo on the Watch.
     case help
+    /// Steps stopped during a walk session on the Watch. Only a check-in;
+    /// nothing is detected or claimed.
+    case walk
 }
 
 public enum AlarmPhase: String, Codable, Sendable {

@@ -61,6 +61,7 @@ struct SettingsView: View {
                 Button("Use 15-second demo timers") {
                     draft.countdownSeconds = 15
                     draft.ackWindowSeconds = 15
+                    draft.walkStopSeconds = 20
                 }
                 .frame(minHeight: Theme.minTarget)
                 .buttonStyle(.rippleLink)
@@ -107,6 +108,23 @@ struct SettingsView: View {
                 SectionHeader("Hand gestures")
             } footer: {
                 FormNote("A full sequence says I'm okay. Up to 5 seconds between gestures. Uses AssistiveTouch, which turns off Apple's double tap.")
+            }
+
+            Section {
+                IconRow(icon: "figure.walk") {
+                    Toggle("Walk sessions", isOn: $draft.walkEnabled)
+                }
+                if draft.walkEnabled {
+                    IconRow(icon: "timer") {
+                        Stepper(value: $draft.walkStopSeconds, in: 15...600, step: 15) {
+                            LabeledContent("Check in if I stop for", value: Self.duration(draft.walkStopSeconds))
+                        }
+                    }
+                }
+            } header: {
+                SectionHeader("Walk sessions")
+            } footer: {
+                FormNote("Tap Start walk on the Watch. If your steps stop for this long, Ripple asks if you're okay. It doesn't detect falls.")
             }
 
             Section {
@@ -198,6 +216,14 @@ struct SettingsView: View {
     private var watchSyncText: String {
         guard let version = store.watchConfigVersion else { return "Not yet" }
         return version == store.config.version ? "Yes" : "Sending…"
+    }
+
+    /// "20 s", "2 min" or "2 min 15 s".
+    static func duration(_ seconds: Int) -> String {
+        let minutes = seconds / 60
+        let rest = seconds % 60
+        if minutes == 0 { return "\(rest) s" }
+        return rest == 0 ? "\(minutes) min" : "\(minutes) min \(rest) s"
     }
 }
 

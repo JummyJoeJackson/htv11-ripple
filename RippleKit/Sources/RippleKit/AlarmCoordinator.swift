@@ -88,6 +88,7 @@ public final class AlarmCoordinator {
         case .dismiss: result = dismiss(alarmId: action.alarmId)
         case .hold: result = hold(alarmId: action.alarmId)
         case .help: result = requestHelp()
+        case .walkStopped: result = walkStopped()
         }
         remember(action.id, result)
         return result
@@ -180,6 +181,18 @@ public final class AlarmCoordinator {
         case .escalated, .closed: changed()
         }
         return requested
+    }
+
+    /// Steps stopped during a walk session. A normal check-in: the wearer can
+    /// answer it, and only no answer sends texts. An alarm already open is
+    /// enough, so the Watch stops asking.
+    @discardableResult
+    public func walkStopped() -> ActionResult {
+        if let alarm, alarm.isOpen {
+            return ActionResult(ok: true, feedback: "Already checking in")
+        }
+        let result = startAlarm(source: .walk)
+        return result.ok ? ActionResult(ok: true, feedback: "Steps stopped. Checking in.") : result
     }
 
     private func makeAlarm(source: AlarmSource, countdownSeconds countdown: Int, at t: Date) -> Alarm {
@@ -450,7 +463,8 @@ public final class AlarmCoordinator {
         let t = now()
         if let current = visibleAlarm {
             if current.phase == .countdown {
-                return WatchDisplay(mode: .checkIn, circleLabel: "I'm okay", status: "Check in", alarmId: current.id,
+                let status = current.source == .walk ? "You stopped walking" : "Check in"
+                return WatchDisplay(mode: .checkIn, circleLabel: "I'm okay", status: status, alarmId: current.id,
                                     deadline: current.deadline, phoneAvailable: phoneAvailable, updatedAt: t)
             }
             if let ack = current.acknowledgment {

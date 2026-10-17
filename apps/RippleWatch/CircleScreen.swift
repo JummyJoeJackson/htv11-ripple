@@ -13,6 +13,7 @@ import SwiftUI
 /// With swipe combos on: swipe up twice asks for help in any state; swipe
 /// down twice is "I'm okay" during an alarm. With the voice phrase on, the
 /// microphone listens for it during an alarm without anything to press.
+/// While monitoring, a button under the circle starts a walk session.
 struct CircleScreen: View {
     @Environment(WatchStore.self) private var store
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -54,6 +55,14 @@ struct CircleScreen: View {
                 WatchNote(text: "iPhone not available", systemImage: "iphone.slash", color: Theme.primaryTint)
             } else {
                 StatusLine(text: display.status, mode: display.mode)
+            }
+
+            if store.config.walkEnabled && display.mode == .monitoring {
+                WalkButton(walking: store.walking, steps: store.walkSteps, stillSince: store.walkStillSince,
+                           stopAfter: store.config.walkStopSeconds) {
+                    store.toggleWalk()
+                }
+                .disabled(store.sending)
             }
 
             if store.config.voiceEnabled && display.mode.isAlarm {
@@ -241,6 +250,44 @@ private struct WatchCountdown: View {
                 .monospacedDigit()
                 .foregroundStyle(.white)
                 .accessibilityLabel("\(remaining) seconds to answer")
+        }
+    }
+}
+
+/// Starts or ends a walk session while monitoring. During a walk it shows the
+/// step count, and how long the wearer has been still once a stop would count,
+/// so it's clear steps are being counted, even after the screen was off.
+private struct WalkButton: View {
+    let walking: Bool
+    let steps: Int
+    let stillSince: Date?
+    let stopAfter: Int
+    let action: () -> Void
+
+    var body: some View {
+        VStack(spacing: 2) {
+            Button(action: action) {
+                Label(walking ? "End walk · \(steps) steps" : "Start walk", systemImage: "figure.walk")
+                    .font(.footnote)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+            .tint(walking ? .orange : .green)
+            .accessibilityLabel(walking ? "End walk. \(steps) steps so far." : "Start walk")
+            .accessibilityHint("During a walk, if your steps stop for a while, Ripple checks in.")
+
+            if walking, let stillSince {
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    let still = max(0, Int(context.date.timeIntervalSince(stillSince)))
+                    if still >= 3 {
+                        Text("Still \(still) s of \(stopAfter) s")
+                            .font(.caption2)
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                            .accessibilityLabel("Still for \(still) seconds. Ripple checks in at \(stopAfter).")
+                    }
+                }
+            }
         }
     }
 }

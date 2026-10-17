@@ -35,6 +35,14 @@ final class AdminStore {
 
     @ObservationIgnored private var api: RippleAPI?
     @ObservationIgnored private var pollTask: Task<Void, Never>?
+    /// The command just sent, until the iPhone answers it.
+    @ObservationIgnored private var awaited: AwaitedCommand?
+
+    private struct AwaitedCommand {
+        let id: String
+        let sentAt: Date
+        var warned = false
+    }
 
     private enum Keys {
         static let server = "ripple.admin.serverAddress"
@@ -149,8 +157,32 @@ final class AdminStore {
             guard selectedUserId == userId else { return }
             view = fresh
             connection = .online
+            reportAwaitedCommand(in: fresh)
         } catch {
             connection = .offline(describe(error))
+        }
+    }
+
+    /// Shows the iPhone's answer to the command just sent in the banner.
+    /// Otherwise a refusal like "Monitoring is off" only appears in small
+    /// text in the command list, and the button seems to do nothing.
+    private func reportAwaitedCommand(in view: AdminWearerView) {
+        guard let awaited, let command = view.commands.first(where: { $0.id == awaited.id }) else { return }
+        let waited = Date().timeIntervalSince(awaited.sentAt)
+        switch command.state {
+        case .done, .rejected:
+            let answer = command.result.flatMap { $0.isEmpty ? nil : $0 } ?? command.state.label
+            banner = AdminBanner(text: "\(command.kind.label): \(answer)", ok: command.state == .done)
+            self.awaited = nil
+        case .queued where !awaited.warned && waited > 8:
+            banner = AdminBanner(text: "The iPhone hasn't picked up \"\(command.kind.label)\" yet. Is Ripple open on it and online?", ok: false)
+            self.awaited?.warned = true
+        case .delivered where !awaited.warned && waited > 10:
+            // An older iPhone build can't read a newer command, which also stops its syncing.
+            banner = AdminBanner(text: "The iPhone got \"\(command.kind.label)\" but hasn't answered. If its Ripple app is older than this admin app, rebuild it.", ok: false)
+            self.awaited?.warned = true
+        default:
+            break
         }
     }
 
@@ -160,9 +192,18 @@ final class AdminStore {
         guard let api, let userId = selectedUserId else { return }
         pending = pendingText
         defer { pending = nil }
+        let before = Set(view?.commands.map(\.id) ?? [])
         do {
-            view = try await action(api, userId)
+            let fresh = try await action(api, userId)
+            view = fresh
             banner = AdminBanner(text: success, ok: true)
+            // Follow the command just sent until the iPhone answers it.
+            if let sent = fresh.commands.first(where: { !before.contains($0.id) }) {
+                awaited = AwaitedCommand(id: sent.id, sentAt: Date())
+            }
+        } catch RippleAPIError.server(400, "bad_request", let message) {
+            // The usual cause: this admin app knows a command the server's build doesn't.
+            banner = AdminBanner(text: "Not done. \(message) The server is probably an older build: pull the latest code and restart it.", ok: false)
         } catch {
             banner = AdminBanner(text: "Not done. \(describe(error))", ok: false)
         }

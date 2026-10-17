@@ -199,6 +199,10 @@ public final class AlarmCoordinator {
                 alertText: "", escalationText: ""
             ))
         }
+        // Each person gets their own reply code, so a reply also says who it's from.
+        for (index, code) in ReplyCode.makeCodes(count: recipients.count).enumerated() {
+            recipients[index].acceptCode = code
+        }
         return Alarm(
             id: RippleID.make(bytes: 8), runId: runId, source: source, startedAt: t,
             deadline: t.addingTimeInterval(TimeInterval(countdown)), countdownSeconds: countdown,
@@ -366,6 +370,38 @@ public final class AlarmCoordinator {
         if changedAnything {
             changed()
         }
+    }
+
+    /// A contact texted back "RIPPLE ACCEPT 4821". The Ripple Accept shortcut
+    /// passes the reply here; it counts exactly like tapping their link.
+    ///
+    /// The code must belong to someone who was texted for the open alarm. If
+    /// the sender's number is known and differs from that person's number, the
+    /// reply is refused, so a forwarded code can't accept for someone else.
+    /// For a duress alarm the feedback is empty, so the iPhone shows nothing.
+    @discardableResult
+    public func acceptReply(text: String, from sender: String? = nil) -> ActionResult {
+        guard let code = ReplyCode.acceptCode(in: text) else {
+            return ActionResult(ok: false, feedback: "That message has no Ripple accept code.")
+        }
+        guard let current = alarm, current.isOpen else {
+            return ActionResult(ok: false, feedback: "No alert is open, so the reply \(code) was ignored.")
+        }
+        guard let recipient = current.recipients.first(where: { $0.acceptCode == code }) else {
+            return ActionResult(ok: false, feedback: "The reply code \(code) doesn't match the open alert.")
+        }
+        guard current.textedRecipientIds.contains(recipient.id) else {
+            return ActionResult(ok: false, feedback: "\(recipient.name) hasn't been texted for this alert yet.")
+        }
+        if let sender, let senderPhone = Phone.normalize(sender), senderPhone != recipient.phone {
+            return ActionResult(ok: false, feedback: "That reply came from a different number than \(recipient.name)'s.")
+        }
+        let quiet = current.duress
+        if let existing = current.acknowledgment {
+            return ActionResult(ok: true, feedback: quiet ? "" : "\(existing.name) is already responding.")
+        }
+        applyAcknowledgment(Acknowledgment(recipientId: recipient.id, name: recipient.name, at: now()))
+        return ActionResult(ok: true, feedback: quiet ? "" : "\(recipient.name) is responding.")
     }
 
     /// A contact tapped the acknowledge link. Others already texted are told.
@@ -548,20 +584,21 @@ public final class AlarmCoordinator {
             let recipient = alarm.recipients[index]
             let location = recipient.shareLocation ? alarm.location?.mapURL : nil
             let link = MessageTemplates.ackLink(baseURL: serverBaseURL, token: recipient.ackToken)
+            let code = recipient.acceptCode
             if let helpTime {
                 alarm.recipients[index].alertText = MessageTemplates.help(
-                    name: alarm.wearerName, time: helpTime, locationURL: location, helpCard: helpCard, ackLink: link
+                    name: alarm.wearerName, time: helpTime, locationURL: location, helpCard: helpCard, ackLink: link, acceptCode: code
                 )
                 alarm.recipients[index].escalationText = MessageTemplates.helpEscalation(
-                    name: alarm.wearerName, time: helpTime, locationURL: location, ackLink: link
+                    name: alarm.wearerName, time: helpTime, locationURL: location, ackLink: link, acceptCode: code
                 )
                 continue
             }
             alarm.recipients[index].alertText = MessageTemplates.alert(
-                name: alarm.wearerName, checkInTime: time, locationURL: location, helpCard: helpCard, ackLink: link
+                name: alarm.wearerName, checkInTime: time, locationURL: location, helpCard: helpCard, ackLink: link, acceptCode: code
             )
             alarm.recipients[index].escalationText = MessageTemplates.escalation(
-                name: alarm.wearerName, checkInTime: time, locationURL: location, ackLink: link
+                name: alarm.wearerName, checkInTime: time, locationURL: location, ackLink: link, acceptCode: code
             )
         }
     }

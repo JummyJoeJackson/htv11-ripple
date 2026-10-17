@@ -235,16 +235,56 @@ struct HandGestureSetupView: View {
     }
 }
 
-/// One-time setup for the "Ripple Alert" shortcut that sends the texts.
+/// One-time setup for the two shortcuts: "Ripple Alert" sends the texts, and
+/// "Ripple Accept" passes a contact's "RIPPLE ACCEPT 4821" reply back to Ripple.
 struct ShortcutSetupView: View {
     @Environment(WearerStore.self) private var store
     @State private var name = ""
     @State private var testContactId = ""
+    @State private var replyText = ""
 
     var body: some View {
         RippleForm {
             Section {
                 Text("Ripple sends texts from your iPhone and your own Messages account by running a shortcut. Each person gets their own text, so nobody gets a group text.")
+            }
+
+            Section {
+                SetupStep(number: 1, text: "Get \"Ripple Alert.shortcut\" and \"Ripple Accept.shortcut\" from the team (the shortcuts folder in the repo, signed on a Mac).")
+                SetupStep(number: 2, text: "AirDrop them to this iPhone, or open them from Files, and tap Add Shortcut for each.")
+                SetupStep(number: 3, text: "Keep the names Ripple Alert and Ripple Accept, then send a test message below.")
+            } header: {
+                SectionHeader("Install the shortcuts")
+            } footer: {
+                FormNote("If you can't get the files, build Ripple Alert by hand with the steps further down.")
+            }
+
+            Section {
+                SetupStep(number: 1, text: "In Shortcuts, open Automation, tap +, and choose Message.")
+                SetupStep(number: 2, text: "Set Message Contains to \"Ripple accept\". Leave Sender as anyone, or pick your contacts.")
+                SetupStep(number: 3, text: "Choose Run Immediately, then tap Next.")
+                SetupStep(number: 4, text: "Pick the Ripple Accept shortcut, so the message is passed to it.")
+            } header: {
+                SectionHeader("Let contacts reply to accept")
+            } footer: {
+                FormNote("Alert texts end with \"or reply RIPPLE ACCEPT 4821\", with a different code for each person. When a reply arrives, the automation runs Ripple Accept, which opens Ripple with the reply. It counts like tapping the link: your Watch shows who is responding and Tier 2 isn't texted. The reply itself still appears in Messages.")
+            }
+
+            Section {
+                TextField("RIPPLE ACCEPT 4821", text: $replyText)
+                    .textInputAutocapitalization(.characters)
+                    .autocorrectionDisabled()
+                Button("Use this reply") {
+                    store.acceptReply(text: replyText, from: nil)
+                    replyText = ""
+                }
+                .frame(minHeight: Theme.minTarget)
+                .buttonStyle(.rippleLink)
+                .disabled(ReplyCode.acceptCode(in: replyText) == nil)
+            } header: {
+                SectionHeader("Try a reply")
+            } footer: {
+                FormNote("Does what the automation does, for testing during an alert. The code must belong to someone who was already texted.")
             }
 
             Section {
@@ -272,7 +312,7 @@ struct ShortcutSetupView: View {
                 SetupStep(number: 7, text: "Inside the repeat, add Send Message: the message is the text value, the recipient is the to value. Expand it and turn off Show When Run.")
                 SetupStep(number: 8, text: "Come back here and send a test message. Approve any permission Shortcuts asks for, so it can send without asking during the demo.")
             } header: {
-                SectionHeader("Build the shortcut")
+                SectionHeader("Or build Ripple Alert by hand")
             } footer: {
                 FormNote("The input looks like {\"messages\":[{\"to\":\"+14165550101\",\"text\":\"Ripple alert: …\"}]}.")
             }
@@ -304,7 +344,7 @@ struct ShortcutSetupView: View {
                 FormNote("Opening the shortcut doesn't prove a text arrived. Check the other phone. Sending works with this app open; sending while the phone is locked is untested.")
             }
         }
-        .navigationTitle("Messaging shortcut")
+        .navigationTitle("Messaging shortcuts")
         .onAppear {
             name = store.config.shortcutName
             if testContactId.isEmpty { testContactId = store.config.contacts.first?.id ?? "" }

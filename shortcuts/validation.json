@@ -1,0 +1,17 @@
+{
+  "runtimeVerifiedOnIPhone": false,
+  "shortcuts": [
+    {
+      "name": "Ripple Alert",
+      "actions": 7,
+      "allowlistPassed": true,
+      "signed": false
+    },
+    {
+      "name": "Ripple Accept",
+      "actions": 3,
+      "allowlistPassed": true,
+      "signed": false
+    }
+  ]
+}

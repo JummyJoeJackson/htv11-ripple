@@ -70,17 +70,50 @@ The first time, iOS asks you to trust the developer: **Settings → General → 
 1. Open **Ripple**, enter the server address and the wearer's name.
 2. **Contacts**: add teammates by name and phone number. Put at least one in **Tier 1** and one in **Tier 2**. Turn on **Share my location in alerts** for one of them only (for the privacy scenario).
 3. **Settings**: keep the 15-second demo timers, turn on double tap, and optionally a voice phrase. Tap **Save**. **Watch settings** should show "Up to date". With the voice phrase on, allow speech recognition on the iPhone and the microphone on the Watch when asked.
-4. Build the **Ripple Alert** shortcut (below) and send a test message from **Settings → Messaging shortcut**.
+4. Install the **Ripple Alert** and **Ripple Accept** shortcuts (below), send a test message from **Settings → Messaging shortcuts**, and add the reply automation.
 
-### The Ripple Alert shortcut
+### The messaging shortcuts
 
-Ripple sends texts from the wearer's own phone by opening a shortcut through Apple's Shortcuts URL scheme. The app passes JSON like this as text input:
+Ripple texts from the wearer's own phone through two shortcuts, both in the [`shortcuts`](../shortcuts) folder:
 
-```json
-{"messages":[{"to":"+14165550101","text":"Ripple alert: Alex did not respond …"}]}
+| Shortcut | Run by | What it does |
+| --- | --- | --- |
+| **Ripple Alert** | Ripple, through Apple's Shortcuts URL scheme | Sends each alert text to its own recipient, Show When Run off |
+| **Ripple Accept** | A Messages automation | Passes a contact's "RIPPLE ACCEPT 4821" reply to Ripple |
+
+iOS only imports signed shortcut files, and only a Mac can sign them. On a Mac, from the repository:
+
+```bash
+python3 scripts/build_ripple_shortcuts.py --sign
 ```
 
-Build it once in the Shortcuts app:
+This writes `shortcuts/Ripple Alert.shortcut` and `shortcuts/Ripple Accept.shortcut`. CI also tries to sign them and, if that works on GitHub's Mac, attaches them to the run as the **ripple-shortcuts** artifact. Add `--validate-native` to check every action with the Mac's own Shortcuts parser. Neither shortcut depends on Ripple's bundle identifier, so one signed pair works for every teammate's build.
+
+On the wearer's iPhone:
+
+1. AirDrop both signed files to the iPhone and tap **Add Shortcut** for each. Keep the names.
+2. In Ripple, open **Settings → Messaging shortcuts** and send a test message. Approve anything Shortcuts asks for.
+3. In Shortcuts, open **Automation**, tap **+**, choose **Message**, set **Message Contains** to `Ripple accept`, choose **Run Immediately**, tap **Next**, and pick **Ripple Accept**.
+
+Automations live on the phone and can't be shipped in a file, so step 3 is always manual.
+
+Each recipient gets their own message, so nobody is in a group text. When Ripple Alert finishes, Shortcuts returns to Ripple (`ripple://shortcut?...`) and the message shows as **Submitted**. That only means the shortcut ran; confirm on the recipient's phone. Keep Ripple in the foreground during the demo, since opening Shortcuts from a locked phone or a backgrounded app is untested.
+
+### Accepting by text reply
+
+Every alert and second alert ends with "…or reply RIPPLE ACCEPT 4821", with a different 4-digit code for each person. When a contact replies:
+
+1. The automation runs **Ripple Accept** with the message, which opens `ripple://accept?text=<the reply>`.
+2. Ripple finds the code in the reply. Case, spacing and punctuation don't matter.
+3. If the code belongs to someone who was texted for the open alert, it counts like tapping their link. The iPhone and Watch show "[Name] is responding", everyone else already texted gets "Ripple: [Name] is checking on [wearer]", and Tier 2 isn't texted.
+4. The backend learns about it on the next sync, so its backup sender won't text Tier 2 either, and the link page shows who is checking.
+
+A reply for a closed alert, someone not yet texted, or an unknown code is ignored, with a short note in Ripple. To test without the automation, paste a reply into **Settings → Messaging shortcuts → Try a reply** during an alert.
+
+If the reply's sender is passed as a phone number and it differs from that contact's number, Ripple refuses it, so a forwarded code can't accept for someone else. During a duress alarm the reply still counts, but Ripple shows nothing on screen. The reply itself still appears in Messages, though.
+
+<details>
+<summary>Building Ripple Alert by hand instead</summary>
 
 1. Tap **+** and name the shortcut **Ripple Alert** (the name is configurable in the app).
 2. Open the shortcut's details and allow it to receive **Text** input.
@@ -89,9 +122,8 @@ Build it once in the Shortcuts app:
 5. **Repeat with Each** item in Dictionary Value.
 6. Inside the repeat: **Get Dictionary Value** for `to` in Repeat Item, and another for `text` in Repeat Item.
 7. Inside the repeat: **Send Message** with the `text` value as the message and the `to` value as the recipient. Expand it and turn off **Show When Run**.
-8. In Ripple, go to **Settings → Messaging shortcut** and send a test message. Approve any permissions Shortcuts asks for.
 
-Each recipient gets their own message, so nobody is in a group text. When the shortcut finishes, Shortcuts returns to Ripple (`ripple://shortcut?...`) and the message shows as **Submitted**. That only means the shortcut ran; confirm on the recipient's phone. Keep Ripple in the foreground during the demo, since opening Shortcuts from a locked phone or a backgrounded app is untested.
+</details>
 
 ## 4. Set up the demo admin
 

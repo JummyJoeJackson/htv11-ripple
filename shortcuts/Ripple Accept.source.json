@@ -1,0 +1,91 @@
+{
+  "WFWorkflowName": "Ripple Accept",
+  "WFWorkflowClientVersion": "2600.0.0",
+  "WFWorkflowMinimumClientVersion": 900,
+  "WFWorkflowMinimumClientVersionString": "900",
+  "WFWorkflowIcon": {
+    "WFWorkflowIconStartColor": 463140863,
+    "WFWorkflowIconGlyphNumber": 59511
+  },
+  "WFWorkflowInputContentItemClasses": [
+    "WFAppContentItem",
+    "WFAppStoreAppContentItem",
+    "WFArticleContentItem",
+    "WFContactContentItem",
+    "WFDateContentItem",
+    "WFEmailAddressContentItem",
+    "WFFolderContentItem",
+    "WFGenericFileContentItem",
+    "WFImageContentItem",
+    "WFiTunesProductContentItem",
+    "WFLocationContentItem",
+    "WFDCMapsLinkContentItem",
+    "WFAVAssetContentItem",
+    "WFPDFContentItem",
+    "WFPhoneNumberContentItem",
+    "WFRichTextContentItem",
+    "WFSafariWebPageContentItem",
+    "WFStringContentItem",
+    "WFURLContentItem"
+  ],
+  "WFWorkflowOutputContentItemClasses": [],
+  "WFWorkflowHasShortcutInputVariables": true,
+  "WFWorkflowHasOutputFallback": false,
+  "WFWorkflowImportQuestions": [],
+  "WFWorkflowTypes": [],
+  "WFQuickActionSurfaces": [],
+  "WFWorkflowActions": [
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.urlencode",
+      "WFWorkflowActionParameters": {
+        "UUID": "CD1F6F31-037C-5238-BBA0-141A2622099F",
+        "WFEncodeMode": "Encode",
+        "WFInput": {
+          "Value": {
+            "string": "￼",
+            "attachmentsByRange": {
+              "{0, 1}": {
+                "Type": "ExtensionInput"
+              }
+            }
+          },
+          "WFSerializationType": "WFTextTokenString"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.gettext",
+      "WFWorkflowActionParameters": {
+        "UUID": "94797390-4D22-53C3-BAEE-39E804BC0802",
+        "WFTextActionText": {
+          "Value": {
+            "string": "ripple://accept?text=￼",
+            "attachmentsByRange": {
+              "{21, 1}": {
+                "OutputUUID": "CD1F6F31-037C-5238-BBA0-141A2622099F",
+                "Type": "ActionOutput",
+                "OutputName": "URL Encoded Text"
+              }
+            }
+          },
+          "WFSerializationType": "WFTextTokenString"
+        }
+      }
+    },
+    {
+      "WFWorkflowActionIdentifier": "is.workflow.actions.openurl",
+      "WFWorkflowActionParameters": {
+        "UUID": "C9917F65-CFC4-5BCA-95A0-47B243DE1290",
+        "WFInput": {
+          "Value": {
+            "OutputUUID": "94797390-4D22-53C3-BAEE-39E804BC0802",
+            "Type": "ActionOutput",
+            "OutputName": "Text"
+          },
+          "WFSerializationType": "WFTextTokenAttachment"
+        },
+        "Show-WFInput": true
+      }
+    }
+  ]
+}

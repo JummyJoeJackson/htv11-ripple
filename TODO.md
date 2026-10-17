@@ -21,6 +21,8 @@
   - double clench + pinch
   - double clench + double pinch
 
+- Reply to accept: done on the `response-text` branch. Alert texts end with "or reply RIPPLE ACCEPT ####", a Messages automation runs the Ripple Accept shortcut, and Ripple treats the reply like a tap on the link. See docs/RUNNING.md → Accepting by text reply. Still needs a physical test with the phone locked.
+
 ```
 Yes—replying by text is feasible, and we can do it without giving Ripple access to your inbox. For your current setup, an iPhone Shortcuts automation is the most practical approach.
 I checked the code:

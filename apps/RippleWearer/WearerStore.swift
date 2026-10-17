@@ -476,8 +476,28 @@ final class WearerStore {
 
     // MARK: Callbacks
 
+    /// ripple://shortcut?… is the Ripple Alert shortcut finishing.
+    /// ripple://accept?text=…&from=… is a contact's "RIPPLE ACCEPT 4821" reply,
+    /// passed on by the Ripple Accept shortcut from a Messages automation.
     func handle(url: URL) {
-        _ = sender.handle(url: url)
+        if sender.handle(url: url) { return }
+        guard url.scheme == "ripple", url.host == "accept" else { return }
+        let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        let text = items.first { $0.name == "text" }?.value ?? ""
+        let from = items.first { $0.name == "from" }?.value?.trimmingCharacters(in: .whitespacesAndNewlines)
+        acceptReply(text: text, from: from?.isEmpty == false ? from : nil)
+    }
+
+    /// Counts a text reply like a tap on the acknowledge link. The backend
+    /// learns about it on the next sync, which stops its Tier 2 backup.
+    func acceptReply(text: String, from sender: String?) {
+        // A phone in simulated failure does nothing.
+        guard !inOutage else { return }
+        let result = coordinator.acceptReply(text: text, from: sender)
+        // Empty feedback means a duress alarm: show nothing.
+        if !result.feedback.isEmpty {
+            show(result)
+        }
     }
 
     func describe(_ error: Error) -> String {

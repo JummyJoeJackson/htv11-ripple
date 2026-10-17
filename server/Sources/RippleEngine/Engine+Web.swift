@@ -16,8 +16,14 @@ extension Engine {
         return (token, record, recipient)
     }
 
+    /// Who is checking, whether they tapped a link (recorded here) or texted
+    /// "RIPPLE ACCEPT" (recorded by the phone and reported on sync).
+    func currentAcknowledgment(_ record: AlarmRecord) -> Acknowledgment? {
+        record.acknowledgment ?? record.snapshot.acknowledgment
+    }
+
     func ackView(_ record: AlarmRecord, recipient: AlarmRecipient) -> AckView {
-        let ack = record.acknowledgment
+        let ack = currentAcknowledgment(record)
         return AckView(
             wearerName: record.snapshot.wearerName,
             alertTime: alertTime(record) ?? record.snapshot.startedAt,
@@ -41,12 +47,12 @@ extension Engine {
         guard isOpen(record) else { throw EngineError.gone("This alert has closed. No action is needed.") }
         var updated = record
         let t = now()
-        if updated.acknowledgment == nil {
+        if currentAcknowledgment(updated) == nil {
             updated.acknowledgment = Acknowledgment(recipientId: recipient.id, name: recipient.name, at: t)
             db.alarms[record.id] = updated
             log(record.userId, "\(recipient.name) tapped \"I'm checking on \(record.snapshot.wearerName)\". That means they took responsibility, not that help has arrived.")
             dirty = true
-        } else if updated.acknowledgment?.recipientId != recipient.id {
+        } else if currentAcknowledgment(updated)?.recipientId != recipient.id {
             log(record.userId, "\(recipient.name) also tapped the acknowledge link.")
             dirty = true
         }

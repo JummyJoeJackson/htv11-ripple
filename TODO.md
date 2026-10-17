@@ -8,4 +8,16 @@
 - Smarter alert text. With the wearer's permission add one short context line, like "Last steps 4 min ago. Last meds 1:00 PM. Help card: I may look confused. Meds in left pocket." so the helper arrives knowing what to expect.
 - Built for Parkinson's bodies. Touch and double tap first since voice can get soft, big targets and hold actions for tremor. Optional rhythmic haptic beat during a check in, rhythm cues are a known freezing strategy but frame it as comfort only.
 
+- Multiple gestures
+  - pinch
+  - clench
+  - double pinch
+  - double clench
+  - pinch + clench
+  - double pinch + clench
+  - clench + pinch
+  - clench + double pinch
+  - double clench + pinch
+  - double clench + double pinch
+
 [Demo Photos]([url](https://drive.google.com/drive/folders/1HuXoaYTzwrxl_IqGnw3iEyiH_kPRZIj7?usp=drive_link))

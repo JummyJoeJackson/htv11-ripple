@@ -395,9 +395,10 @@ private struct WalkButton: View {
         VStack(spacing: 2) {
             Button(action: action) {
                 Label(walking ? "End walk · \(steps) steps" : "Start walk", systemImage: "figure.walk")
-                    .font(.footnote)
+                    .font(.headline)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.7)
+                    .minimumScaleFactor(0.6)
+                    .frame(minHeight: 44)
             }
             .tint(walking ? .orange : .green)
             .accessibilityLabel(walking ? "End walk. \(steps) steps so far." : "Start walk")
@@ -410,7 +411,7 @@ private struct WalkButton: View {
                         Text("Still \(still) s of \(stopAfter) s")
                             .font(.caption2)
                             .monospacedDigit()
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(WatchColors.secondaryText)
                             .accessibilityLabel("Still for \(still) seconds. Ripple checks in at \(stopAfter).")
                     }
                 }

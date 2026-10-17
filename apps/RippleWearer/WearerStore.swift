@@ -59,6 +59,7 @@ final class WearerStore {
     let sender = ShortcutSender()
     let connectivity = PhoneConnectivity()
     let location = LocationProvider()
+    let speech = SpeechListener()
     private let bridge = CoordinatorBridge()
 
     @ObservationIgnored private var api: RippleAPI?
@@ -137,6 +138,17 @@ final class WearerStore {
         connectivity.onReachable = { [weak self] in
             self?.pushToWatch(force: true)
         }
+        // The Watch listens for the voice phrase; this iPhone recognizes the speech.
+        connectivity.onVoiceAudio = { [weak self] session, audio in
+            guard let self, self.config.voiceEnabled, !self.inOutage else { return }
+            self.speech.receive(sessionId: session, audio: audio, phrase: self.config.voicePhrase)
+        }
+        connectivity.onVoiceStop = { [weak self] session in
+            self?.speech.stop(sessionId: session)
+        }
+        speech.onHeard = { [weak self] heard in
+            self?.connectivity.send(heard)
+        }
     }
 
     private func rebuildAPI() {
@@ -203,6 +215,9 @@ final class WearerStore {
         if next.contacts.contains(where: \.shareLocation) {
             location.requestPermission()
         }
+        if next.voiceEnabled {
+            speech.requestPermission()
+        }
         pushToWatch(force: true)
     }
 
@@ -221,6 +236,7 @@ final class WearerStore {
     // MARK: Loop
 
     func start() {
+        if config.voiceEnabled { speech.requestPermission() }
         guard isSetUp, loopTask == nil else {
             pushToWatch(force: true)
             return
@@ -244,6 +260,7 @@ final class WearerStore {
     }
 
     private func step() {
+        speech.endIfQuiet()
         if outageUntil != nil && !inOutage {
             outageUntil = nil
             waitingForSyncAfterOutage = true

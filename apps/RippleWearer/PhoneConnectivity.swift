@@ -11,6 +11,10 @@ final class PhoneConnectivity: NSObject, WCSessionDelegate {
     var onConfigAck: ((Int) -> Void)?
     /// Called on the main thread when the Watch app becomes reachable.
     var onReachable: (() -> Void)?
+    /// Called on the main thread with microphone audio from the Watch, by listening session.
+    var onVoiceAudio: ((String, Data) -> Void)?
+    /// Called on the main thread when the Watch stops listening.
+    var onVoiceStop: ((String) -> Void)?
 
     // Updated on the main thread.
     private(set) var isReachable = false
@@ -64,6 +68,12 @@ final class PhoneConnectivity: NSObject, WCSessionDelegate {
         lastSentConfigVersion = config.version
     }
 
+    /// What speech recognition heard, for the Watch that's listening.
+    func send(_ heard: VoiceHeard) {
+        guard WCSession.isSupported(), WCSession.default.activationState == .activated, WCSession.default.isReachable else { return }
+        WCSession.default.sendMessage(WatchEnvelope.make(WatchEnvelope.voiceHeard, heard), replyHandler: nil, errorHandler: nil)
+    }
+
     private func refreshFlags(_ session: WCSession) {
         isReachable = session.isReachable
         isPaired = session.isPaired
@@ -97,14 +107,18 @@ final class PhoneConnectivity: NSObject, WCSessionDelegate {
         }
     }
 
-    /// Pings and configuration confirmations.
+    /// Pings, configuration confirmations and microphone audio.
     func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
         let type = WatchEnvelope.type(of: message)
         let ack = type == WatchEnvelope.configAck ? WatchEnvelope.decode(WatchConfigAck.self, from: message) : nil
+        let voice = type == WatchEnvelope.voiceAudio ? WatchEnvelope.decodeVoiceAudio(from: message) : nil
+        let voiceStopped = type == WatchEnvelope.voiceStop ? message[WatchEnvelope.sessionKey] as? String : nil
         DispatchQueue.main.async {
             self.lastContact = Date()
             self.isReachable = true
             if let ack { self.onConfigAck?(ack.version) }
+            if let voice { self.onVoiceAudio?(voice.session, voice.audio) }
+            if let voiceStopped { self.onVoiceStop?(voiceStopped) }
         }
     }
 

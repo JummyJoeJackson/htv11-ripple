@@ -64,7 +64,7 @@ The first time, iOS asks you to trust the developer: **Settings → General → 
 
 1. Open **Ripple**, enter the server address and the wearer's name.
 2. **Contacts**: add teammates by name and phone number. Put at least one in **Tier 1** and one in **Tier 2**. Turn on **Share my location in alerts** for one of them only (for the privacy scenario).
-3. **Settings**: keep the 15-second demo timers, turn on double tap, and optionally a voice phrase. Tap **Save**. **Watch settings** should show "Up to date".
+3. **Settings**: keep the 15-second demo timers, turn on double tap, and optionally a voice phrase. Tap **Save**. **Watch settings** should show "Up to date". With the voice phrase on, allow speech recognition on the iPhone and the microphone on the Watch when asked.
 4. Build the **Ripple Alert** shortcut (below) and send a test message from **Settings → Messaging shortcut**.
 
 ### The Ripple Alert shortcut
@@ -101,7 +101,7 @@ Start monitoring by tapping **Start** on the Watch circle. Keep the Watch app op
 
 | Scenario | Steps | What judges see |
 | --- | --- | --- |
-| Safe | Admin: **Trigger alarm**. Wearer taps the circle. Trigger again; wearer double taps. | Watch returns to green Monitoring. No texts. |
+| Safe | Admin: **Trigger alarm**. Wearer taps the circle. Trigger again; wearer double taps, or clenches with AssistiveTouch on. | Watch returns to green Monitoring. No texts. |
 | No response | Trigger and let the countdown run out. | The iPhone opens Ripple Alert; Tier 1 phones receive the alert, one with a map link. |
 | Unacknowledged alert | Tier 1 ignores the link for 15 seconds. | Tier 2 receives the escalation text. |
 | False alarm | After texts go out, the wearer taps **I'm okay now**. | Everyone already texted receives "okay now". |
@@ -116,6 +116,34 @@ When someone taps an acknowledge link, the Watch and iPhone show "[Contact] is r
 ### Temporary contacts
 
 On the wearer's iPhone: **Contacts → Invite for one hour**. The other person scans the QR code (or opens the shared link) and taps **I agree**. They join Tier 1 for one hour from that moment. **Remove now** ends it early. Expired or removed contacts never receive new alerts.
+
+### Swipe combos
+
+On the Watch circle, swipe up twice to ask for help, or swipe down twice during an alarm for "I'm okay". Turn them on or off in **Settings → Swipe combos** on the wearer's iPhone; they're on by default. Swipe on the circle, not from the screen edges, which open watchOS screens.
+
+Help texts Tier 1 straight away, even when monitoring is off. During a countdown it stops waiting; after the alert it texts Tier 2 without waiting for the acknowledge window.
+
+### Pinch and clench (AssistiveTouch)
+
+Ripple doesn't detect hand gestures itself. Apple's AssistiveTouch recognises them and uses them to move a highlight and press buttons, so they work in Ripple without any app setting.
+
+Set up on the Watch:
+
+1. **Settings → Accessibility → AssistiveTouch**: turn on AssistiveTouch, then **Hand Gestures**.
+2. Keep the default gestures: pinch = next item, double pinch = previous item, clench = tap, double clench = Action Menu.
+3. **Activation Gesture**: if it's on, the wearer double clenches once to wake hand gestures before using them. Decide before rehearsing.
+4. Check **Settings → Gestures → Double Tap**. watchOS may switch it off while AssistiveTouch is on; if so, use clench in the Safe scenario instead.
+
+Using it in Ripple:
+
+| To | Do this |
+| --- | --- |
+| Say "I'm okay" during an alarm | With the circle highlighted, **clench**. |
+| Ask for help | With the circle highlighted, **double clench** to open the Action Menu, **pinch** until **Get help** is highlighted, then **clench**. |
+
+AssistiveTouch can't do the 2-second hold, so duress stays touch only.
+
+For the demo, mirror the Watch on the presenting iPhone (**Settings → Accessibility → Apple Watch Mirroring**) so judges can see the highlight move. Rehearse with it once, since mirroring adds its own controls.
 
 ## Reaching the server
 
@@ -157,8 +185,10 @@ GitHub Actions runs both and builds all three apps for the simulator on every pu
 | | |
 | --- | --- |
 | Shortcuts | Sending works with Ripple in the foreground on an unlocked iPhone. Locked or backgrounded sending is unverified. The Shortcuts app appears briefly on the wearer's screen while sending, including during duress. |
-| Watch | The demo assumes the Watch app is open. Set **Settings → General → Return to Clock** to one hour on the Watch. Background prompts and wrist-down behaviour aren't handled. |
-| Voice | The phrase uses Watch dictation after tapping the microphone button. There's no always-listening wake phrase. |
+| Watch | The demo assumes the Watch app is open. Set **Settings → General → Return to Clock** to one hour on the Watch. While monitoring, the app keeps running with the screen off, using a mindfulness extended runtime session, so the iPhone can still reach it and haptics still play. A session lasts up to one hour; the next one starts when the app is in front again. Leaving the app ends it. |
+| Voice | During an alarm the Watch microphone listens for the phrase by itself, with nothing to press. watchOS has no speech recognition, so the Watch streams the audio to the wearer's iPhone, which recognizes it (on the iPhone when supported). It needs both apps open, and the iPhone reachable. The app keeps running with the wrist down, but whether the microphone keeps recording then is untested. Anyone nearby who says the phrase also dismisses, so pick one nobody says by accident (the default is "I am currently fine"). If listening can't start, the Watch shows the tap-to-dictate microphone button instead. |
 | Physical buttons | Not used; the side button and Digital Crown belong to the system. |
+| AssistiveTouch | Apple recognises pinch and clench, not Ripple. Whether **Get help** appears in the Action Menu, and how often a shaky hand clenches the circle by accident (a false "I'm okay"), need testing on the Watch. |
+| Help location | Help texts go out immediately, so they include a map link only if an alarm was already running and had a location fix. |
 | Backup | It covers a phone that stops syncing. If the phone sent a text but couldn't report it before going quiet, the backup may send a second copy, marked as backup. |
 | Data | Demo data is deleted on reset. Tokens and phone numbers are stored in a JSON file on the Mac; this is a prototype, not production storage. |

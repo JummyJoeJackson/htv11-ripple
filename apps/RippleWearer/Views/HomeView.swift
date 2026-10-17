@@ -155,8 +155,15 @@ struct HomeStatus {
             headline = "Answer on your Watch."
             detail = "Tap the circle, or tap \"I'm okay\" below."
         case .alertSent:
-            headline = "No one has responded yet."
-            detail = (alarm?.alertedAt ?? alarm?.startedAt).map { "Your contacts were texted at \($0.shortTime)." }
+            let texted = (alarm?.alertedAt ?? alarm?.startedAt).map { "Your contacts were texted at \($0.shortTime)." }
+            if alarm?.helpRequestedAt != nil {
+                // The wearer swiped up for help on the Watch.
+                headline = "You asked for help."
+                detail = [texted, "No one has responded yet."].compactMap { $0 }.joined(separator: " ")
+            } else {
+                headline = "No one has responded yet."
+                detail = texted
+            }
         case .responding:
             let ack = alarm?.acknowledgment
             headline = "\(ack?.name ?? "A contact") is checking on you."

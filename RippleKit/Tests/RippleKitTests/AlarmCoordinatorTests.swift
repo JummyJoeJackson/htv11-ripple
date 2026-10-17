@@ -209,6 +209,66 @@ final class AlarmCoordinatorTests: XCTestCase {
         XCTAssertEqual(coordinator.display().mode, .monitoring, "The Watch never shows a responder for a duress alarm")
     }
 
+    // MARK: Help combo
+
+    func testHelpTextsTierOneRightAway() {
+        let result = coordinator.handle(WatchAction(kind: .help, method: .combo, alarmId: nil))
+        XCTAssertEqual(result.feedback, "Help requested")
+        XCTAssertEqual(Set(sent(.alert)), ["sam", "jo"], "No countdown: the wearer asked")
+        XCTAssertTrue(recorder.sent.first { $0.kind == .alert }!.text.hasPrefix("Ripple alert: Alex asked for help from their Watch at"))
+        XCTAssertEqual(coordinator.alarm?.source, .help)
+        XCTAssertEqual(coordinator.display().mode, .alertSent)
+        XCTAssertEqual(coordinator.display().status, "Help requested")
+    }
+
+    func testHelpWorksWithMonitoringOff() {
+        coordinator.stopMonitoring()
+        coordinator.requestHelp()
+        XCTAssertEqual(Set(sent(.alert)), ["sam", "jo"])
+        submitAll()
+        coordinator.dismiss(alarmId: coordinator.alarm?.id)
+        XCTAssertEqual(Set(sent(.okayNow)), ["sam", "jo"], "I'm okay now still follows up")
+        XCTAssertEqual(coordinator.display().mode, .off, "Asking for help doesn't turn monitoring on")
+    }
+
+    func testHelpDuringCountdownSendsNow() {
+        coordinator.startAlarm(source: .admin)
+        advance(3)
+        coordinator.requestHelp()
+        XCTAssertEqual(Set(sent(.alert)), ["sam", "jo"])
+        XCTAssertTrue(recorder.sent.first { $0.kind == .alert }!.text.contains("asked for help"))
+    }
+
+    func testHelpAfterTheAlertEscalatesWithoutWaiting() {
+        coordinator.startAlarm(source: .admin)
+        advance(15)
+        submitAll()
+        coordinator.requestHelp()
+        XCTAssertEqual(sent(.escalation), ["pat"], "Nobody has confirmed, so Tier 2 is texted now")
+        XCTAssertTrue(recorder.sent.first { $0.kind == .escalation }!.text.contains("asked for help"))
+        advance(60)
+        XCTAssertEqual(sent(.escalation), ["pat"], "Tier 2 is texted once")
+    }
+
+    func testHelpAfterSomeoneRespondsSendsNothingNew() {
+        coordinator.startAlarm(source: .admin)
+        advance(15)
+        submitAll()
+        coordinator.applyAcknowledgment(Acknowledgment(recipientId: "sam", name: "Sam", at: clock.now))
+        let before = recorder.sent.count
+        XCTAssertEqual(coordinator.requestHelp().feedback, "Sam is responding")
+        XCTAssertEqual(recorder.sent.count, before)
+    }
+
+    func testSettingsSavedBeforeCombosStillLoad() throws {
+        var json = try JSONSerialization.jsonObject(with: RippleJSON.encoder.encode(coordinator.config)) as! [String: Any]
+        json["combosEnabled"] = nil
+        let old = try JSONSerialization.data(withJSONObject: json)
+        let loaded = try RippleJSON.decoder.decode(RippleConfig.self, from: old)
+        XCTAssertEqual(loaded.contacts.count, 3, "Updating the app keeps the wearer's contacts")
+        XCTAssertTrue(loaded.combosEnabled)
+    }
+
     // MARK: Connectivity failure
 
     func testBackupSendsAreNotRepeatedByThePhone() {

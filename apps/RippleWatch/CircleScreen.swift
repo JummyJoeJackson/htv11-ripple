@@ -9,9 +9,14 @@ import SwiftUI
 /// | Monitoring on    | Stop         | "Hold to stop." only     | Asks "Stop monitoring?"      |
 /// | Alarm pending    | I'm okay     | Dismiss, keep monitoring | Duress: looks like dismissal |
 /// | Alert sent       | I'm okay now | Okay-now texts, close    | Duress: looks like dismissal |
+///
+/// With swipe combos on: swipe up twice asks for help in any state; swipe
+/// down twice is "I'm okay" during an alarm. With the voice phrase on, the
+/// microphone listens for it during an alarm without anything to press.
 struct CircleScreen: View {
     @Environment(WatchStore.self) private var store
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         let display = store.display
@@ -21,11 +26,17 @@ struct CircleScreen: View {
                 mode: display.mode,
                 deadline: display.mode == .checkIn ? display.deadline : nil,
                 doubleTapEnabled: store.config.doubleTapEnabled && display.mode.isAlarm,
+                swipesEnabled: store.config.combosEnabled,
                 onTap: { method in store.tapCircle(method: method) },
-                onHold: { store.holdCircle() }
+                onHold: { store.holdCircle() },
+                onSwipe: { step in store.swipe(step) }
             )
             .animation(reduceMotion ? nil : .easeInOut(duration: 0.3), value: display.mode)
+            // VoiceOver uses swipes to move around, so it gets help as a named action.
+            .accessibilityAction(named: Text("Get help")) { store.requestHelp() }
 
+            // The countdown is inside the circle. Feedback shows during a check-in
+            // too, so "Swipe down again" appears under the circle.
             if let feedback = store.feedback {
                 WatchNote(text: feedback.text, systemImage: feedback.ok ? "checkmark.circle.fill" : "exclamationmark.triangle.fill",
                           color: feedback.ok ? .white : Theme.primaryTint)
@@ -46,14 +57,20 @@ struct CircleScreen: View {
             }
 
             if store.config.voiceEnabled && display.mode.isAlarm {
-                VoiceButton(phrase: store.config.voicePhrase) { text in
-                    store.voiceInput(text)
+                if store.listening {
+                    ListeningLabel(phrase: store.config.voicePhrase, heard: store.heardText)
+                } else {
+                    VoiceButton(phrase: store.config.voicePhrase) { text in
+                        store.voiceInput(text)
+                    }
                 }
             }
         }
         .padding(.horizontal, 2)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black.ignoresSafeArea())
+        // Coming back to the front restarts whatever the system stopped, straight away.
+        .onChange(of: scenePhase) { _, _ in store.refreshRuntime() }
         .confirmationDialog("Stop monitoring?", isPresented: Binding(get: { store.confirmStop }, set: { store.confirmStop = $0 })) {
             Button("Stop monitoring", role: .destructive) { store.confirmStopMonitoring() }
             Button("Keep monitoring", role: .cancel) {}
@@ -95,18 +112,25 @@ private struct WatchNote: View {
 }
 
 /// The circle. Tap and native double tap run the visible action; holding
-/// for 2 seconds runs the hold action instead (never both).
+/// for 2 seconds runs the hold action instead (never both). With combos on,
+/// a vertical swipe is a combo step and never also counts as a tap. A shaky
+/// tap that wanders and comes back is still a tap.
 private struct RippleCircle: View {
     let label: String
     let mode: CircleMode
     let deadline: Date?
     let doubleTapEnabled: Bool
+    let swipesEnabled: Bool
     let onTap: (DismissMethod) -> Void
     let onHold: () -> Void
+    let onSwipe: (GestureStep) -> Void
 
     @State private var holdFired = false
     @ScaledMetric(relativeTo: .title3) private var labelSize: CGFloat = 26
     @ScaledMetric(relativeTo: .largeTitle) private var countdownSize: CGFloat = 38
+    /// The current touch has travelled far enough to be a swipe.
+    @State private var swiping = false
+    @State private var lastSwipeAt = Date.distantPast
 
     var body: some View {
         Button {
@@ -114,6 +138,8 @@ private struct RippleCircle: View {
                 holdFired = false
                 return
             }
+            // A swipe that ends on the circle can also end a button press.
+            if swiping || Date().timeIntervalSince(lastSwipeAt) < 0.5 { return }
             onTap(.touch)
         } label: {
             ZStack {
@@ -144,6 +170,18 @@ private struct RippleCircle: View {
                 onHold()
             }
         )
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 10)
+                .onChanged { value in
+                    swiping = swipesEnabled && Self.step(value.translation) != nil
+                }
+                .onEnded { value in
+                    swiping = false
+                    guard swipesEnabled, let step = Self.step(value.translation) else { return }
+                    lastSwipeAt = Date()
+                    onSwipe(step)
+                }
+        )
         .doubleTapShortcut(enabled: doubleTapEnabled)
         .accessibilityLabel(label)
         .accessibilityHint(hint)
@@ -156,6 +194,11 @@ private struct RippleCircle: View {
         case .checkIn: return "Tap to answer the check-in."
         case .alertSent, .responding: return "Tap to tell your contacts you're okay."
         }
+    }
+
+    /// Net travel from where the finger went down, so tremor that comes back cancels out.
+    private static func step(_ translation: CGSize) -> GestureStep? {
+        GestureStep.swipe(dx: Double(translation.width), dy: Double(translation.height))
     }
 }
 
@@ -188,8 +231,26 @@ private struct WatchCountdown: View {
     }
 }
 
+/// Shown while the microphone listens for the phrase during an alarm. Once
+/// something is heard it shows the words, so the wearer knows it's working.
+private struct ListeningLabel: View {
+    let phrase: String
+    let heard: String
+
+    var body: some View {
+        Label(heard.isEmpty ? "Say \"\(phrase)\"" : "\"\(heard)\"", systemImage: "waveform")
+            .font(.footnote)
+            .foregroundStyle(heard.isEmpty ? Color.primary : Color.secondary)
+            .lineLimit(1)
+            .truncationMode(.head)
+            .minimumScaleFactor(0.7)
+            .accessibilityLabel("Listening. Say \(phrase) to dismiss.")
+    }
+}
+
 /// Dismiss by saying the configured phrase, using Watch dictation while the
-/// app is open. Always a normal dismissal; duress stays touch only.
+/// app is open. The fallback when the microphone can't listen by itself.
+/// Always a normal dismissal; duress stays touch only.
 private struct VoiceButton: View {
     let phrase: String
     let onText: (String) -> Void
@@ -217,7 +278,8 @@ private struct CirclePreview: View {
 
     var body: some View {
         VStack(spacing: 6) {
-            RippleCircle(label: label, mode: mode, deadline: deadline, doubleTapEnabled: false, onTap: { _ in }, onHold: {})
+            RippleCircle(label: label, mode: mode, deadline: deadline, doubleTapEnabled: false, swipesEnabled: false,
+                         onTap: { _ in }, onHold: {}, onSwipe: { _ in })
             StatusLine(text: status, mode: mode)
         }
         .padding(.horizontal, 2)

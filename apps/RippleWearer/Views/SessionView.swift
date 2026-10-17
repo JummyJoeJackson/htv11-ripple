@@ -29,7 +29,9 @@ private struct MessagesCard: View {
         let alarm = store.coordinator.lastVisibleAlarm
         Card("Texts") {
             if let alarm {
-                Text("Alarm at \(alarm.startedAt.shortTime) · \(alarm.isOpen ? "still open" : (alarm.closeReason?.label ?? "closed"))")
+                let started = alarm.helpRequestedAt.map { "Help requested at \($0.shortTime)" } ?? "Alarm at \(alarm.startedAt.shortTime)"
+                let state = alarm.isOpen ? "still open" : (alarm.closeReason?.label ?? "closed")
+                Text("\(started) · \(state)")
                     .font(Theme.label)
                     .foregroundStyle(Theme.secondaryText)
                 if alarm.messages.isEmpty {

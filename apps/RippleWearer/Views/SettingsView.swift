@@ -57,11 +57,20 @@ struct SettingsView: View {
                 Toggle("Say a phrase to answer", isOn: $draft.voiceEnabled)
                 if draft.voiceEnabled {
                     TextField("Phrase", text: $draft.voicePhrase)
+                    StatusRow(label: "Speech recognition", value: store.speech.statusText)
                 }
             } header: {
                 SectionHeader("Answering an alarm")
             } footer: {
-                FormNote("Double tap needs Apple Watch Series 9, Ultra 2 or later on watchOS 11. The phrase uses dictation while the Watch app is open. The secret help signal is always a 2-second hold on the circle, so a stray double tap or a misheard phrase can't set it off or hide it.")
+                FormNote("Double tap needs Apple Watch Series 9, Ultra 2 or later on watchOS 11. With a phrase on, the Watch listens for it during an alarm, with nothing to press. This iPhone recognizes the speech, so keep Ripple open on both. Pick a phrase you wouldn't say by accident: anyone nearby who says it also answers. The secret help signal is always a 2-second hold on the circle, so a stray double tap, swipe or misheard phrase can't set it off or hide it.")
+            }
+
+            Section {
+                Toggle("Swipe up twice for help, down twice for I'm okay", isOn: $draft.combosEnabled)
+            } header: {
+                SectionHeader("Swipe combos")
+            } footer: {
+                FormNote("Swipe on the Watch circle. It takes two swipes the same way, so one shaky movement can't do either. Help texts your contacts straight away, even when monitoring is off.")
             }
 
             Section {

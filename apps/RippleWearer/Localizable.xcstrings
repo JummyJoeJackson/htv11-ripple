@@ -337,6 +337,34 @@
         }
       }
     },
+    "Alarm gesture": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gesto de alarma"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geste d'alarme"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "警报手势"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "警報手勢"
+          }
+        }
+      }
+    },
     "Alert sent": {
       "localizations": {
         "es": {
@@ -1177,6 +1205,34 @@
         }
       }
     },
+    "Dismiss gesture": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gesto para descartar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geste pour arrêter"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "解除手势"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "解除手勢"
+          }
+        }
+      }
+    },
     "Do you want to send a Ripple alert to all your contacts?": {
       "localizations": {
         "es": {
@@ -1481,6 +1537,62 @@
           "stringUnit": {
             "state": "translated",
             "value": "手勢"
+          }
+        }
+      }
+    },
+    "Hand gestures to dismiss": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestos con la mano para descartar la alarma"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestes de la main pour arrêter l'alarme"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用手势解除警报"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用手勢解除警報"
+          }
+        }
+      }
+    },
+    "Hand gestures to trigger alarm": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestos con la mano para activar la alarma"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestes de la main pour déclencher l'alarme"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用手势触发警报"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用手勢觸發警報"
           }
         }
       }
@@ -3137,6 +3249,34 @@
         }
       }
     },
+    "Set up Watch gesture shortcuts": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Configurar los atajos de gestos del reloj"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Configurer les raccourcis de gestes de la montre"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置手表手势快捷指令"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設定手錶手勢捷徑"
+          }
+        }
+      }
+    },
     "Set up again": {
       "localizations": {
         "es": {
@@ -3889,6 +4029,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "你的 Ripple 伺服器顯示的位址。"
+          }
+        }
+      }
+    },
+    "The alarm gesture texts your contacts right away. Choices that could set off the other gesture are hidden. Turns off Apple's double tap.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El gesto de alarma envía un mensaje a tus contactos de inmediato. Se ocultan las opciones que podrían activar el otro gesto. Desactiva el doble toque de Apple."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le geste d'alarme envoie tout de suite un texto à vos contacts. Les choix qui pourraient déclencher l'autre geste sont masqués. Désactive la fonction Toucher deux fois d'Apple."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "警报手势会立即发短信给你的联系人。可能触发另一个手势的选项会被隐藏。会关闭 Apple 的“互点两下”功能。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "警報手勢會立即傳簡訊給你的聯絡人。可能觸發另一個手勢的選項會被隱藏。會關閉 Apple 的「點兩下」功能。"
           }
         }
       }

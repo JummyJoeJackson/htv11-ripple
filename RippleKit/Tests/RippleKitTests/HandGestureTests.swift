@@ -25,7 +25,7 @@ final class HandGestureTests: XCTestCase {
         for preset in HandGesturePreset.allCases {
             var recognizer = HandGestureRecognizer(preset: preset)
             for (index, step) in preset.steps.enumerated() {
-                let expected: HandGestureProgress = index == preset.steps.count - 1 ? .matched : .partial
+                let expected: HandGestureProgress = index == preset.steps.count - 1 ? .matched(.okay) : .partial
                 XCTAssertEqual(recognizer.record(step, at: at(Double(index))), expected, preset.label)
             }
         }
@@ -35,11 +35,11 @@ final class HandGestureTests: XCTestCase {
         var pinch = HandGestureRecognizer(preset: .doublePinch)
         XCTAssertEqual(pinch.record(.pinch, at: at(0)), .idle)
         XCTAssertEqual(pinch.record(.pinch, at: at(1)), .idle)
-        XCTAssertEqual(pinch.record(.doublePinch, at: at(2)), .matched)
+        XCTAssertEqual(pinch.record(.doublePinch, at: at(2)), .matched(.okay))
         var clench = HandGestureRecognizer(preset: .doubleClench)
         XCTAssertEqual(clench.record(.clench, at: at(0)), .idle)
         XCTAssertEqual(clench.record(.clench, at: at(1)), .idle)
-        XCTAssertEqual(clench.record(.doubleClench, at: at(2)), .matched)
+        XCTAssertEqual(clench.record(.doubleClench, at: at(2)), .matched(.okay))
     }
 
     func testUnselectedPresetCannotMatch() {
@@ -55,13 +55,13 @@ final class HandGestureTests: XCTestCase {
         var recognizer = HandGestureRecognizer(preset: .pinchClench)
         XCTAssertEqual(recognizer.record(.pinch, at: at(0)), .partial)
         XCTAssertEqual(recognizer.record(.pinch, at: at(1)), .partial)
-        XCTAssertEqual(recognizer.record(.clench, at: at(2)), .matched)
+        XCTAssertEqual(recognizer.record(.clench, at: at(2)), .matched(.okay))
     }
 
     func testSlowInputAtWindowBoundaryMatches() {
         var recognizer = HandGestureRecognizer(preset: .doubleClenchDoublePinch)
         recognizer.record(.doubleClench, at: at(0))
-        XCTAssertEqual(recognizer.record(.doublePinch, at: at(5)), .matched)
+        XCTAssertEqual(recognizer.record(.doublePinch, at: at(5)), .matched(.okay))
     }
 
     func testExpiredPrefixCannotCompleteAndNextSequenceWorks() {
@@ -69,7 +69,7 @@ final class HandGestureTests: XCTestCase {
         recognizer.record(.pinch, at: at(0))
         XCTAssertEqual(recognizer.record(.clench, at: at(5.01)), .idle)
         XCTAssertEqual(recognizer.record(.pinch, at: at(6)), .partial)
-        XCTAssertEqual(recognizer.record(.clench, at: at(7)), .matched)
+        XCTAssertEqual(recognizer.record(.clench, at: at(7)), .matched(.okay))
     }
 
     func testDuplicatePrefixDoesNotExtendWindow() {
@@ -117,7 +117,7 @@ final class HandGestureTests: XCTestCase {
         var recognizer = HandGestureRecognizer(preset: .clenchDoublePinch)
         recognizer.record(.clench, at: at(0))
         XCTAssertEqual(recognizer.record(.clench, at: at(1)), .partial)
-        XCTAssertEqual(recognizer.record(.doublePinch, at: at(2)), .matched)
+        XCTAssertEqual(recognizer.record(.doublePinch, at: at(2)), .matched(.okay))
     }
 
     func testResetDiscardsPartialInputAndDuplicateHistory() {
@@ -126,19 +126,19 @@ final class HandGestureTests: XCTestCase {
         recognizer.reset()
         XCTAssertEqual(recognizer.record(.clench, at: at(1)), .idle)
         recognizer.select(.pinch)
-        XCTAssertEqual(recognizer.record(.pinch, at: at(2)), .matched)
+        XCTAssertEqual(recognizer.record(.pinch, at: at(2)), .matched(.okay))
         recognizer.reset()
-        XCTAssertEqual(recognizer.record(.pinch, at: at(2.1)), .matched)
+        XCTAssertEqual(recognizer.record(.pinch, at: at(2.1)), .matched(.okay))
     }
 
     func testSelectionChangeCannotFinishOldSequence() {
         var recognizer = HandGestureRecognizer(preset: .pinchClench)
         recognizer.record(.pinch, at: at(0))
         recognizer.select(.doublePinchClench)
-        XCTAssertEqual(recognizer.preset, .doublePinchClench)
+        XCTAssertEqual(recognizer.bindings, [HandGestureBinding(preset: .doublePinchClench, action: .okay)])
         XCTAssertEqual(recognizer.record(.clench, at: at(1)), .idle)
         XCTAssertEqual(recognizer.record(.doublePinch, at: at(2)), .partial)
-        XCTAssertEqual(recognizer.record(.clench, at: at(3)), .matched)
+        XCTAssertEqual(recognizer.record(.clench, at: at(3)), .matched(.okay))
     }
 
     func testOutOfOrderInputCannotCompleteAndClearsOldPrefix() {
@@ -147,7 +147,7 @@ final class HandGestureTests: XCTestCase {
         XCTAssertEqual(recognizer.record(.clench, at: at(0)), .idle)
         XCTAssertEqual(recognizer.record(.clench, at: at(2)), .idle)
         XCTAssertEqual(recognizer.record(.pinch, at: at(3)), .partial)
-        XCTAssertEqual(recognizer.record(.clench, at: at(4)), .matched)
+        XCTAssertEqual(recognizer.record(.clench, at: at(4)), .matched(.okay))
     }
 
     func testNonFiniteInputCannotCompleteAndClearsPrefix() {
@@ -164,6 +164,102 @@ final class HandGestureTests: XCTestCase {
             let recognizer = HandGestureRecognizer(preset: .pinchClench, maxGap: invalid, bounce: invalid)
             XCTAssertEqual(recognizer.maxGap, 5)
             XCTAssertEqual(recognizer.bounce, 0.4)
+        }
+    }
+
+    // MARK: Dismiss and help together
+
+    private func both(dismiss: HandGesturePreset, help: HandGesturePreset) -> HandGestureRecognizer {
+        HandGestureRecognizer(bindings: [
+            HandGestureBinding(preset: dismiss, action: .okay),
+            HandGestureBinding(preset: help, action: .help),
+        ])
+    }
+
+    func testEachSequenceReportsItsOwnAction() {
+        var recognizer = both(dismiss: .pinchClench, help: .doubleClenchDoublePinch)
+        XCTAssertEqual(recognizer.record(.pinch, at: at(0)), .partial)
+        XCTAssertEqual(recognizer.record(.clench, at: at(1)), .matched(.okay))
+        XCTAssertEqual(recognizer.record(.doubleClench, at: at(2)), .partial)
+        XCTAssertEqual(recognizer.record(.doublePinch, at: at(3)), .matched(.help))
+    }
+
+    func testSharedFirstStepWaitsForTheSecond() {
+        var recognizer = both(dismiss: .clenchPinch, help: .clenchDoublePinch)
+        XCTAssertEqual(recognizer.nextSteps, [.clench])
+        XCTAssertEqual(recognizer.record(.clench, at: at(0)), .partial)
+        XCTAssertEqual(recognizer.nextSteps, [.pinch, .doublePinch])
+        XCTAssertEqual(recognizer.record(.doublePinch, at: at(1)), .matched(.help))
+        XCTAssertEqual(recognizer.nextSteps, [.clench])
+    }
+
+    func testFinishingOneSequenceCannotStartTheOther() {
+        // The pinch that finishes clench + pinch is not the start of pinch + clench.
+        var recognizer = both(dismiss: .clenchPinch, help: .pinchClench)
+        recognizer.record(.clench, at: at(0))
+        XCTAssertEqual(recognizer.record(.pinch, at: at(1)), .matched(.okay))
+        XCTAssertEqual(recognizer.record(.clench, at: at(2)), .partial)
+        XCTAssertEqual(recognizer.nextSteps, [.pinch])
+    }
+
+    func testNextStepsListEachSequenceStartOnce() {
+        let recognizer = both(dismiss: .doublePinch, help: .clenchPinch)
+        XCTAssertEqual(recognizer.nextSteps, [.doublePinch, .clench])
+        XCTAssertEqual(HandGestureRecognizer(bindings: []).nextSteps, [])
+    }
+
+    func testSelectingNewBindingsDiscardsPartialInput() {
+        var recognizer = HandGestureRecognizer(bindings: [HandGestureBinding(preset: .doubleClenchDoublePinch, action: .help)])
+        recognizer.record(.doubleClench, at: at(0))
+        recognizer.select([
+            HandGestureBinding(preset: .pinch, action: .okay),
+            HandGestureBinding(preset: .doubleClenchDoublePinch, action: .help),
+        ])
+        XCTAssertEqual(recognizer.record(.doublePinch, at: at(1)), .idle)
+    }
+}
+
+final class HandGesturePairTests: XCTestCase {
+    func testOverlapMeansSameOrContained() {
+        XCTAssertTrue(HandGesturePreset.pinchClench.overlaps(.pinchClench))
+        XCTAssertTrue(HandGesturePreset.pinch.overlaps(.pinchClench))
+        XCTAssertTrue(HandGesturePreset.pinchClench.overlaps(.pinch))
+        XCTAssertTrue(HandGesturePreset.clench.overlaps(.pinchClench))
+        XCTAssertFalse(HandGesturePreset.doublePinch.overlaps(.pinchClench))
+        XCTAssertFalse(HandGesturePreset.clenchPinch.overlaps(.pinchClench))
+        XCTAssertFalse(HandGesturePreset.pinch.overlaps(.clench))
+    }
+
+    func testAChoiceDisappearsFromTheOtherPicker() {
+        for dismiss in HandGesturePreset.allCases {
+            XCTAssertFalse(HandGesturePreset.helpChoices(besides: dismiss).contains(dismiss), dismiss.label)
+        }
+        for help in HandGesturePreset.helpChoices(besides: .pinchClench) {
+            XCTAssertFalse(HandGesturePreset.dismissChoices(besides: help).contains(help), help.label)
+        }
+    }
+
+    func testEveryAllowedPairKeepsBothSelectionsAvailable() {
+        for dismiss in HandGesturePreset.allCases {
+            let helps = HandGesturePreset.helpChoices(besides: dismiss)
+            XCTAssertFalse(helps.isEmpty, dismiss.label)
+            for help in helps {
+                XCTAssertEqual(help.steps.count, 2, help.label)
+                XCTAssertFalse(help.overlaps(dismiss), "\(dismiss.label) / \(help.label)")
+                XCTAssertTrue(HandGesturePreset.dismissChoices(besides: help).contains(dismiss), "\(dismiss.label) / \(help.label)")
+            }
+        }
+    }
+
+    func testHelpChoicesLeaveOutSequencesContainingASingleDismissInput() {
+        XCTAssertEqual(HandGesturePreset.helpChoices(besides: .pinch), [.doublePinchClench, .clenchDoublePinch, .doubleClenchDoublePinch])
+        XCTAssertEqual(HandGesturePreset.dismissChoices(besides: .doubleClenchDoublePinch).count, 7)
+    }
+
+    func testDefaultHelpIsAlwaysAllowed() {
+        XCTAssertEqual(HandGesturePreset.defaultHelp(besides: .pinchClench), .doubleClenchDoublePinch)
+        for dismiss in HandGesturePreset.allCases {
+            XCTAssertTrue(HandGesturePreset.helpChoices(besides: dismiss).contains(.defaultHelp(besides: dismiss)), dismiss.label)
         }
     }
 }
@@ -191,6 +287,7 @@ final class HandGestureConfigTests: XCTestCase {
             var config = wearerConfig()
             config.handGesturesEnabled = true
             config.handGesturePreset = preset
+            config.handGestureHelpPreset = .defaultHelp(besides: preset)
             let restored = try RippleJSON.decoder.decode(RippleConfig.self, from: RippleJSON.encoder.encode(config))
             XCTAssertEqual(restored, config)
             XCTAssertEqual(restored.watchConfig.handGesturePreset, preset)
@@ -253,5 +350,77 @@ final class HandGestureConfigTests: XCTestCase {
     func testFreshDefaultsKeepHandGesturesOffUntilSetUp() {
         XCTAssertFalse(RippleConfig.makeDefault(wearerName: "New wearer").handGesturesEnabled)
         XCTAssertFalse(WatchConfig.fallback.handGesturesEnabled)
+        XCTAssertFalse(RippleConfig.makeDefault(wearerName: "New wearer").handGestureHelpEnabled)
+        XCTAssertFalse(WatchConfig.fallback.handGestureHelpEnabled)
+        XCTAssertEqual(RippleConfig.makeDefault(wearerName: "New wearer").handGestureHelpPreset, .doubleClenchDoublePinch)
+    }
+
+    // MARK: Help sequence
+
+    func testEveryAllowedPairRoundTripsAndReachesWatch() throws {
+        for dismiss in HandGesturePreset.allCases {
+            for help in HandGesturePreset.helpChoices(besides: dismiss) {
+                var config = wearerConfig()
+                config.handGesturesEnabled = true
+                config.handGesturePreset = dismiss
+                config.handGestureHelpEnabled = true
+                config.handGestureHelpPreset = help
+                let restored = try RippleJSON.decoder.decode(RippleConfig.self, from: RippleJSON.encoder.encode(config))
+                XCTAssertEqual(restored, config)
+                let watch = try RippleJSON.decoder.decode(WatchConfig.self, from: RippleJSON.encoder.encode(restored.watchConfig))
+                XCTAssertEqual(watch, restored.watchConfig)
+                XCTAssertTrue(watch.handGestureHelpEnabled)
+                XCTAssertEqual(watch.handGestureHelpPreset, help)
+            }
+        }
+    }
+
+    func testSettingsWithoutHelpKeysKeepHelpOffAndClearOfDismiss() throws {
+        var original = wearerConfig()
+        original.handGesturesEnabled = true
+        original.handGesturePreset = .doubleClench
+        var legacy = try encodedObject(original)
+        legacy.removeValue(forKey: "handGestureHelpEnabled")
+        legacy.removeValue(forKey: "handGestureHelpPreset")
+        let restored = try RippleJSON.decoder.decode(RippleConfig.self, from: JSONSerialization.data(withJSONObject: legacy))
+        XCTAssertEqual(restored.contacts, original.contacts)
+        XCTAssertTrue(restored.handGesturesEnabled)
+        XCTAssertEqual(restored.handGesturePreset, .doubleClench)
+        XCTAssertFalse(restored.handGestureHelpEnabled)
+        XCTAssertFalse(restored.handGestureHelpPreset.overlaps(.doubleClench))
+
+        var legacyWatch = try encodedObject(original.watchConfig)
+        legacyWatch.removeValue(forKey: "handGestureHelpEnabled")
+        legacyWatch.removeValue(forKey: "handGestureHelpPreset")
+        let watch = try RippleJSON.decoder.decode(WatchConfig.self, from: JSONSerialization.data(withJSONObject: legacyWatch))
+        XCTAssertTrue(watch.handGesturesEnabled)
+        XCTAssertFalse(watch.handGestureHelpEnabled)
+        XCTAssertFalse(watch.handGestureHelpPreset.overlaps(.doubleClench))
+    }
+
+    func testOverlappingSingleOrUnknownHelpPresetLoadsDisabled() throws {
+        for invalid in ["pinchClench", "clench", "futureGesture"] {
+            var payload = try encodedObject(wearerConfig())
+            payload["handGesturePreset"] = "pinch"
+            payload["handGesturesEnabled"] = true
+            payload["handGestureHelpPreset"] = invalid
+            payload["handGestureHelpEnabled"] = true
+            let restored = try RippleJSON.decoder.decode(RippleConfig.self, from: JSONSerialization.data(withJSONObject: payload))
+            XCTAssertTrue(restored.handGesturesEnabled, invalid)
+            XCTAssertEqual(restored.handGesturePreset, .pinch, invalid)
+            XCTAssertFalse(restored.handGestureHelpEnabled, invalid)
+            XCTAssertEqual(restored.handGestureHelpPreset, .defaultHelp(besides: .pinch), invalid)
+            XCTAssertEqual(restored.contacts, wearerConfig().contacts, invalid)
+
+            var watchPayload = try encodedObject(wearerConfig().watchConfig)
+            watchPayload["handGesturePreset"] = "pinch"
+            watchPayload["handGesturesEnabled"] = true
+            watchPayload["handGestureHelpPreset"] = invalid
+            watchPayload["handGestureHelpEnabled"] = true
+            let watch = try RippleJSON.decoder.decode(WatchConfig.self, from: JSONSerialization.data(withJSONObject: watchPayload))
+            XCTAssertTrue(watch.handGesturesEnabled, invalid)
+            XCTAssertFalse(watch.handGestureHelpEnabled, invalid)
+            XCTAssertEqual(watch.handGestureHelpPreset, .defaultHelp(besides: .pinch), invalid)
+        }
     }
 }

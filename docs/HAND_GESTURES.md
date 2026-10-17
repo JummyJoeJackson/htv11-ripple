@@ -1,6 +1,6 @@
-# Hand gesture dismissal
+# Hand gestures
 
-Ripple supports these ten selectable sequences, in this order:
+Hand gestures can dismiss an alarm, and a second sequence can trigger one by asking for help. Ripple supports these ten selectable sequences, in this order:
 
 1. pinch
 2. clench
@@ -13,9 +13,21 @@ Ripple supports these ten selectable sequences, in this order:
 9. double clench + pinch
 10. double clench + double pinch
 
-On the iPhone, open **Ripple → Settings → Hand gestures**, turn on **Hand gestures to dismiss**, choose a **Gesture sequence**, and tap **Save**. The existing Watch sync section confirms which configuration version the Watch has received. Hand gestures are off by default, including when an existing installation first loads the new setting. The initial selection is **pinch + clench**.
+On the iPhone, open **Ripple → Settings → Hand gestures**, turn on **Hand gestures to dismiss**, choose a **Dismiss gesture**, and tap **Save**. The existing Watch sync section confirms which configuration version the Watch has received. Hand gestures are off by default, including when an existing installation first loads the new setting. The initial selection is **pinch + clench**.
 
-Only the selected, complete sequence dismisses an active alarm, using Ripple's usual “I'm okay” action. Intermediate inputs do nothing to the alarm. Inputs received without an active alarm update the Watch's receipt display so setup can be checked. The gesture input shortcuts do not send messages or start Help/duress actions themselves. The existing touchscreen and swipe controls keep their existing behavior.
+Only the selected, complete sequence dismisses an active alarm, using Ripple's usual “I'm okay” action. Intermediate inputs do nothing to the alarm. Inputs that complete no enabled sequence update the Watch's receipt display so setup can be checked. The gesture input shortcuts never start duress, which stays the touch-only 2-second hold. The existing touchscreen and swipe controls keep their existing behavior.
+
+## Triggering an alarm with a gesture
+
+Turn on **Hand gestures to trigger alarm** and choose an **Alarm gesture** to ask for help without touching the screen. A completed alarm gesture does what swiping up twice does, in every state, including when monitoring is off:
+
+- With no alarm open, Tier 1 is texted straight away, with no countdown.
+- During a check-in countdown, the alert goes out now instead of waiting.
+- After the alert, Tier 2 is texted without waiting for the acknowledge window.
+
+It is never duress: the Watch shows **Help requested**, and **I'm okay now** sends the usual follow-up texts if it was a mistake. The initial selection is **double clench + double pinch**, and the setting is off by default.
+
+The two gestures can never be the same. Each picker hides the other's current choice, and also any sequence that overlaps it, meaning one is a step of the other. With dismiss on **pinch**, for example, **pinch + clench** is hidden from the alarm picker, because the pinch would dismiss the alarm before the alarm gesture could finish. With dismiss on **clench** it is hidden too: if the Watch missed the pinch, the clench alone would turn a request for help into a dismissal. The alarm gesture always takes two inputs, because one stray pinch or clench should never text contacts. Settings that somehow arrive with an overlapping or single-input alarm gesture load with it turned off.
 
 ## How the input reaches Ripple
 
@@ -23,11 +35,12 @@ Only the selected, complete sequence dismisses an active alarm, using Ripple's u
 AssistiveTouch recognises a gesture
   → its assigned one-action shortcut runs
   → the matching background Ripple Watch App Intent records the input
-  → Ripple checks the selected sequence
-  → a complete match answers the current alarm through the paired iPhone
+  → Ripple checks the selected sequences
+  → a complete dismiss match answers the current alarm, and a complete
+    alarm match asks for help, through the paired iPhone
 ```
 
-Apple supplies four base gestures. A double pinch or double clench is one recognised input, not two separate shortcut executions. Compound presets need two inputs in order, with at most **5 seconds** between them. A wrong input restarts matching if it can begin the selected sequence. A timed-out partial sequence must be entered again. Changing the selection or alarm discards a pending partial sequence.
+Apple supplies four base gestures. A double pinch or double clench is one recognised input, not two separate shortcut executions. Compound presets need two inputs in order, with at most **5 seconds** between them. A wrong input restarts matching if it can begin a selected sequence. A timed-out partial sequence must be entered again. Changing a selection or the alarm discards a pending partial sequence, and the input that finishes one sequence never counts toward the other. If a gesture wakes Ripple in the background, the Watch waits up to 3 seconds for the iPhone connection before reporting that it couldn't send.
 
 Ripple's App Intents return without a dialog or request to open an app. The useful background execution and successive gesture delivery still need physical Watch verification; a Mac build cannot establish AssistiveTouch's on-device timing or screen behavior.
 
@@ -59,10 +72,10 @@ On the iPhone:
 2. Turn on **AssistiveTouch** and **Hand Gestures**.
 3. Open each of the four gesture assignments. Select **Shortcuts**, then choose its matching Ripple input shortcut from the table.
 4. Set **Activation Gesture → None** so double clench can run its assigned shortcut rather than being consumed as the activation gesture.
-5. Open **Ripple → Settings → Hand gestures**, enable hand gesture dismissal, choose the preset, and **Save**.
+5. Open **Ripple → Settings → Hand gestures**, enable hand gesture dismissal, choose the preset, and **Save**. Turn on the alarm gesture after the checks below, once contacts know a test may text them.
 6. In **Watch sync**, wait until the iPhone and Watch configuration versions match.
 
-The AssistiveTouch assignments apply across watchOS. AssistiveTouch disables Apple's native double tap. The physical input shortcuts continue to represent the same four base gestures whenever the dropdown changes; choose another preset and save/sync it without rebuilding the shortcuts.
+The AssistiveTouch assignments apply across watchOS, so the alarm gesture can run while another app is on screen. AssistiveTouch disables Apple's native double tap. The physical input shortcuts continue to represent the same four base gestures whenever either dropdown changes; choose another preset and save/sync it without rebuilding the shortcuts.
 
 ## Generate wrappers for another local build
 
@@ -82,10 +95,12 @@ Replace the example bundle identifier with the installed Watch app's bundle iden
 The iPhone and Watch can remain disconnected while code is built on the Mac. When the devices return:
 
 1. Install the updated builds over the existing apps, preserving the wearer account and configuration.
-2. Set up and sync the four input shortcuts and AssistiveTouch assignments above.
+2. Set up and sync the four input shortcuts and AssistiveTouch assignments above. Keep **Hand gestures to trigger alarm** off for steps 3 and 4, so a pair of test gestures can't text contacts.
 3. With **no alarm open**, keep Ripple visible on the Watch and run each gesture. Verify that **Gesture #N: <gesture>** and its status update and that Ripple remains visible. This check must use the actual AssistiveTouch gesture; calling the matcher directly does not verify the integration.
 4. Still with no alarm open, run two different gestures in succession and check both input receipts. This establishes successive shortcut delivery only; sequence matching runs only while an alarm is active.
 5. During a separately coordinated alarm test, check each single gesture preset and each compound preset. Save and confirm Watch sync after each selection. Perform an incomplete sequence, then the complete selected sequence within 5 seconds between steps. Only the complete match should answer that same alarm.
 6. During those alarm tests, repeat with a gap longer than 5 seconds and with a wrong first or second gesture. Check that these do not dismiss the alarm, and that no old partial sequence can carry into a new alarm or a changed preset.
+7. Tell the test contacts first, then turn on **Hand gestures to trigger alarm** and sync. Run the alarm gesture with no alarm open, during a countdown, and after an alert, and check the Tier 1, immediate alert and Tier 2 texts above. Repeat once with Ripple closed or another app on screen. Finish each run with **I'm okay now** or a demo reset.
+8. In Settings, check that the dismiss gesture's current choice, and any sequence overlapping it, is missing from the alarm picker, and the reverse.
 
-Mac unit tests cover preset matching, duplicate handling, sequence timeout/reset, and backward-compatible configuration decoding. Device testing must establish actual shortcut delivery, single/double gesture recognition, execution order, and whether Ripple stays visible.
+Mac unit tests cover preset matching, duplicate handling, sequence timeout/reset, each sequence reporting its own action, the overlap rule and both pickers' choices, and backward-compatible configuration decoding. Device testing must establish actual shortcut delivery, single/double gesture recognition, execution order, whether Ripple stays visible, and how often tremor or everyday hand movement completes the alarm gesture by accident.

@@ -43,7 +43,7 @@ final class WatchStore {
     @ObservationIgnored private var pendingActionId: String?
     @ObservationIgnored private var pendingCompletion: ((WatchActionReply?) -> Void)?
     @ObservationIgnored private var combos = ComboRecognizer()
-    @ObservationIgnored private var handGestures = HandGestureRecognizer(preset: .pinchClench)
+    @ObservationIgnored private var handGestures = HandGestureRecognizer(bindings: [])
     @ObservationIgnored private var handGestureExpiryTask: Task<Void, Never>?
     @ObservationIgnored private var voiceSessionId: String?
     @ObservationIgnored private var micHeldUntil = Date.distantPast
@@ -61,7 +61,6 @@ final class WatchStore {
         let defaults = UserDefaults.standard
         config = defaults.data(forKey: Keys.config).flatMap { try? RippleJSON.decoder.decode(WatchConfig.self, from: $0) } ?? .fallback
         display = defaults.data(forKey: Keys.display).flatMap { try? RippleJSON.decoder.decode(WatchDisplay.self, from: $0) } ?? .off
-        handGestures.select(config.handGesturePreset)
         handGestureCount = defaults.integer(forKey: Keys.gestureCount)
         lastHandGesture = defaults.string(forKey: Keys.lastGesture)
         link.onDisplay = { [weak self] display in
@@ -127,9 +126,10 @@ final class WatchStore {
     private func store(_ newConfig: WatchConfig) {
         guard newConfig.version >= config.version else { return }
         if newConfig.handGesturesEnabled != config.handGesturesEnabled
-            || newConfig.handGesturePreset != config.handGesturePreset {
+            || newConfig.handGesturePreset != config.handGesturePreset
+            || newConfig.handGestureHelpEnabled != config.handGestureHelpEnabled
+            || newConfig.handGestureHelpPreset != config.handGestureHelpPreset {
             resetHandGestures()
-            handGestures.select(newConfig.handGesturePreset)
         }
         config = newConfig
         if let data = try? RippleJSON.encoder.encode(newConfig) {
@@ -310,25 +310,32 @@ final class WatchStore {
     // MARK: AssistiveTouch shortcut inputs
 
     /// Called by each background intent. Every input leaves a local receipt,
-    /// including when there is no alarm, so setup can be tested harmlessly.
-    /// Only a complete selected sequence can enter the existing dismissal path.
+    /// including when nothing is listening, so setup can be tested harmlessly.
+    /// Only a complete selected sequence acts: the dismiss sequence answers an
+    /// open alarm, and the help sequence asks for help in any state.
     func receiveHandGesture(_ step: HandGestureStep, at time: Date = Date()) async {
         handGestureCount += 1
         lastHandGesture = step.label
         UserDefaults.standard.set(handGestureCount, forKey: Keys.gestureCount)
         UserDefaults.standard.set(step.label, forKey: Keys.lastGesture)
 
-        guard config.handGesturesEnabled else {
+        guard config.handGesturesEnabled || config.handGestureHelpEnabled else {
             resetHandGestures(status: "Hand gestures are off")
             return
         }
-        guard display.mode.isAlarm, display.alarmId != nil else {
+        let bindings = activeHandGestures
+        guard !bindings.isEmpty else {
             resetHandGestures(status: "No alarm; input recorded")
             return
         }
         guard !sending else {
             handGestureStatus = "Action already pending"
             return
+        }
+        // An alarm opening or closing changes what counts. Selecting resets,
+        // so a partial sequence never carries across.
+        if bindings != handGestures.bindings {
+            handGestures.select(bindings)
         }
 
         switch handGestures.record(step, at: time) {
@@ -337,21 +344,48 @@ final class WatchStore {
             // Preserve the recognizer's bounce history across repeated deliveries.
             handGestureExpiryTask?.cancel()
             handGestureExpiryTask = nil
-            handGestureStatus = "Start: \(config.handGesturePreset.steps[0].label)"
+            handGestureStatus = "Start: \(nextHandGestures)"
         case .partial:
-            handGestureStatus = "Next: \(config.handGesturePreset.steps[1].label)"
+            handGestureStatus = "Next: \(nextHandGestures)"
             expireHandGestures()
-        case .matched:
+        case .matched(let action):
             handGestureExpiryTask?.cancel()
             handGestureStatus = "Matched; confirming…"
+            await waitForPhone()
             // Await the reply (or the existing timeout) before the intent returns,
             // so watchOS doesn't suspend the useful work after an early result.
             await withCheckedContinuation { continuation in
-                send(.dismiss, method: .combo) { [weak self] reply in
+                send(action == .help ? .help : .dismiss, method: .combo) { [weak self] reply in
                     self?.handGestureStatus = reply?.result.feedback ?? "Not confirmed; check iPhone"
                     continuation.resume()
                 }
             }
+        }
+    }
+
+    /// The dismiss sequence counts only while an alarm is open. The help
+    /// sequence counts in every state, like swiping up twice.
+    private var activeHandGestures: [HandGestureBinding] {
+        var bindings: [HandGestureBinding] = []
+        if config.handGesturesEnabled, display.mode.isAlarm, display.alarmId != nil {
+            bindings.append(HandGestureBinding(preset: config.handGesturePreset, action: .okay))
+        }
+        if config.handGestureHelpEnabled {
+            bindings.append(HandGestureBinding(preset: config.handGestureHelpPreset, action: .help))
+        }
+        return bindings
+    }
+
+    private var nextHandGestures: String {
+        handGestures.nextSteps.map(\.label).joined(separator: " or ")
+    }
+
+    /// A gesture can wake Ripple in the background before WatchConnectivity
+    /// reconnects, so give the iPhone a moment before the send gives up.
+    private func waitForPhone(seconds: Double = 3) async {
+        let deadline = Date().addingTimeInterval(seconds)
+        while !link.isReachable && Date() < deadline {
+            try? await Task.sleep(nanoseconds: 250_000_000)
         }
     }
 

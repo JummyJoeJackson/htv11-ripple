@@ -109,6 +109,10 @@ public struct RippleConfig: Codable, Equatable, Sendable {
     /// Accept the selected AssistiveTouch shortcut sequence to dismiss an alarm.
     public var handGesturesEnabled: Bool
     public var handGesturePreset: HandGesturePreset
+    /// Accept a second sequence that asks for help in any state, like swiping
+    /// up twice. Never duress, and never overlapping the dismiss sequence.
+    public var handGestureHelpEnabled: Bool
+    public var handGestureHelpPreset: HandGesturePreset
     /// Name of the user-installed shortcut that sends the texts.
     public var shortcutName: String
     /// Usual dose times. At each one the Watch asks for "Took my meds".
@@ -116,7 +120,8 @@ public struct RippleConfig: Codable, Equatable, Sendable {
     /// Minutes to wait for "Took my meds" before a gentle check-in starts.
     public var medicationGraceMinutes: Int
 
-    public init(version: Int, wearerName: String, contacts: [PermanentContact], helpCardEnabled: Bool, helpCard: String, checkInIntervalMinutes: Int, countdownSeconds: Int, ackWindowSeconds: Int, doubleTapEnabled: Bool, voiceEnabled: Bool, voicePhrase: String, shortcutName: String, combosEnabled: Bool = true, handGesturesEnabled: Bool = false, handGesturePreset: HandGesturePreset = .pinchClench, medicationTimes: [MedicationTime] = [], medicationGraceMinutes: Int = 30) {
+    /// Without a help preset, the default one that doesn't overlap the dismiss preset.
+    public init(version: Int, wearerName: String, contacts: [PermanentContact], helpCardEnabled: Bool, helpCard: String, checkInIntervalMinutes: Int, countdownSeconds: Int, ackWindowSeconds: Int, doubleTapEnabled: Bool, voiceEnabled: Bool, voicePhrase: String, shortcutName: String, combosEnabled: Bool = true, handGesturesEnabled: Bool = false, handGesturePreset: HandGesturePreset = .pinchClench, handGestureHelpEnabled: Bool = false, handGestureHelpPreset: HandGesturePreset? = nil, medicationTimes: [MedicationTime] = [], medicationGraceMinutes: Int = 30) {
         self.version = version
         self.wearerName = wearerName
         self.contacts = contacts
@@ -131,6 +136,8 @@ public struct RippleConfig: Codable, Equatable, Sendable {
         self.combosEnabled = combosEnabled
         self.handGesturesEnabled = handGesturesEnabled
         self.handGesturePreset = handGesturePreset
+        self.handGestureHelpEnabled = handGestureHelpEnabled
+        self.handGestureHelpPreset = handGestureHelpPreset ?? .defaultHelp(besides: handGesturePreset)
         self.shortcutName = shortcutName
         self.medicationTimes = medicationTimes
         self.medicationGraceMinutes = medicationGraceMinutes
@@ -139,14 +146,18 @@ public struct RippleConfig: Codable, Equatable, Sendable {
     private enum CodingKeys: String, CodingKey {
         case version, wearerName, contacts, helpCardEnabled, helpCard, checkInIntervalMinutes, countdownSeconds,
              ackWindowSeconds, doubleTapEnabled, voiceEnabled, voicePhrase, combosEnabled, shortcutName,
-             handGesturesEnabled, handGesturePreset, medicationTimes, medicationGraceMinutes
+             handGesturesEnabled, handGesturePreset, handGestureHelpEnabled, handGestureHelpPreset,
+             medicationTimes, medicationGraceMinutes
     }
 
     /// Older settings still load without losing contacts. Hand gestures need
-    /// explicit opt-in, and unknown future presets stay disabled.
+    /// explicit opt-in, and unknown future presets stay disabled. So does a
+    /// help preset that overlaps the dismiss preset.
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let preset = try? container.decode(HandGesturePreset.self, forKey: .handGesturePreset)
+        let helpPreset = (try? container.decode(HandGesturePreset.self, forKey: .handGestureHelpPreset))
+            .flatMap { HandGesturePreset.helpChoices(besides: preset ?? .pinchClench).contains($0) ? $0 : nil }
         self.init(
             version: try container.decode(Int.self, forKey: .version),
             wearerName: try container.decode(String.self, forKey: .wearerName),
@@ -163,6 +174,8 @@ public struct RippleConfig: Codable, Equatable, Sendable {
             combosEnabled: try container.decodeIfPresent(Bool.self, forKey: .combosEnabled) ?? true,
             handGesturesEnabled: (try container.decodeIfPresent(Bool.self, forKey: .handGesturesEnabled) ?? false) && preset != nil,
             handGesturePreset: preset ?? .pinchClench,
+            handGestureHelpEnabled: (try container.decodeIfPresent(Bool.self, forKey: .handGestureHelpEnabled) ?? false) && helpPreset != nil,
+            handGestureHelpPreset: helpPreset,
             medicationTimes: try container.decodeIfPresent([MedicationTime].self, forKey: .medicationTimes) ?? [],
             medicationGraceMinutes: try container.decodeIfPresent(Int.self, forKey: .medicationGraceMinutes) ?? 30
         )
@@ -188,7 +201,7 @@ public struct RippleConfig: Codable, Equatable, Sendable {
 
     /// The part of the configuration the Watch needs.
     public var watchConfig: WatchConfig {
-        WatchConfig(version: version, doubleTapEnabled: doubleTapEnabled, voiceEnabled: voiceEnabled, voicePhrase: voicePhrase, combosEnabled: combosEnabled, handGesturesEnabled: handGesturesEnabled, handGesturePreset: handGesturePreset)
+        WatchConfig(version: version, doubleTapEnabled: doubleTapEnabled, voiceEnabled: voiceEnabled, voicePhrase: voicePhrase, combosEnabled: combosEnabled, handGesturesEnabled: handGesturesEnabled, handGesturePreset: handGesturePreset, handGestureHelpEnabled: handGestureHelpEnabled, handGestureHelpPreset: handGestureHelpPreset)
     }
 }
 

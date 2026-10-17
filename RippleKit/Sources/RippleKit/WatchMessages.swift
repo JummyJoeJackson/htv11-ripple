@@ -22,8 +22,11 @@ public struct WatchDisplay: Codable, Equatable, Sendable {
     /// Whether the iPhone can currently act (false during a simulated phone failure).
     public var phoneAvailable: Bool
     public var updatedAt: Date
+    /// Set while a dose is due and "Took my meds" hasn't been tapped. Only
+    /// while monitoring with no alarm open. Older saved displays load as nil.
+    public var medsDueAt: Date?
 
-    public init(mode: CircleMode, circleLabel: String, status: String, alarmId: String?, deadline: Date?, phoneAvailable: Bool, updatedAt: Date) {
+    public init(mode: CircleMode, circleLabel: String, status: String, alarmId: String?, deadline: Date?, phoneAvailable: Bool, updatedAt: Date, medsDueAt: Date? = nil) {
         self.mode = mode
         self.circleLabel = circleLabel
         self.status = status
@@ -31,6 +34,7 @@ public struct WatchDisplay: Codable, Equatable, Sendable {
         self.deadline = deadline
         self.phoneAvailable = phoneAvailable
         self.updatedAt = updatedAt
+        self.medsDueAt = medsDueAt
     }
 
     public static let off = WatchDisplay(mode: .off, circleLabel: "Start", status: "Off", alarmId: nil, deadline: nil, phoneAvailable: true, updatedAt: Date())
@@ -102,6 +106,8 @@ public enum WatchActionKind: String, Codable, Sendable {
     case hold
     /// Any state: swipe up twice. Texts contacts now, without a countdown. Never duress.
     case help
+    /// A dose is due: tap the circle. Records "Took my meds"; never starts or ends an alarm.
+    case tookMeds
 }
 
 public enum DismissMethod: String, Codable, Sendable {

@@ -29,6 +29,62 @@
         }
       }
     },
+    "%lld min": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 分钟"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 分鐘"
+          }
+        }
+      }
+    },
+    "%lld s to answer.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld s para responder."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld s pour répondre."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 秒内回应。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 秒內回應。"
+          }
+        }
+      }
+    },
     "A contact is checking on you.": {
       "localizations": {
         "es": {
@@ -109,6 +165,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "已開啟"
+          }
+        }
+      }
+    },
+    "Add a dose time": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Añadir una hora de toma"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter une heure de prise"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加服药时间"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新增服藥時間"
           }
         }
       }
@@ -197,6 +281,34 @@
         }
       }
     },
+    "Add dose times": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Añadir horas de toma"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter des heures de prise"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加服药时间"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新增服藥時間"
+          }
+        }
+      }
+    },
     "Add someone to text": {
       "localizations": {
         "es": {
@@ -249,6 +361,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "已傳送警報"
+          }
+        }
+      }
+    },
+    "All your contacts get a text now.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todos tus contactos reciben un mensaje ahora."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tous vos contacts reçoivent un texto maintenant."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你的所有联系人现在都会收到短信。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你的所有聯絡人現在都會收到簡訊。"
           }
         }
       }
@@ -617,6 +757,34 @@
         }
       }
     },
+    "Check-in every %lld min.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Control cada %lld min."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérification toutes les %lld min."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每 %lld 分钟确认一次。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每 %lld 分鐘確認一次。"
+          }
+        }
+      }
+    },
     "Choose \"Allow While Using App\".": {
       "localizations": {
         "es": {
@@ -809,6 +977,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "聯絡人"
+          }
+        }
+      }
+    },
+    "Contacts get an \"I'm okay\" text.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus contactos reciben un mensaje de «Estoy bien»."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vos contacts reçoivent un texto « Je vais bien »."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "联系人会收到“我没事”的短信。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "聯絡人會收到「我沒事」的簡訊。"
           }
         }
       }
@@ -1033,6 +1229,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "就診和提醒。"
+          }
+        }
+      }
+    },
+    "Dose": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dosis"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dose"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剂量"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "劑量"
           }
         }
       }
@@ -1457,6 +1681,34 @@
         }
       }
     },
+    "I took them": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ya las tomé"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je les ai pris"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "我已服药"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "我已服藥"
+          }
+        }
+      }
+    },
     "I'm okay": {
       "localizations": {
         "es": {
@@ -1513,6 +1765,34 @@
         }
       }
     },
+    "If you can't answer your Watch, Ripple texts your people.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si no puedes responder a tu reloj, Ripple escribe a tus personas."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si vous ne pouvez pas répondre à votre montre, Ripple texte vos proches."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "如果你无法回应手表，Ripple 会发短信给你的亲友。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "如果你無法回應手錶，Ripple 會傳簡訊給你的親友。"
+          }
+        }
+      }
+    },
     "Language": {
       "localizations": {
         "es": {
@@ -1565,6 +1845,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "姓氏（選填）"
+          }
+        }
+      }
+    },
+    "Last taken %@": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Última toma %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dernière prise %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上次服药 %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上次服藥 %@"
           }
         }
       }
@@ -1653,6 +1961,34 @@
         }
       }
     },
+    "Medication": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medicación"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Médicaments"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用药"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用藥"
+          }
+        }
+      }
+    },
     "Medication Reminders": {
       "localizations": {
         "es": {
@@ -1677,6 +2013,62 @@
           "stringUnit": {
             "state": "translated",
             "value": "用藥提醒"
+          }
+        }
+      }
+    },
+    "Medication reminders": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recordatorios de medicación"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rappels de médicaments"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用药提醒"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用藥提醒"
+          }
+        }
+      }
+    },
+    "Medication times saved.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Horas de toma guardadas."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heures de prise enregistrées."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "服药时间已保存。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "服藥時間已儲存。"
           }
         }
       }
@@ -1821,6 +2213,34 @@
         }
       }
     },
+    "Next %@": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Próxima %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prochaine %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下次 %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下次 %@"
+          }
+        }
+      }
+    },
     "Next Appointment": {
       "localizations": {
         "es": {
@@ -1873,6 +2293,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "下次確認時間：%@。"
+          }
+        }
+      }
+    },
+    "Next dose": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Próxima toma"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prochaine prise"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下次服药"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下次服藥"
           }
         }
       }
@@ -1989,6 +2437,34 @@
         }
       }
     },
+    "No tap in time starts a check-in.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si no tocas a tiempo, empieza un control."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sans toucher à temps, une vérification commence."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未及时点按会开始确认。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未及時點按會開始確認。"
+          }
+        }
+      }
+    },
     "Not now": {
       "localizations": {
         "es": {
@@ -2017,6 +2493,34 @@
         }
       }
     },
+    "Not set up": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin configurar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non configuré"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未设置"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未設定"
+          }
+        }
+      }
+    },
     "Off": {
       "localizations": {
         "es": {
@@ -2041,6 +2545,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "已關閉"
+          }
+        }
+      }
+    },
+    "Only sent with an alert.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo se envía con una alerta."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Envoyée seulement avec une alerte."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅在警报时发送。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "僅在警報時傳送。"
           }
         }
       }
@@ -2321,6 +2853,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "儲存聯絡人"
+          }
+        }
+      }
+    },
+    "Save medication times": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardar horas de toma"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrer les heures"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存服药时间"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "儲存服藥時間"
           }
         }
       }
@@ -2689,6 +3249,34 @@
         }
       }
     },
+    "Simulator: localhost:8080": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Simulador: localhost:8080"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Simulateur : localhost:8080"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "模拟器：localhost:8080"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "模擬器：localhost:8080"
+          }
+        }
+      }
+    },
     "Since %@": {
       "localizations": {
         "es": {
@@ -2797,6 +3385,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "有人正在趕來"
+          }
+        }
+      }
+    },
+    "Someone who can check on you.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alguien que pueda ver cómo estás."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quelqu'un qui peut venir vous voir."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一个可以来看你的人。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一個可以來看你的人。"
           }
         }
       }
@@ -3109,6 +3725,34 @@
         }
       }
     },
+    "Tap your Watch or \"I'm okay\" below.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca tu reloj o «Estoy bien» abajo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touchez votre montre ou « Je vais bien » ci-dessous."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点按手表或下方的“我没事”。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "點按手錶或下方的「我沒事」。"
+          }
+        }
+      }
+    },
     "Tapping the circle always works too.": {
       "localizations": {
         "es": {
@@ -3133,6 +3777,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "點按圓圈也一直有效。"
+          }
+        }
+      }
+    },
+    "Text all your contacts?": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Escribir a todos tus contactos?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Texter tous vos contacts ?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "要发短信给所有联系人吗？"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "要傳簡訊給所有聯絡人嗎？"
           }
         }
       }
@@ -3361,6 +4033,62 @@
         }
       }
     },
+    "Turn it on to get check-ins.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actívala para recibir controles."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activez-la pour recevoir des vérifications."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开启后即可接收确认。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開啟後即可接收確認。"
+          }
+        }
+      }
+    },
+    "Unsaved changes": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cambios sin guardar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modifications non enregistrées"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未保存的更改"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未儲存的變更"
+          }
+        }
+      }
+    },
     "Up twice for help, down twice for okay": {
       "localizations": {
         "es": {
@@ -3441,6 +4169,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "語音"
+          }
+        }
+      }
+    },
+    "Wait for \"Took my meds\"": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esperar «Tomé mis medicinas»"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attendre « J'ai pris mes médicaments »"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等待“已服药”"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等待「已服藥」"
           }
         }
       }
@@ -3865,6 +4621,34 @@
         }
       }
     },
+    "Your Watch will buzz if an alarm starts.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu reloj vibrará si empieza una alarma."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Votre montre vibrera si une alarme se déclenche."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "警报开始时，你的手表会振动。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "警報開始時，你的手錶會震動。"
+          }
+        }
+      }
+    },
     "Your Watch won't check on you. Turn it on here or on your Watch.": {
       "localizations": {
         "es": {
@@ -3889,6 +4673,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "你的手錶不會確認你的狀況。請在這裡或手錶上開啟。"
+          }
+        }
+      }
+    },
+    "Your care at a glance": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu cuidado de un vistazo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vos soins en un coup d'œil"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你的照护一目了然"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你的照護一目了然"
           }
         }
       }

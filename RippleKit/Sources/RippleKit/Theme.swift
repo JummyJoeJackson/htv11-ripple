@@ -150,11 +150,11 @@ public struct PrimaryButtonStyle: ButtonStyle {
             .textCase(.uppercase)
             .tracking(1.5)
             .multilineTextAlignment(.center)
-            .foregroundStyle(isEnabled ? Theme.onBrand : .white)
+            .foregroundStyle(isEnabled ? Theme.onBrand : Theme.secondaryText)
             .padding(.horizontal, 20)
             .frame(maxWidth: .infinity, minHeight: Theme.primaryButtonHeight)
             .background(
-                isEnabled ? (configuration.isPressed ? Theme.brandPressed : Theme.brand) : Theme.off,
+                isEnabled ? (configuration.isPressed ? Theme.brandPressed : Theme.brand) : Theme.divider,
                 in: RoundedRectangle(cornerRadius: Theme.cornerRadius)
             )
             .contentShape(RoundedRectangle(cornerRadius: Theme.cornerRadius))

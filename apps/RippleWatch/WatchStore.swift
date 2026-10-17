@@ -102,7 +102,12 @@ final class WatchStore {
             resetHandGestures()
         }
         let previousAlarm = display.mode == .checkIn ? display.alarmId : nil
+        let previousDose = display.medsDueAt
         display = newDisplay
+        // One gentle buzz when a dose comes due.
+        if let dose = newDisplay.medsDueAt, dose != previousDose {
+            WKInterfaceDevice.current().play(.notification)
+        }
         if let data = try? RippleJSON.encoder.encode(newDisplay) {
             UserDefaults.standard.set(data, forKey: Keys.display)
         }
@@ -142,7 +147,12 @@ final class WatchStore {
         case .off:
             send(.start)
         case .monitoring:
-            showHoldHint = true
+            // A dose is due: the tap means "Took my meds". Otherwise taps do nothing.
+            if display.medsDueAt != nil {
+                send(.tookMeds)
+            } else {
+                showHoldHint = true
+            }
         case .checkIn, .alertSent, .responding:
             send(.dismiss, method: method)
         }

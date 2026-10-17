@@ -444,6 +444,11 @@ final class WearerStore {
         show(coordinator.stopMonitoring())
     }
 
+    /// "I took them" on the iPhone: the same as "Took my meds" on the Watch.
+    func tookMedsFromPhone() {
+        show(coordinator.recordMedsTaken())
+    }
+
     func dismissFromPhone() {
         show(coordinator.dismiss(alarmId: coordinator.visibleAlarm?.id))
     }

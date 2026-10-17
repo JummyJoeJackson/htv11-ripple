@@ -11,9 +11,9 @@ struct SessionView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
-                ScreenHeader(title: "Sessions", subtitle: "Your check-ins, alerts and texts")
+                ScreenHeader(title: "Sessions", subtitle: nil)
                 NextCheckInCard()
-                ComingSoonRow(icon: "pills.fill", title: "Medication reminders")
+                MedicationSummaryRow()
 
                 SectionTitle(title: "Upcoming")
                 ComingSoonRow(icon: "stethoscope", title: "Appointments")
@@ -73,6 +73,49 @@ private struct NextCheckInCard: View {
     }
 }
 
+/// Medication reminders: how many dose times, and the next one.
+private struct MedicationSummaryRow: View {
+    @Environment(WearerStore.self) private var store
+
+    var body: some View {
+        let _ = store.revision
+        let count = store.config.medicationTimes.count
+        HStack(spacing: Theme.spacing) {
+            Image(systemName: "pills.fill")
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(Theme.accent)
+                .frame(width: 52, height: 52)
+                .background(Theme.iconTint, in: Circle())
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Medication reminders")
+                    .font(Theme.body.weight(.semibold))
+                    .foregroundStyle(Theme.text)
+                if let taken = store.coordinator.lastMedsTakenAt {
+                    Text("Last taken \(taken.dayAndTime)")
+                        .font(Theme.label)
+                        .foregroundStyle(Theme.secondaryText)
+                }
+            }
+            Spacer(minLength: 8)
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(count == 0 ? "Not set up" : (count == 1 ? "1 a day" : "\(count) a day"))
+                    .font(Theme.label)
+                    .foregroundStyle(Theme.secondaryText)
+                if let next = store.coordinator.nextDoseAt {
+                    Text("Next \(next.shortTime)")
+                        .font(Theme.labelBold)
+                        .foregroundStyle(Theme.text)
+                }
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, minHeight: Theme.rowHeight, alignment: .leading)
+        .rippleCard()
+        .accessibilityElement(children: .combine)
+    }
+}
+
 /// A feature that isn't built yet, shown as a row with a "Coming soon" tag.
 private struct ComingSoonRow: View {
     let icon: String
@@ -121,7 +164,7 @@ private struct RecentActivityCard: View {
         let events = Self.events(from: store.coordinator.history)
         VStack(spacing: 0) {
             if events.isEmpty {
-                FormNote("Nothing yet. Check-ins and alerts will show here.")
+                FormNote("Nothing yet.")
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(16)
             }

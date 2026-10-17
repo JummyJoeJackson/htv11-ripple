@@ -132,6 +132,7 @@
       }
     },
     "%lld s to answer.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -189,7 +190,37 @@
         }
       }
     },
+    "A fall or heart alert from your Watch starts a check-in.": {
+      "extractionState": "stale",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una caída o alerta cardíaca del reloj inicia un control."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Une chute ou une alerte cardiaque de votre montre lance une vérification."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手表的跌倒或心脏警报会开始确认。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手錶的跌倒或心臟警報會開始確認。"
+          }
+        }
+      }
+    },
     "A short note added to alert texts.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -219,6 +250,7 @@
     },
     "Accurate to about %lld m": {},
     "Active": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -387,6 +419,7 @@
       }
     },
     "Add someone to text": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -414,7 +447,6 @@
         }
       }
     },
-    "Add the four shortcuts": {},
     "Alarm gesture": {
       "localizations": {
         "es": {
@@ -444,6 +476,7 @@
       }
     },
     "Alert sent": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -471,6 +504,7 @@
         }
       }
     },
+    "Alert shortcut name": {},
     "All your contacts get a text now.": {
       "localizations": {
         "es": {
@@ -500,6 +534,7 @@
       }
     },
     "All your contacts will be texted now, including both tiers and active one-hour contacts. Each person can respond with Ripple accept followed by the four-digit code in their alert.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -584,6 +619,7 @@
       }
     },
     "Answer with one tap": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -612,6 +648,7 @@
       }
     },
     "Answering an alarm": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -640,7 +677,35 @@
       }
     },
     "Answers the check-in. No one is texted.": {},
-    "Apple Watch recognises the gestures. Each shortcut sends one gesture to Ripple, which checks the sequence you chose in Settings.": {},
+    "Apple Watch alerts": {
+      "extractionState": "stale",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alertas del Apple Watch"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alertes Apple Watch"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Watch 警报"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Watch 警報"
+          }
+        }
+      }
+    },
     "Asks for confirmation before texting a Ripple alert to all your contacts.": {
       "localizations": {
         "es": {
@@ -670,9 +735,9 @@
       }
     },
     "Asks to remove this contact now.": {},
-    "Assign AssistiveTouch gestures": {},
-    "AssistiveTouch turns off Apple's native double tap. Ripple's touchscreen controls remain available.": {},
+    "Assign gestures in the Watch app": {},
     "Automatic check-ins are off. If an alarm starts, your Watch buzzes.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -729,6 +794,7 @@
       }
     },
     "Call": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -815,6 +881,7 @@
     "Changes the language of the app.": {},
     "Check again": {},
     "Check in": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -870,7 +937,9 @@
         }
       }
     },
+    "Check that Shortcuts is installed and that you have an internet connection, then try again.": {},
     "Check-in every %lld min.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -900,6 +969,7 @@
     },
     "Checking…": {},
     "Choose \"Allow While Using App\".": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -927,8 +997,8 @@
         }
       }
     },
-    "Choose and check a sequence": {},
     "Close": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -1013,6 +1083,7 @@
       }
     },
     "Connect to Ripple": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -1069,6 +1140,7 @@
       }
     },
     "Contacts": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -1097,6 +1169,7 @@
       }
     },
     "Contacts get an \"I'm okay\" text.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -1120,6 +1193,35 @@
           "stringUnit": {
             "state": "translated",
             "value": "聯絡人會收到「我沒事」的簡訊。"
+          }
+        }
+      }
+    },
+    "Contacts see this name.": {
+      "extractionState": "stale",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus contactos ven este nombre."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vos contacts voient ce nom."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "联系人会看到这个名字。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "聯絡人會看到這個名字。"
           }
         }
       }
@@ -1152,8 +1254,12 @@
         }
       }
     },
+    "Copy Ripple accept": {},
+    "Copy Ripple join": {},
     "Couldn't find your location.": {},
+    "Couldn't open Shortcuts": {},
     "Couldn't text": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -1182,6 +1288,7 @@
       }
     },
     "Create your profile": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -1210,6 +1317,7 @@
       }
     },
     "Daily Symptom Check-in": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -1238,6 +1346,7 @@
       }
     },
     "Demo admin pairing code": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -1294,6 +1403,35 @@
         }
       }
     },
+    "Dismiss": {
+      "extractionState": "stale",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descartar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fermer l'alarme"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭警报"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "關閉警報"
+          }
+        }
+      }
+    },
     "Dismiss gesture": {
       "localizations": {
         "es": {
@@ -1324,6 +1462,7 @@
     },
     "Dismiss message": {},
     "Do you want to send a Ripple alert to all your contacts?": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -1352,6 +1491,7 @@
       }
     },
     "Doctor visits and reminders.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -1438,6 +1578,7 @@
       }
     },
     "Dose times": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -1467,6 +1608,7 @@
     },
     "Edit contact": {},
     "Emergency Help": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -1494,7 +1636,37 @@
         }
       }
     },
+    "Every %lld min": {
+      "extractionState": "stale",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cada %lld min"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toutes les %lld min"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每 %lld 分钟"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每 %lld 分鐘"
+          }
+        }
+      }
+    },
     "Every %lld min your Watch buzzes and asks if you're okay.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -1522,8 +1694,10 @@
         }
       }
     },
+    "Falls": {},
     "Finishes setup and opens Ripple.": {},
     "First name": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -1552,6 +1726,7 @@
       }
     },
     "Gesture": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -1579,9 +1754,8 @@
         }
       }
     },
-    "Gesture sequence": {},
-    "Gesture shortcuts": {},
     "Get help": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -1639,6 +1813,7 @@
     },
     "Goes to the previous step.": {},
     "Hackathon prototype. Not a medical or emergency service.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -1667,6 +1842,7 @@
       }
     },
     "Hand gestures": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -1750,6 +1926,7 @@
         }
       }
     },
+    "Heart alerts": {},
     "Hello, %@!": {
       "localizations": {
         "es": {
@@ -1779,6 +1956,7 @@
       }
     },
     "Help card": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -1835,6 +2013,7 @@
       }
     },
     "Home": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -1891,6 +2070,7 @@
       }
     },
     "How will you answer?": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -2089,6 +2269,9 @@
       }
     },
     "In Tier 1 until %@. No expiration text will be sent.": {},
+    "Install": {},
+    "Install %@": {},
+    "Install each shortcut, tap Add Shortcut in Shortcuts, then return here to continue.": {},
     "Invite someone for one hour": {},
     "Language": {
       "localizations": {
@@ -2119,6 +2302,7 @@
       }
     },
     "Last name (optional)": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -2204,6 +2388,7 @@
       }
     },
     "Location": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -2232,6 +2417,7 @@
       }
     },
     "Location for Ripple": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -2319,6 +2505,7 @@
       }
     },
     "Medication Reminders": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -2375,6 +2562,7 @@
       }
     },
     "Medication times saved.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -2403,6 +2591,7 @@
       }
     },
     "Messaging shortcut": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -2430,8 +2619,8 @@
         }
       }
     },
-    "Messaging shortcuts": {},
     "Monitoring": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -2517,6 +2706,7 @@
     },
     "Name": {},
     "Needs Apple Watch Series 9 or later.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -2574,6 +2764,7 @@
       }
     },
     "Next Appointment": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -2688,6 +2879,7 @@
       }
     },
     "Next: %@.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -2716,6 +2908,7 @@
       }
     },
     "No answer": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -2744,6 +2937,7 @@
       }
     },
     "No email or password needed.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -2800,6 +2994,7 @@
       }
     },
     "No tap in time starts a check-in.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -2857,6 +3052,7 @@
       }
     },
     "Not now": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -2912,7 +3108,38 @@
         }
       }
     },
+    "Not yet": {
+      "extractionState": "stale",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas encore"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未"
+          }
+        }
+      }
+    },
+    "OK": {},
     "Off": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -2940,8 +3167,38 @@
         }
       }
     },
+    "On": {
+      "extractionState": "stale",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activé"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开启"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開啟"
+          }
+        }
+      }
+    },
     "One-hour contact": {},
     "Only sent with an alert.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -2998,6 +3255,7 @@
       }
     },
     "Open Ripple on your Watch.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -3025,8 +3283,10 @@
         }
       }
     },
+    "Open Shortcuts": {},
     "Open in Maps": {},
     "Opens the same map link your contacts got.": {},
+    "Opens the shortcut's installation page. Tap Add Shortcut, then return to Ripple.": {},
     "Opens this contact to edit or remove.": {},
     "Opens your medication times.": {},
     "Page %lld of %lld": {
@@ -3042,6 +3302,7 @@
     "Pairing code %@": {},
     "Phone, with area code": {},
     "Pick what's easiest for you.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -3071,6 +3332,7 @@
     },
     "Picks a profile photo from your library. It stays on this iPhone.": {},
     "Pinch your fingers twice": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -3099,6 +3361,7 @@
       }
     },
     "Pinch your thumb and finger together twice.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -3127,6 +3390,7 @@
       }
     },
     "Profile": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -3186,6 +3450,7 @@
       }
     },
     "Responding": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -3216,8 +3481,9 @@
     "Restore now": {},
     "Ripple": {},
     "Ripple accept 4821 or Ripple join 583921": {},
-    "Ripple texts from your iPhone using this shortcut.": {},
+    "Ripple shortcuts": {},
     "Same Wi-Fi as the server. In the Simulator, use localhost:8080.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -3329,8 +3595,9 @@
         }
       }
     },
-    "Save name": {},
+    "Save shortcut name": {},
     "Say a short phrase": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -3392,6 +3659,7 @@
     "Send to": {},
     "Send to Watch again": {},
     "Sending": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -3420,6 +3688,7 @@
       }
     },
     "Sending texts now.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -3448,6 +3717,7 @@
       }
     },
     "Sent only with an alert, only to contacts you pick.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -3476,6 +3746,7 @@
       }
     },
     "Sent texts can't be undone. Contacts get an \"I'm okay\" text.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -3505,6 +3776,7 @@
     },
     "Server": {},
     "Server address": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -3533,6 +3805,7 @@
       }
     },
     "Session details": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -3561,6 +3834,7 @@
       }
     },
     "Sessions": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -3589,6 +3863,7 @@
       }
     },
     "Set up Watch gesture shortcuts": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -3644,6 +3919,8 @@
         }
       }
     },
+    "Set up all Ripple shortcuts": {},
+    "Set up reply automations": {},
     "Set up this iPhone again?": {},
     "Settings": {
       "localizations": {
@@ -3674,6 +3951,7 @@
       }
     },
     "Share how you're feeling today.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -3731,8 +4009,8 @@
       }
     },
     "Shares location": {},
-    "Shortcut name": {},
     "Simulator: localhost:8080": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -3790,6 +4068,7 @@
     },
     "Since 12:47 AM": {},
     "Skip": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -3818,6 +4097,7 @@
       }
     },
     "Skip for now": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -3846,6 +4126,7 @@
       }
     },
     "Someone is coming": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -3874,6 +4155,7 @@
       }
     },
     "Someone who can check on you.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -3902,6 +4184,7 @@
       }
     },
     "Someone who can check on you. Add more later.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -3987,6 +4270,7 @@
       }
     },
     "Stay on track with your medications.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -4141,6 +4425,7 @@
     "Taken at %@": {},
     "Takes one location reading now and shows it on a map.": {},
     "Tap": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -4169,6 +4454,7 @@
       }
     },
     "Tap \"Allow location\" below.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -4197,6 +4483,7 @@
       }
     },
     "Tap it within %lld s, or your contacts get a text.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -4225,6 +4512,7 @@
       }
     },
     "Tap the circle on your Watch": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -4253,6 +4541,7 @@
       }
     },
     "Tap the circle on your Watch, or \"I'm okay\" below. If time runs out, your contacts get a text.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -4309,6 +4598,7 @@
       }
     },
     "Tapping the circle always works too.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -4337,6 +4627,7 @@
       }
     },
     "Tells Ripple you've taken this dose, so no check-in starts.": {},
+    "Test and troubleshoot": {},
     "Text all your contacts?": {
       "localizations": {
         "es": {
@@ -4367,6 +4658,7 @@
     },
     "Text invitation": {},
     "Text your contacts now.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -4424,6 +4716,7 @@
       }
     },
     "Texting": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -4452,7 +4745,36 @@
       }
     },
     "Texts everyone already contacted that you're okay.": {},
+    "Texts your contacts right away, only when no alarm is open. Pick two different gestures. Turns off Apple's double tap.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escribe a tus contactos de inmediato, solo si no hay una alarma abierta. Elige dos gestos distintos. Desactiva el doble toque de Apple."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Texte vos contacts immédiatement, seulement si aucune alarme n'est ouverte. Choisissez deux gestes différents. Désactive le double toucher d'Apple."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅在没有警报时立即发短信给联系人。请选择两个不同的手势。会关闭 Apple 的轻点两下。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "僅在沒有警報時立即傳簡訊給聯絡人。請選擇兩個不同的手勢。會關閉 Apple 的輕點兩下。"
+          }
+        }
+      }
+    },
     "The address your Ripple server shows.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -4481,6 +4803,7 @@
       }
     },
     "The alarm gesture texts your contacts right away. Choices that could set off the other gesture are hidden. Turns off Apple's double tap.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -4508,8 +4831,9 @@
         }
       }
     },
-    "The gesture actions run in the background. Keep the shortcuts to one action, without Open App or Show Alert, so they don't request a screen change.": {},
+    "The install link isn't available yet.": {},
     "The secret help signal is always a 2-second hold.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -4538,6 +4862,7 @@
       }
     },
     "Their name": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -4566,6 +4891,7 @@
       }
     },
     "Their phone number": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -4593,7 +4919,6 @@
         }
       }
     },
-    "These four shortcuts are gesture inputs. Keep your existing Ripple Alert messaging shortcut separate.": {},
     "They reply \"Ripple join %@\" to start their one hour. Check Messages to confirm the invitation was sent.": {},
     "This iPhone is ignoring the Watch and the server until %@.": {},
     "This invitation or session has ended.": {},
@@ -4658,6 +4983,7 @@
       }
     },
     "Timing": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -4685,6 +5011,36 @@
         }
       }
     },
+    "Trigger alarm": {
+      "extractionState": "stale",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activar alarma"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déclencher l'alarme"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "触发警报"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "觸發警報"
+          }
+        }
+      }
+    },
+    "Try this reply": {},
     "Turn it on to get check-ins.": {
       "localizations": {
         "es": {
@@ -4743,6 +5099,7 @@
     },
     "Turns off check-ins until you start again.": {},
     "Unsaved changes": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -4766,6 +5123,35 @@
           "stringUnit": {
             "state": "translated",
             "value": "未儲存的變更"
+          }
+        }
+      }
+    },
+    "Up to date": {
+      "extractionState": "stale",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actualizado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "À jour"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已同步"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已同步"
           }
         }
       }
@@ -4826,8 +5212,8 @@
         }
       }
     },
-    "Use this reply": {},
     "Voice": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -4913,6 +5299,7 @@
     },
     "Waiting for %@'s reply": {},
     "Watch": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -4936,6 +5323,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "手錶"
+          }
+        }
+      }
+    },
+    "Watch and texting": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reloj y mensajes"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Montre et textos"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手表和短信"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手錶和簡訊"
           }
         }
       }
@@ -4969,6 +5384,7 @@
       }
     },
     "Watch monitoring": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -4998,6 +5414,7 @@
     },
     "What your contacts would see in an alert.": {},
     "When your Watch buzzes, tap the big circle.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -5026,6 +5443,7 @@
       }
     },
     "When your Watch buzzes, tell it you're okay. If you can't, your contacts get a text.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -5054,6 +5472,7 @@
       }
     },
     "Who gets texted, timing, and how you answer.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -5082,6 +5501,7 @@
       }
     },
     "Who was texted": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -5110,6 +5530,7 @@
       }
     },
     "Who was texted and when": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -5137,7 +5558,6 @@
         }
       }
     },
-    "Without an active alarm, inputs only update the receipt display. A matching sequence during an alarm dismisses it through Ripple's usual I'm okay action. Changing the dropdown later needs Save and Watch sync, with the same four shortcuts.": {},
     "You": {},
     "You asked for help.": {
       "localizations": {
@@ -5168,6 +5588,7 @@
       }
     },
     "You choose who gets texted. Ripple never tracks you.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -5197,6 +5618,7 @@
     },
     "You have %lld contacts.": {},
     "You stay in control": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -5225,6 +5647,7 @@
       }
     },
     "Your Watch checks in. If you can't answer, Ripple texts the people you choose.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -5281,6 +5704,7 @@
       }
     },
     "Your Watch listens for it during an alarm.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -5310,6 +5734,7 @@
     },
     "Your Watch will buzz and ask if you're okay.": {},
     "Your Watch will buzz if an alarm starts.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -5338,6 +5763,7 @@
       }
     },
     "Your Watch won't check on you. Turn it on here or on your Watch.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -5394,6 +5820,7 @@
       }
     },
     "Your check-ins and help, in one place": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -5422,6 +5849,7 @@
       }
     },
     "Your contacts see this name.": {
+      "extractionState": "stale",
       "localizations": {
         "es": {
           "stringUnit": {

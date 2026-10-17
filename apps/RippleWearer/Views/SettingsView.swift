@@ -1,16 +1,15 @@
 import RippleKit
 import SwiftUI
 
-/// All app preferences live on the iPhone. Saving sends them to the Watch.
+/// Settings as a short menu. Each row opens its own page; pages that change
+/// settings have their own Save, which sends the change to the Watch.
 struct SettingsView: View {
     @Environment(WearerStore.self) private var store
-    @State private var draft = RippleConfig.makeDefault(wearerName: "")
-    @State private var loaded = false
-    @State private var confirmForget = false
     /// False when opened from Home, so the navigation bar keeps its Back button.
     var isTabRoot = true
 
     var body: some View {
+        let config = store.config
         RippleForm {
             Section {
                 ScreenHeader(title: "Settings", subtitle: nil)
@@ -20,20 +19,136 @@ struct SettingsView: View {
 
             Section {
                 LanguagePicker()
-            } header: {
-                SectionHeader("Language")
             }
 
+            Section {
+                MenuRow(icon: "person.fill", title: "Profile", value: config.wearerName) { ProfileSettings() }
+                MenuRow(icon: "doc.text", title: "Help card", value: config.helpCardEnabled ? "On" : "Off") { HelpCardSettings() }
+            }
+
+            Section {
+                MenuRow(icon: "clock", title: "Timing",
+                        value: config.checkInIntervalMinutes == 0 ? "\(config.countdownSeconds) s" : "Every \(config.checkInIntervalMinutes) min") { TimingSettings() }
+                MenuRow(icon: "pills", title: "Medication", value: medicationSummary) { MedicationView() }
+                MenuRow(icon: "heart.text.square", title: "Apple Watch alerts",
+                        value: config.healthAlerts.isEmpty ? "Off" : "On") { HealthAlertSettings() }
+            }
+
+            Section {
+                MenuRow(icon: AnswerMethod(config).icon, title: "How you answer", value: answerSummary) { AnswerSetupScreen() }
+                MenuRow(icon: "hand.raised", title: "Hand gestures",
+                        value: config.handGesturesEnabled || config.handGestureHelpEnabled ? "On" : "Off") { HandGestureSettings() }
+            }
+
+            Section {
+                MenuRow(icon: "applewatch", title: "Watch and texting", value: watchSyncText) { WatchAndTextingSettings() }
+                MenuRow(icon: "iphone", title: "Device", value: nil) { DeviceSettings() }
+            }
+        }
+        .navigationTitle("Settings")
+        .toolbar(isTabRoot ? .hidden : .visible, for: .navigationBar)
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    /// "Gesture", "Voice: “I'm okay”" or "Tap", plus swipes if on.
+    private var answerSummary: String {
+        let method = AnswerMethod(store.config)
+        var text = method == .voice ? "Voice" : method.title
+        if store.config.combosEnabled { text += " + swipes" }
+        return text
+    }
+
+    private var medicationSummary: String {
+        let count = store.config.medicationTimes.count
+        return count == 0 ? "None" : "\(count) a day"
+    }
+
+    private var watchSyncText: String {
+        guard let version = store.watchConfigVersion else { return "Not yet" }
+        return version == store.config.version ? "Up to date" : "Sending…"
+    }
+}
+
+/// One menu row: icon, title, current value and a chevron to its page.
+private struct MenuRow<Destination: View>: View {
+    let icon: String
+    let title: String
+    let value: String?
+    @ViewBuilder let destination: () -> Destination
+
+    var body: some View {
+        NavigationLink {
+            destination()
+        } label: {
+            IconRow(icon: icon) {
+                if let value {
+                    LabeledContent {
+                        Text(LocalizedStringKey(value))
+                    } label: {
+                        Text(LocalizedStringKey(title))
+                    }
+                } else {
+                    Text(LocalizedStringKey(title))
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Pages
+
+/// A settings page that edits a copy of the settings and saves it with one button.
+private struct ConfigPage<Content: View>: View {
+    @Environment(WearerStore.self) private var store
+    let title: String
+    var canSave: (RippleConfig) -> Bool = { _ in true }
+    @ViewBuilder let content: (Binding<RippleConfig>) -> Content
+    @State private var draft = RippleConfig.makeDefault(wearerName: "")
+    @State private var loaded = false
+
+    var body: some View {
+        RippleForm {
+            content($draft)
+            Section {
+                Button("Save") {
+                    store.save(draft)
+                    store.banner = Banner(text: "Saved. Sending to your Watch.", ok: true)
+                }
+                .buttonStyle(.ripplePrimary)
+                .listRowInsets(EdgeInsets())
+                .listRowBackground(Color.clear)
+                .disabled(draft == store.config || !canSave(draft))
+            }
+        }
+        .navigationTitle(LocalizedStringKey(title))
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            guard !loaded else { return }
+            loaded = true
+            draft = store.config
+        }
+    }
+}
+
+private struct ProfileSettings: View {
+    var body: some View {
+        ConfigPage(title: "Profile", canSave: { !$0.wearerName.trimmingCharacters(in: .whitespaces).isEmpty }) { $draft in
             Section {
                 AvatarPicker(size: 64)
                 IconRow(icon: "person.fill") {
                     TextField("Your name", text: $draft.wearerName)
                         .textContentType(.name)
                 }
-            } header: {
-                SectionHeader("Profile")
+            } footer: {
+                FormNote("Contacts see this name.")
             }
+        }
+    }
+}
 
+private struct HelpCardSettings: View {
+    var body: some View {
+        ConfigPage(title: "Help card") { $draft in
             Section {
                 IconRow(icon: "doc.text") {
                     Toggle("Add a note to alert texts", isOn: $draft.helpCardEnabled)
@@ -42,12 +157,16 @@ struct SettingsView: View {
                     TextField("I have Parkinson's. My medication is in my left pocket.", text: $draft.helpCard, axis: .vertical)
                         .lineLimit(2...5)
                 }
-            } header: {
-                SectionHeader("Help card")
             } footer: {
                 FormNote("A short note added to alert texts.")
             }
+        }
+    }
+}
 
+private struct TimingSettings: View {
+    var body: some View {
+        ConfigPage(title: "Timing") { $draft in
             Section {
                 IconRow(icon: "clock") {
                     Stepper(value: $draft.checkInIntervalMinutes, in: 0...240, step: 5) {
@@ -70,22 +189,16 @@ struct SettingsView: View {
                 }
                 .frame(minHeight: Theme.minTarget)
                 .buttonStyle(.rippleLink)
-            } header: {
-                SectionHeader("Timing")
             }
+        }
+    }
+}
 
-            Section {
-                NavigationLink {
-                    MedicationView()
-                } label: {
-                    IconRow(icon: "pills") {
-                        LabeledContent("Dose times", value: medicationSummary)
-                    }
-                }
-            } header: {
-                SectionHeader("Medication")
-            }
+private struct HealthAlertSettings: View {
+    @Environment(WearerStore.self) private var store
 
+    var body: some View {
+        ConfigPage(title: "Apple Watch alerts") { $draft in
             Section {
                 IconRow(icon: "figure.fall") {
                     Toggle("Falls", isOn: $draft.healthFallsEnabled)
@@ -96,29 +209,16 @@ struct SettingsView: View {
                 if !store.config.healthAlerts.isEmpty {
                     StatusRow(label: "Apple Health", value: store.health.statusText)
                 }
-            } header: {
-                SectionHeader("Apple Watch alerts")
             } footer: {
-                FormNote("When your Watch records a fall or a heart alert in Health, Ripple checks in. Texts say which alert it was.")
+                FormNote("A fall or heart alert from your Watch starts a check-in.")
             }
+        }
+    }
+}
 
-            Section {
-                NavigationLink {
-                    AnswerSetupScreen()
-                } label: {
-                    IconRow(icon: AnswerMethod(store.config).icon) {
-                        LabeledContent("How you answer", value: answerSummary)
-                    }
-                }
-                if store.config.voiceEnabled {
-                    StatusRow(label: "Speech recognition", value: store.speech.statusText)
-                }
-            } header: {
-                SectionHeader("Answering an alarm")
-            } footer: {
-                FormNote("The secret help signal is always a 2-second hold.")
-            }
-
+private struct HandGestureSettings: View {
+    var body: some View {
+        ConfigPage(title: "Hand gestures") { $draft in
             Section {
                 IconRow(icon: "hand.raised") {
                     Toggle("Hand gestures to dismiss", isOn: $draft.handGesturesEnabled)
@@ -134,6 +234,10 @@ struct SettingsView: View {
                     .pickerStyle(.menu)
                     .disabled(!draft.handGesturesEnabled)
                 }
+            } header: {
+                SectionHeader("Dismiss")
+            }
+            Section {
                 IconRow(icon: "exclamationmark.bubble") {
                     Toggle("Hand gestures to trigger alarm", isOn: $draft.handGestureHelpEnabled)
                 }
@@ -147,33 +251,21 @@ struct SettingsView: View {
                     .disabled(!draft.handGestureHelpEnabled)
                 }
             } header: {
-                SectionHeader("Hand gestures")
+                SectionHeader("Trigger alarm")
             } footer: {
-                FormNote("The alarm gesture texts your contacts right away, only when no alarm is active. During an alarm, only your dismiss gesture is recognized. Choose two different gestures. Turns off Apple's double tap.")
+                FormNote("Texts your contacts right away, only when no alarm is open. Pick two different gestures. Turns off Apple's double tap.")
             }
+        }
+    }
+}
 
-            Section {
-                Button {
-                    var updated = draft
-                    updated.shortcutName = updated.shortcutName.trimmingCharacters(in: .whitespacesAndNewlines)
-                    // "How you answer" saves on its own screen, so keep what it saved.
-                    updated = AnswerChoice(store.config).applied(to: updated)
-                    // Dose times save on their own screen, so keep what it saved.
-                    updated.medicationTimes = store.config.medicationTimes
-                    updated.medicationGraceMinutes = store.config.medicationGraceMinutes
-                    store.save(updated)
-                    store.banner = Banner(text: "Saved. Sending to your Watch.", ok: true)
-                } label: {
-                    Text("Save")
-                }
-                .buttonStyle(.ripplePrimary)
-                .listRowInsets(EdgeInsets())
-                .listRowBackground(Color.clear)
-                .disabled(draft.wearerName.trimmingCharacters(in: .whitespaces).isEmpty || unchanged)
-            }
+private struct WatchAndTextingSettings: View {
+    @Environment(WearerStore.self) private var store
 
+    var body: some View {
+        RippleForm {
             Section {
-                StatusRow(label: "Watch has your settings", value: watchSyncText,
+                StatusRow(label: "Watch has your settings", value: store.watchConfigVersion == store.config.version ? "Yes" : "Not yet",
                           ok: store.watchConfigVersion == store.config.version)
                 if let synced = store.watchConfigSyncedAt {
                     StatusRow(label: "Last checked", value: synced.shortTime)
@@ -191,11 +283,6 @@ struct SettingsView: View {
                 } label: {
                     Label("Set up all Ripple shortcuts", systemImage: "square.stack.3d.up")
                 }
-            } header: {
-                SectionHeader("Shortcuts")
-            }
-
-            Section {
                 StatusRow(label: "Location", value: store.location.statusText)
                 NavigationLink {
                     LocationCheckView()
@@ -205,7 +292,18 @@ struct SettingsView: View {
             } header: {
                 SectionHeader("Texting")
             }
+        }
+        .navigationTitle("Watch and texting")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
 
+private struct DeviceSettings: View {
+    @Environment(WearerStore.self) private var store
+    @State private var confirmForget = false
+
+    var body: some View {
+        RippleForm {
             Section {
                 Text(store.pairingCode.isEmpty ? "––––––" : store.pairingCode)
                     .font(.system(.largeTitle, design: .monospaced).weight(.bold))
@@ -220,50 +318,13 @@ struct SettingsView: View {
                 Button("Set up again", role: .destructive) { confirmForget = true }
                     .frame(minHeight: Theme.minTarget)
                     .buttonStyle(.rippleDestructiveLink)
-            } header: {
-                SectionHeader("Device")
             }
         }
-        .navigationTitle("Settings")
-        .toolbar(isTabRoot ? .hidden : .visible, for: .navigationBar)
+        .navigationTitle("Device")
         .navigationBarTitleDisplayMode(.inline)
         .confirmationDialog("Set up this iPhone again?", isPresented: $confirmForget, titleVisibility: .visible) {
             Button("Set up again", role: .destructive) { store.forgetDevice() }
         }
-        .onAppear {
-            if !loaded {
-                draft = store.config
-                loaded = true
-            }
-        }
-
-    }
-
-    /// "Gesture", "Voice: “I'm okay”" or "Tap", plus swipes if on.
-    private var answerSummary: String {
-        let method = AnswerMethod(store.config)
-        var text = method == .voice ? "Voice: \u{201C}\(store.config.voicePhrase)\u{201D}" : method.title
-        if store.config.combosEnabled { text += " + swipes" }
-        return text
-    }
-
-    /// Nothing on this screen differs from what's saved. "How you answer"
-    /// and dose times save on their own screens, so they don't count.
-    private var unchanged: Bool {
-        var compared = AnswerChoice(store.config).applied(to: draft)
-        compared.medicationTimes = store.config.medicationTimes
-        compared.medicationGraceMinutes = store.config.medicationGraceMinutes
-        return compared == store.config
-    }
-
-    private var medicationSummary: String {
-        let count = store.config.medicationTimes.count
-        return count == 0 ? "None" : "\(count) a day"
-    }
-
-    private var watchSyncText: String {
-        guard let version = store.watchConfigVersion else { return "Not yet" }
-        return version == store.config.version ? "Yes" : "Sending…"
     }
 }
 

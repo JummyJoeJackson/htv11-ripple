@@ -87,7 +87,7 @@ iOS only imports signed shortcut files, and only a Mac can sign them. On a Mac, 
 python3 scripts/build_ripple_shortcuts.py --sign
 ```
 
-This writes `shortcuts/Ripple Alert.shortcut` and `shortcuts/Ripple Accept.shortcut`. CI also tries to sign them and, if that works on GitHub's Mac, attaches them to the run as the **ripple-shortcuts** artifact. Add `--validate-native` to check every action with the Mac's own Shortcuts parser. Neither shortcut depends on Ripple's bundle identifier, so one signed pair works for every teammate's build.
+This writes `shortcuts/Ripple Alert.shortcut` and `shortcuts/Ripple Accept.shortcut`. Signing needs the Mac to be signed into iCloud, which is why CI only checks the unsigned files. Neither shortcut depends on Ripple's bundle identifier, so one signed pair works for every teammate's build; commit the signed files so everyone can AirDrop the same ones. `--validate-native` reads every action back with the Mac's Shortcuts parser, but recent macOS refuses to load that parser into a non-Apple Python, so it may not run.
 
 On the wearer's iPhone:
 

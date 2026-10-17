@@ -82,36 +82,15 @@ jobs:
   shortcuts:
     name: Messaging shortcuts
     runs-on: macos-15
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      # Signing needs a Mac signed into iCloud, so it happens on a teammate's
+      # Mac: python3 scripts/build_ripple_shortcuts.py --sign
       - name: Committed shortcuts match the generator
         run: |
           python3 scripts/build_ripple_shortcuts.py --output-dir "$RUNNER_TEMP/fresh"
           for name in "Ripple Alert" "Ripple Accept"; do
             diff "$RUNNER_TEMP/fresh/$name.source.json" "shortcuts/$name.source.json"
+            plutil -lint "shortcuts/$name.unsigned.shortcut"
           done
-      - name: Read them with Apple's Shortcuts parser
-        id: native
-        continue-on-error: true
-        run: |
-          set -o pipefail
-          python3 scripts/build_ripple_shortcuts.py --output-dir "$RUNNER_TEMP/native" --validate-native 2>&1 | tee "$RUNNER_TEMP/native.log"
-      - name: Sign them
-        id: sign
-        continue-on-error: true
-        run: |
-          set -o pipefail
-          python3 scripts/build_ripple_shortcuts.py --output-dir "$RUNNER_TEMP/signed" --sign 2>&1 | tee "$RUNNER_TEMP/sign.log"
-      - name: Report
-        if: always()
-        run: |
-          echo "::notice title=Apple Shortcuts parser (${{ steps.native.outcome }})::$(tail -4 "$RUNNER_TEMP/native.log" 2>/dev/null | paste -sd ' ' -)"
-          echo "::notice title=Signing (${{ steps.sign.outcome }})::$(tail -4 "$RUNNER_TEMP/sign.log" 2>/dev/null | paste -sd ' ' -)"
-      - name: Upload signed shortcuts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ripple-shortcuts
-          path: ${{ runner.temp }}/signed
-          if-no-files-found: ignore

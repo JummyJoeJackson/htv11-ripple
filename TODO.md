@@ -25,6 +25,6 @@
 
 
 
-Add temp content is not working since the other person needs to scan a QR code that sends them to a localhost link so they can't open it. Just send them a text message and have Ripple monitor via shortcut for a response.
+✅ Temporary contacts join by replying Ripple join to a text invitation. The backend starts one hour after acceptance; joining and expiration send no follow-up texts. QR and web signup are removed.
 
 [Demo Photos]([url](https://drive.google.com/drive/folders/1HuXoaYTzwrxl_IqGnw3iEyiH_kPRZIj7?usp=drive_link))

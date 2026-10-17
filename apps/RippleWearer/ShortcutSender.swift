@@ -2,33 +2,36 @@ import Foundation
 import RippleKit
 import UIKit
 
-/// Sends texts from the wearer's iPhone by running the user-installed
-/// "Ripple Alert" shortcut through Apple's Shortcuts URL scheme.
-///
-/// The shortcut receives JSON like {"messages":[{"to":"+1416…","text":"…"}]}
-/// and repeats Send Message once per recipient, so nobody gets a group text.
-/// Shortcuts calls back ripple://shortcut?batch=…&result=success when it
-/// finishes. Opening the URL, or even that callback, is not proof that a
-/// message was delivered, so the best status is "submitted".
+/// Sends alarm texts, invitations and setup tests through the existing
+/// Ripple Alert shortcut. Each message goes to one recipient.
 @MainActor
 final class ShortcutSender {
     var shortcutName = "Ripple Alert"
-    /// Current state of a message, so cancelled or backup-sent texts are dropped before launch.
     var statusOf: ((String) -> OutMessage?)?
     var onLaunched: (([String]) -> Void)?
     var onResult: (([String], MessageStatus, String?) -> Void)?
-    /// Shortcuts can only be opened while the app is in the foreground.
+    var onInvitationResult: ((String, MessageStatus, String?) -> Void)?
     var canLaunch: () -> Bool = { true }
+
+    private enum Purpose: Equatable {
+        case alarm, test, invitation(String)
+    }
 
     private struct Batch {
         let id: String
         let messageIds: [String]
         let startedAt: Date
-        let isTest: Bool
+        let purpose: Purpose
+    }
+
+    private struct OneOff {
+        let phone: String
+        let text: String
+        let purpose: Purpose
     }
 
     private var queue: [OutMessage] = []
-    private var pendingTest: (phone: String, text: String)?
+    private var oneOffs: [OneOff] = []
     private var inFlight: Batch?
     private(set) var lastTestResult: String?
     var onTestResult: ((String) -> Void)?
@@ -40,45 +43,52 @@ final class ShortcutSender {
         launchIfPossible()
     }
 
-    /// A one-off test message, for setting up and approving the shortcut.
     func sendTest(to phone: String, text: String) {
-        pendingTest = (phone, text)
+        oneOffs.removeAll { $0.purpose == .test }
+        oneOffs.append(OneOff(phone: phone, text: text, purpose: .test))
         launchIfPossible()
+    }
+
+    func sendInvitation(id: String, to phone: String, text: String) {
+        let purpose = Purpose.invitation(id)
+        guard inFlight?.purpose != purpose, !oneOffs.contains(where: { $0.purpose == purpose }) else { return }
+        oneOffs.append(OneOff(phone: phone, text: text, purpose: purpose))
+        launchIfPossible()
+    }
+
+    func cancelInvitation(id: String) {
+        oneOffs.removeAll { $0.purpose == .invitation(id) }
     }
 
     func cancelAll() {
         queue.removeAll()
-        pendingTest = nil
+        oneOffs.removeAll()
     }
 
     func launchIfPossible() {
         guard inFlight == nil, canLaunch() else { return }
-
-        if let test = pendingTest {
-            pendingTest = nil
-            launch(items: [(test.phone, test.text)], messageIds: [], isTest: true)
-            return
-        }
-
+        // Emergency messages take priority over invitations and setup tests.
         let ready = queue.filter { message in
             guard let current = statusOf?(message.id) else { return false }
             return current.isCancellable && current.path == .phone
         }
         queue.removeAll()
-        guard !ready.isEmpty else { return }
-        launch(items: ready.map { ($0.phone, $0.text) }, messageIds: ready.map(\.id), isTest: false)
+        if !ready.isEmpty {
+            launch(items: ready.map { ($0.phone, $0.text) }, messageIds: ready.map(\.id), purpose: .alarm)
+        } else if !oneOffs.isEmpty {
+            let next = oneOffs.removeFirst()
+            launch(items: [(next.phone, next.text)], messageIds: [], purpose: next.purpose)
+        }
     }
 
-    private func launch(items: [(String, String)], messageIds: [String], isTest: Bool) {
+    private func launch(items: [(String, String)], messageIds: [String], purpose: Purpose) {
         let batchId = RippleID.make(bytes: 6)
         guard let url = ShortcutURL.make(name: shortcutName, items: items, batchId: batchId) else {
-            report(messageIds: messageIds, isTest: isTest, status: .failed, detail: "Couldn't build the Shortcuts link.")
+            report(messageIds: messageIds, purpose: purpose, status: .failed, detail: "Couldn't build the Shortcuts link.")
             return
         }
-        inFlight = Batch(id: batchId, messageIds: messageIds, startedAt: Date(), isTest: isTest)
-        if !messageIds.isEmpty {
-            onLaunched?(messageIds)
-        }
+        inFlight = Batch(id: batchId, messageIds: messageIds, startedAt: Date(), purpose: purpose)
+        if !messageIds.isEmpty { onLaunched?(messageIds) }
         UIApplication.shared.open(url, options: [:]) { [weak self] opened in
             guard !opened else { return }
             Task { @MainActor in
@@ -87,24 +97,19 @@ final class ShortcutSender {
         }
     }
 
-    /// Handles ripple://shortcut?batch=…&result=success|error|cancel.
     func handle(url: URL) -> Bool {
         guard url.scheme == "ripple", url.host == "shortcut" else { return false }
         let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
         func value(_ name: String) -> String? { items.first { $0.name == name }?.value }
         guard let batchId = value("batch") else { return true }
         switch value("result") {
-        case "success":
-            finish(batchId: batchId, status: .submitted, detail: "Shortcut finished")
-        case "cancel":
-            finish(batchId: batchId, status: .failed, detail: "The shortcut was cancelled")
-        default:
-            finish(batchId: batchId, status: .failed, detail: value("errorMessage") ?? "The shortcut reported an error")
+        case "success": finish(batchId: batchId, status: .submitted, detail: "Shortcut finished")
+        case "cancel": finish(batchId: batchId, status: .failed, detail: "The shortcut was cancelled")
+        default: finish(batchId: batchId, status: .failed, detail: value("errorMessage") ?? "The shortcut reported an error")
         }
         return true
     }
 
-    /// Call about once a second. A shortcut that never calls back is "unknown".
     func tick() {
         if let batch = inFlight, Date().timeIntervalSince(batch.startedAt) > 60 {
             finish(batchId: batch.id, status: .unknown, detail: "No confirmation from Shortcuts")
@@ -115,19 +120,22 @@ final class ShortcutSender {
     private func finish(batchId: String, status: MessageStatus, detail: String?) {
         guard let batch = inFlight, batch.id == batchId else { return }
         inFlight = nil
-        report(messageIds: batch.messageIds, isTest: batch.isTest, status: status, detail: detail)
+        report(messageIds: batch.messageIds, purpose: batch.purpose, status: status, detail: detail)
         launchIfPossible()
     }
 
-    private func report(messageIds: [String], isTest: Bool, status: MessageStatus, detail: String?) {
-        if isTest {
+    private func report(messageIds: [String], purpose: Purpose, status: MessageStatus, detail: String?) {
+        switch purpose {
+        case .test:
             let text = status == .submitted
                 ? "Test shortcut finished. Check the recipient's phone to confirm it arrived."
                 : "Test failed: \(detail ?? status.label)"
             lastTestResult = text
             onTestResult?(text)
-        } else if !messageIds.isEmpty {
-            onResult?(messageIds, status, detail)
+        case .invitation(let id):
+            onInvitationResult?(id, status, detail)
+        case .alarm:
+            if !messageIds.isEmpty { onResult?(messageIds, status, detail) }
         }
     }
 }

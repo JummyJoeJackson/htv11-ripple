@@ -1,4 +1,3 @@
-import CoreImage
 import RippleKit
 import SwiftUI
 import UIKit
@@ -384,18 +383,6 @@ extension Date {
         if calendar.isDateInYesterday(self) { return "Yesterday, \(shortTime)" }
         if calendar.isDateInTomorrow(self) { return "Tomorrow, \(shortTime)" }
         return formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()) + ", " + shortTime
-    }
-}
-
-enum QRCode {
-    static func image(for text: String) -> UIImage? {
-        let filter = CIFilter(name: "CIQRCodeGenerator")
-        filter?.setValue(Data(text.utf8), forKey: "inputMessage")
-        filter?.setValue("M", forKey: "inputCorrectionLevel")
-        guard let output = filter?.outputImage?.transformed(by: CGAffineTransform(scaleX: 10, y: 10)) else { return nil }
-        let context = CIContext()
-        guard let cgImage = context.createCGImage(output, from: output.extent) else { return nil }
-        return UIImage(cgImage: cgImage)
     }
 }
 

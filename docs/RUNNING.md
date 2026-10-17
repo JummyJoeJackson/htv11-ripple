@@ -12,7 +12,7 @@ Everything is Swift. On a Mac you run the backend from Xcode or Terminal, then i
 | Second iPhone for the demo admin app | Any iPhone on iOS 17 or later. |
 | Teammates' phones | They receive the texts. No app needed. |
 | Apple ID | A free personal team is enough to install on your own devices. Builds expire after 7 days. |
-| `cloudflared` on the Mac | `brew install cloudflared`. Lets temporary contacts open invitation links from any phone, including on cellular. No Cloudflare account needed. |
+| `cloudflared` on the Mac | `brew install cloudflared`. Provides a public server address for app connections and provider callbacks. No Cloudflare account needed. |
 | Optional: Twilio account | Only for the backend's backup SMS. Without it, backup texts are printed in the server console. |
 
 All phones and the Mac should be on the same Wi-Fi network. On venue Wi-Fi that blocks device-to-device traffic, use a phone hotspot or a tunnel (see [Reaching the server](#reaching-the-server)).
@@ -32,7 +32,7 @@ The console prints the address to type into the apps, for example:
 Enter this server address in the iPhone apps: http://192.168.1.20:8080
 ```
 
-If `cloudflared` is installed, the server first starts a free Cloudflare quick tunnel and prints a public `https://….trycloudflare.com` address. Temporary-contact invitation links use it, so they can open from anywhere. The address changes each time the server starts; the wearer's iPhone picks up the new one by itself.
+If `cloudflared` is installed, the server first starts a free Cloudflare quick tunnel and prints a public `https://….trycloudflare.com` address. Apps can use that address across networks, and Twilio can use it for delivery callbacks. The address changes each time the server starts. Invitation texts contain no server link.
 
 Allow incoming connections if macOS asks. Data is saved in `server/.data/ripple.json`; delete that file for a completely fresh start.
 
@@ -43,8 +43,8 @@ Set these as environment variables (in Xcode: **Product → Scheme → Edit Sche
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `RIPPLE_PORT` | `8080` | Port to listen on |
-| `RIPPLE_PUBLIC_BASE_URL` | The tunnel address, or `http://<Mac's Wi-Fi IP>:8080` without `cloudflared` | Start of temporary-contact consent links. Set it only to use your own public address; it turns the automatic tunnel off. |
-| `RIPPLE_TUNNEL` | `auto` | `off` stops the server starting a quick tunnel even when `cloudflared` is installed. Links then only open on the same Wi-Fi. |
+| `RIPPLE_PUBLIC_BASE_URL` | The tunnel address, or `http://<Mac's Wi-Fi IP>:8080` without `cloudflared` | Public address for app connections and provider callbacks. Set it only to use your own public address; it turns the automatic tunnel off. |
+| `RIPPLE_TUNNEL` | `auto` | `off` stops the server starting a quick tunnel even when `cloudflared` is installed. Apps then need a reachable local server address. |
 | `RIPPLE_CLOUDFLARED` | | Path to `cloudflared`, if it isn't in `/opt/homebrew/bin` or `/usr/local/bin` |
 | `RIPPLE_ADMIN_SECRET` | `ripple-demo` | Password for the demo admin app |
 | `RIPPLE_SMS` | `console` | Backup SMS route: `console`, `twilio`, or `messages` (the Mac's Messages app) |
@@ -79,7 +79,7 @@ Ripple texts from the wearer's own phone through two shortcuts, both in the [`sh
 | Shortcut | Run by | What it does |
 | --- | --- | --- |
 | **Ripple Alert** | Ripple, through Apple's Shortcuts URL scheme | Sends each alert text to its own recipient, Show When Run off |
-| **Ripple Accept** | A Messages automation | Passes a contact's "RIPPLE ACCEPT 4821" reply to Ripple |
+| **Ripple Accept** | A Messages automation | Passes alarm and temporary-contact join replies to Ripple |
 
 iOS only imports signed shortcut files, and only a Mac can sign them. On a Mac, from the repository:
 
@@ -95,7 +95,9 @@ On the wearer's iPhone:
 2. In Ripple, open **Settings → Messaging shortcuts** and send a test message. Approve anything Shortcuts asks for.
 3. In Shortcuts, open **Automation**, tap **+**, choose **Message**, set **Message Contains** to `Ripple accept`, choose **Run Immediately**, tap **Next**, and pick **Ripple Accept**.
 
-Automations live on the phone and can't be shipped in a file, so step 3 is always manual.
+4. Add a second **Message** automation with **Message Contains** set to `Ripple join`, **Run Immediately**, and the same **Ripple Accept** shortcut. Keep the existing `Ripple accept` automation.
+
+Automations live on the phone and can't be shipped in a file, so steps 3–4 are manual. Existing shortcuts need no replacement.
 
 Each recipient gets their own message, so nobody is in a group text. When Ripple Alert finishes, Shortcuts returns to Ripple (`ripple://shortcut?...`) and the message shows as **Submitted**. That only means the shortcut ran; confirm on the recipient's phone. Keep Ripple in the foreground during the demo, since opening Shortcuts from a locked phone or a backgrounded app is untested.
 
@@ -158,7 +160,11 @@ When a valid reply reaches the wearer's Messages automation, the Watch and iPhon
 
 ### Temporary contacts
 
-On the wearer's iPhone: **Contacts → Invite for one hour**. The other person scans the QR code (or opens the shared link) and taps **I agree**. They join Tier 1 for one hour from that moment. **Remove now** ends it early. Expired or removed contacts never receive new alerts.
+On the wearer's iPhone: **Contacts → Invite someone for one hour → Send invitation text**. Ripple Alert sends an individual invitation explaining the one-hour role and whether location will be shared. The contact replies `Ripple join 583921` using their invitation's six-digit code. The second Messages automation runs the existing Ripple Accept shortcut, which hands the reply to Ripple.
+
+The authenticated iPhone forwards the parsed join code to the backend. Only then is the contact activated and `expiresAt` set to one hour after acceptance. Repeated replies do not restart the timer. Expiration, joining, and removal send no lifecycle texts; actual safety alerts still work during the active hour. **Remove now** ends the session early. Invalid, withdrawn, reset, and expired invitations cannot activate a session.
+
+If the backend is temporarily unavailable, the iPhone saves the parsed join request and retries after a successful sync. The one-hour timer starts when the backend accepts it. There is no QR code or web signup flow. Existing active sessions keep their saved expiry when upgrading; old pending web invitations need a new text invitation.
 
 ### Swipe combos
 
@@ -176,7 +182,7 @@ See [Hand gesture setup and device checks](HAND_GESTURES.md) for the exact prese
 
 ## Reaching the server
 
-- **Temporary-contact invitation links** use the tunnel address when `cloudflared` is installed, so they open on any phone, on Wi-Fi or cellular. Without it they use the Mac's Wi-Fi address, which only phones on the same Wi-Fi can open; the server prints a warning.
+- **Contacts** receive and reply to ordinary messages; they never open the Ripple server in a browser.
 - **The apps** can use the Mac's Wi-Fi address on the same network, or the tunnel address from anywhere. The tunnel address changes each time the server restarts, so the Wi-Fi address is less retyping.
 - With the tunnel, the server is reachable from the internet. Set `RIPPLE_ADMIN_SECRET` to something only your team knows, instead of the default `ripple-demo`.
 - Quick tunnels are Cloudflare's free testing service, with no uptime guarantee. If one fails to start, the server carries on with the Wi-Fi address and says so.
@@ -192,13 +198,12 @@ flowchart LR
     admin["Demo admin iPhone"] -->|commands| api
     api -->|"backup SMS if the phone goes quiet"| twilio["Twilio"]
     contact["Contact's phone"] -->|"Ripple accept + code via Messages automation"| phone
-    contact -->|"temporary-contact consent link"| api
 ```
 
 - The wearer's iPhone runs the alarm state machine (`RippleKit/Sources/RippleKit/AlarmCoordinator.swift`) and always sends first.
 - It registers each alarm with the server and syncs about every second. That is its heartbeat.
 - If a text is 30 seconds overdue, or the phone has been quiet for 30 seconds past a deadline, the server sends it through Twilio and marks it as backup. When the phone comes back, it sees what the backup sent and doesn't repeat it.
-- The server hosts the temporary-contact consent page (`/t/<token>`), and relays admin commands. It reports whether each command reached the iPhone.
+- The server records invitation replies through the authenticated `/v1/wearer/temporary/join` endpoint, stores one-hour expiry timestamps, and relays admin commands. The old consent web routes are removed.
 
 ## Tests
 

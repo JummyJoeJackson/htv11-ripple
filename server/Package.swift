@@ -19,7 +19,7 @@ let package = Package(
                 .product(name: "Crypto", package: "swift-crypto"),
             ]
         ),
-        // HTTP API, web pages, the Twilio backup sender and the worker loop.
+        // HTTP API, the Twilio backup sender and the worker loop.
         .executableTarget(
             name: "RippleServer",
             dependencies: [

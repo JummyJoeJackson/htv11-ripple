@@ -27,7 +27,7 @@ Holding the circle for 2 seconds is **duress**: the Watch shows the normal "Dism
 - **The phone sends first.** Texts come from the wearer's iPhone and messaging account, so contacts need no app, account or portal.
 - **A declared backup.** If the phone goes quiet, the backend sends the alert by SMS after a 30-second grace period, marked "Sent by Ripple backup." When the phone comes back it doesn't repeat what the backup already sent.
 - **Tiers.** Each contact is in Tier 1 (texted first) or Tier 2 (texted if nobody in Tier 1 acknowledges in time).
-- **Temporary contacts.** Someone nearby can agree to be a contact for one hour by scanning a QR code. They join Tier 1 until the session ends or the wearer removes them; after that they get nothing.
+- **Temporary contacts.** Invite someone by text; their `Ripple join` reply starts one hour as a contact on the backend. They join Tier 1 until the session ends or the wearer removes them; expiration is silent, with no confirmation, reminder, or expiry texts.
 - **Duress.** A 2-second hold looks exactly like a dismissal on the Watch and the iPhone, and the alert text is the normal one, so nothing reveals it.
 - **Privacy by permission.** Location is off by default and set per contact. Ripple takes one location fix when an alarm starts and never tracks in the background. An optional help card, written by the wearer, is added to alerts only if they turn it on.
 - **Hard to trigger by accident.** Stopping monitoring needs a hold and a confirmation. Double tap and voice can only dismiss; duress is touch only. Swipe combos need two swipes in the same direction. Tremor that moves back and forth doesn't count as a swipe, and a finger bouncing off the glass counts once.
@@ -39,8 +39,7 @@ Holding the circle for 2 seconds is **duress**: the Watch shows the normal "Dism
 | --- | --- |
 | **Wearer iPhone app** (SwiftUI) | Contacts and tiers, location permissions, temporary contacts, help card, timings, dismiss methods, Watch sync. Runs the alarm and sends texts through the Ripple Alert shortcut. |
 | **Apple Watch app** (SwiftUI) | One large circle with a status label and countdown. Tap, hold, native double tap and voice phrase. During an alarm the microphone listens for the phrase and streams to the iPhone, which recognizes it (watchOS has no speech recognition). Keeps the last settings it received. |
-| **Ripple server** (Swift, Vapor) | Mirrors each alarm, holds the backup deadline, sends backup SMS through Twilio, hosts the temporary-contact consent page, and relays demo admin commands. |
-| **Web pages** | A consent page for temporary contacts. No app, account or login. |
+| **Ripple server** (Swift, Vapor) | Mirrors each alarm, holds the backup deadline, sends backup SMS through Twilio, records temporary-contact replies, and relays demo admin commands. |
 | **Demo admin iPhone app** (SwiftUI) | Labelled Demo admin. Triggers alarms, cuts the phone connection, expires temporary contacts, disables alarms, resets the demo, and shows per-recipient message status. |
 | **RippleKit** (Swift package) | Shared models, message wording, tier rules and the alarm state machine used by every app and the server |
 

@@ -17,7 +17,7 @@ The design covers all seven Kaze demo scenarios: safe, no response, duress, conn
 - Add, edit, and remove permanent contacts by name and phone number.
 - Place each contact in **Tier 1** (texted first) or **Tier 2** (texted if nobody in Tier 1 acknowledges in time).
 - Per contact toggle: **Share my location in alerts.** Off by default.
-- Invite someone to be a temporary contact for a one-hour session. Record their consent, show when the session expires, and allow early removal. An expired or removed contact must not receive new alerts. Temporary contacts join Tier 1 while active.
+- Invite someone by text to be a temporary contact. Their Ripple join reply records consent and starts a one-hour backend session. Expiration is silent, with no follow-up texts. Show when the session expires, and allow early removal. An expired or removed contact must not receive new alerts. Temporary contacts join Tier 1 while active.
 - Optional **help card**: a short note added to alert texts, written by the wearer, such as "I have Parkinson's. I may look confused. My medication is in my left pocket." Off by default.
 - Configure preferred supported Watch gestures and a voice phrase for dismissing alarms. Touch remains available as the fallback.
 - Configure check-in timing, the response countdown, and the acknowledge window before Tier 2 is texted. Short timers may be used for demos.
@@ -54,7 +54,7 @@ Desired ways to dismiss an alarm:
 
 Duress is touch only (the 2 second hold), so a misheard voice phrase or a stray double tap can never trigger or hide it. Native double tap supports one primary action per scene, and its control must be visible. It does not provide arbitrary custom gesture recognition. Voice and gesture failures must leave the touch fallback available.
 
-Inviting a temporary contact from the Watch is optional. It may show a simple invitation shortcut or QR code if practical, but must not add a Watch setup workflow.
+Inviting a temporary contact from the Watch is optional. It may start the same text invitation flow if practical, but must not add a Watch setup workflow.
 
 ### 3. Second iPhone app: demo admin
 
@@ -188,7 +188,7 @@ The backend stores only alarm ids, timestamps, phone numbers, and message text f
 7. If the phone goes silent at any point, the backend sends the remaining messages by SMS.
 8. "I'm okay now" ends the alarm and texts everyone already alerted. Resetting the demo cancels all remaining work. Duplicate commands must not restart an alarm or create duplicate alerts.
 
-Use SwiftUI for the three apps and WatchConnectivity for paired iPhone–Watch configuration and actions. Keep shared state minimal: monitoring on/off, current alarm/countdown, duress flag (never displayed), configuration version, contacts with tiers, location permission, and expiry times, acknowledgment status, per-recipient message status with sending path, and, if enabled, medication times, the last "Took my meds" tap, and the time of the last steps. A lightweight backend connects the admin phone to the wearer phone, hosts the temporary-contact consent page, and holds the backup deadline.
+Use SwiftUI for the three apps and WatchConnectivity for paired iPhone–Watch configuration and actions. Keep shared state minimal: monitoring on/off, current alarm/countdown, duress flag (never displayed), configuration version, contacts with tiers, location permission, and expiry times, acknowledgment status, per-recipient message status with sending path, and, if enabled, medication times, the last "Took my meds" tap, and the time of the last steps. A lightweight backend connects the admin phone to the wearer phone, records temporary-contact join replies, and holds the backup deadline.
 
 ## MVP and demo checks
 

@@ -70,6 +70,7 @@ final class WearerStore {
     @ObservationIgnored private var waitingForSyncAfterOutage = false
     @ObservationIgnored private var appActive = true
     @ObservationIgnored private var locatedAlarmId: String?
+    @ObservationIgnored private var pendingJoinReplies: [JoinTemporaryRequest] = []
 
     private enum Keys {
         static let server = "ripple.serverAddress"
@@ -78,6 +79,7 @@ final class WearerStore {
         static let config = "ripple.config"
         static let coordinator = "ripple.coordinator"
         static let watchVersion = "ripple.watchConfigVersion"
+        static let joinReplies = "ripple.pendingJoinReplies"
     }
 
     var isSetUp: Bool { deviceToken != nil }
@@ -99,6 +101,9 @@ final class WearerStore {
         let storedWatchVersion = defaults.integer(forKey: Keys.watchVersion)
         watchConfigVersion = storedWatchVersion > 0 ? storedWatchVersion : nil
         coordinator = AlarmCoordinator(config: initialConfig, snapshot: snapshot)
+        pendingJoinReplies = defaults.data(forKey: Keys.joinReplies)
+            .flatMap { try? RippleJSON.decoder.decode([JoinTemporaryRequest].self, from: $0) }?
+            .filter { $0.runId == coordinator.runId } ?? []
         coordinator.delegate = bridge
         sender.shortcutName = initialConfig.shortcutName
         rebuildAPI()
@@ -123,6 +128,15 @@ final class WearerStore {
         }
         sender.onTestResult = { [weak self] text in
             self?.testResult = text
+        }
+        sender.onInvitationResult = { [weak self] id, status, detail in
+            guard let self, self.temporaryContacts.first(where: { $0.id == id })?.state == .invited else { return }
+            self.banner = Banner(
+                text: status == .submitted
+                    ? "Invitation shortcut finished. Check Messages to confirm it was sent."
+                    : "Invitation wasn't confirmed. You can send it again. \(detail ?? status.label)",
+                ok: status == .submitted
+            )
         }
         sender.canLaunch = { [weak self] in
             guard let self else { return false }
@@ -173,6 +187,8 @@ final class WearerStore {
             let response = try await RippleAPI(baseURL: url, token: nil).setup(SetupRequest(displayName: trimmed))
             serverAddress = url.absoluteString
             deviceToken = response.deviceToken
+            pendingJoinReplies.removeAll()
+            persistJoinReplies()
             pairingCode = response.pairingCode
             UserDefaults.standard.set(serverAddress, forKey: Keys.server)
             UserDefaults.standard.set(response.deviceToken, forKey: Keys.token)
@@ -289,6 +305,7 @@ final class WearerStore {
             backend = .online
             apply(response)
             waitingForSyncAfterOutage = false
+            await processJoinReplies(using: api)
         } catch let error as RippleAPIError where error.isUnauthorized {
             backend = .offline("The server doesn't recognize this iPhone. Use Settings → Set up again.")
         } catch {
@@ -304,6 +321,8 @@ final class WearerStore {
     private func apply(_ response: SyncResponse) {
         if response.resetRequired {
             sender.cancelAll()
+            pendingJoinReplies.removeAll()
+            persistJoinReplies()
             coordinator.reset(runId: response.runId)
             banner = Banner(text: "The demo was reset.", ok: true)
         }
@@ -457,16 +476,66 @@ final class WearerStore {
 
     func inviteTemporary(name: String, phone: String, shareLocation: Bool) async -> InviteTemporaryResponse? {
         guard let api else { return nil }
-        pending = "Creating invitation…"
+        pending = "Preparing invitation…"
+        let invitationRunId = coordinator.runId
         defer { pending = nil }
         do {
             let response = try await api.inviteTemporary(InviteTemporaryRequest(name: name, phone: phone, shareLocation: shareLocation))
             if shareLocation { location.requestPermission() }
             await sync()
+            guard coordinator.runId == invitationRunId else {
+                banner = Banner(text: "The demo was reset. Create a new invitation.", ok: false)
+                return nil
+            }
+            sender.sendInvitation(id: response.contact.id, to: response.contact.phone, text: response.invitationText)
             return response
         } catch {
             banner = Banner(text: "Not created. \(describe(error))", ok: false)
             return nil
+        }
+    }
+
+    func resendTemporaryInvitation(_ invitation: InviteTemporaryResponse) {
+        guard temporaryContacts.first(where: { $0.id == invitation.contact.id })?.state == .invited else { return }
+        sender.sendInvitation(id: invitation.contact.id, to: invitation.contact.phone, text: invitation.invitationText)
+    }
+
+    private func persistJoinReplies() {
+        if let data = try? RippleJSON.encoder.encode(pendingJoinReplies) {
+            UserDefaults.standard.set(data, forKey: Keys.joinReplies)
+        }
+    }
+
+    /// Retain matching join commands until the backend accepts or rejects them.
+    /// Only the parsed code and optional sender are saved, not the message body.
+    private func processJoinReplies(using api: RippleAPI) async {
+        while let reply = pendingJoinReplies.first, !inOutage {
+            guard reply.runId == coordinator.runId else {
+                pendingJoinReplies.removeFirst()
+                persistJoinReplies()
+                continue
+            }
+            do {
+                let response = try await api.joinTemporary(reply)
+                guard reply.runId == coordinator.runId else { continue }
+                pendingJoinReplies.removeAll { $0 == reply }
+                persistJoinReplies()
+                temporaryContacts = response.contacts
+                coordinator.temporaryContacts = response.contacts
+                banner = Banner(text: "\(response.contact.name) is now a one-hour contact.", ok: true)
+            } catch let error as RippleAPIError {
+                if case .server(let status, _, _) = error, (400..<500).contains(status), status != 401, status != 429 {
+                    pendingJoinReplies.removeAll { $0 == reply }
+                    persistJoinReplies()
+                    banner = Banner(text: "Not joined. \(describe(error))", ok: false)
+                    continue
+                }
+                banner = Banner(text: "Join reply saved. It will be retried when the backend is available.", ok: false)
+                break
+            } catch {
+                banner = Banner(text: "Join reply saved. It will be retried when the backend is available.", ok: false)
+                break
+            }
         }
     }
 
@@ -476,6 +545,7 @@ final class WearerStore {
         defer { pending = nil }
         do {
             let response = try await api.removeTemporary(id: contact.id)
+            sender.cancelInvitation(id: contact.id)
             temporaryContacts = response.contacts
             coordinator.temporaryContacts = response.contacts
             banner = Banner(text: "\(contact.name) won't receive new alerts.", ok: true)
@@ -487,7 +557,7 @@ final class WearerStore {
     // MARK: Callbacks
 
     /// ripple://shortcut?… is the Ripple Alert shortcut finishing.
-    /// ripple://accept?text=…&from=… is a contact's "RIPPLE ACCEPT 4821" reply,
+    /// ripple://accept?text=…&from=… carries an accept or join reply,
     /// passed on by the Ripple Accept shortcut from a Messages automation.
     func handle(url: URL) {
         if sender.handle(url: url) { return }
@@ -503,6 +573,20 @@ final class WearerStore {
     func acceptReply(text: String, from sender: String?) {
         // A phone in simulated failure does nothing.
         guard !inOutage else { return }
+        if let code = JoinCode.code(in: text) {
+            guard isSetUp else {
+                banner = Banner(text: "Set up Ripple before accepting an invitation reply.", ok: false)
+                return
+            }
+            let reply = JoinTemporaryRequest(runId: coordinator.runId, code: code, from: sender)
+            if !pendingJoinReplies.contains(reply) {
+                pendingJoinReplies.append(reply)
+                persistJoinReplies()
+            }
+            banner = Banner(text: "Join reply saved. Checking the invitation…", ok: true)
+            Task { await sync() }
+            return
+        }
         let result = coordinator.acceptReply(text: text, from: sender)
         // Empty feedback means a duress alarm: show nothing.
         if !result.feedback.isEmpty {

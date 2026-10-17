@@ -13,27 +13,34 @@ struct MainTabView: View {
         // Read the revision so the bar hides and shows as the alarm changes.
         let _ = store.revision
         let inAlarm = store.coordinator.display(phoneAvailable: !store.inOutage).mode.isAlarm
-        Group {
-            switch selection {
-            case .home:
-                HomeView()
-            case .contacts:
-                NavigationStack { ContactsView() }
-            case .session:
-                NavigationStack { SessionView() }
-            case .settings:
-                NavigationStack { SettingsView() }
-            }
-        }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            VStack(spacing: 12) {
-                FeedbackBar()
-                if !inAlarm {
-                    TabBar(selection: $selection)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
+        // The bar sits below the screens rather than over them, so every screen
+        // (including long lists like Settings) ends above it and nothing is hidden.
+        VStack(spacing: 0) {
+            Group {
+                switch selection {
+                case .home:
+                    HomeView()
+                case .contacts:
+                    NavigationStack { ContactsView() }
+                case .session:
+                    NavigationStack { SessionView() }
+                case .settings:
+                    NavigationStack { SettingsView() }
                 }
             }
+            .frame(maxHeight: .infinity)
+            .overlay(alignment: .bottom) {
+                FeedbackBar()
+                    .padding(.bottom, 12)
+            }
+
+            if !inAlarm {
+                TabBar(selection: $selection)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
         }
+        // The waves show behind the glass bar.
+        .background(RippleBackgroundView(background: .one))
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: inAlarm)
         .onChange(of: inAlarm) { _, alarm in
             if alarm { selection = .home }
@@ -51,7 +58,7 @@ enum AppTab: CaseIterable {
         switch self {
         case .home: return "Home"
         case .contacts: return "Contacts"
-        case .session: return "Session"
+        case .session: return "Sessions"
         case .settings: return "Settings"
         }
     }
@@ -75,42 +82,69 @@ enum AppTab: CaseIterable {
     }
 }
 
-/// A solid baby blue bar with large navy icons and labels. Each tab is at
-/// least 64 pt tall; the selected one sits on a lighter pill with a filled icon.
+/// A floating glass capsule. Each tab is at least 60 pt tall; the selected
+/// one sits on a brighter inner pill with a filled blue icon.
 private struct TabBar: View {
     @Binding var selection: AppTab
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 2) {
             ForEach(AppTab.allCases, id: \.self) { tab in
                 let selected = tab == selection
                 Button {
                     selection = tab
                 } label: {
-                    VStack(spacing: 4) {
+                    VStack(spacing: 2) {
                         Image(systemName: selected ? tab.selectedSymbol : tab.symbol)
-                            .font(.system(size: 24, weight: .semibold))
-                            .frame(height: 28)
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(selected ? Theme.accent : Theme.text)
+                            .frame(height: 24)
                         Text(tab.title)
-                            .font(.subheadline.weight(.semibold))
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(Theme.text)
                             .lineLimit(1)
                             .minimumScaleFactor(0.7)
                     }
-                    .foregroundStyle(Theme.onBrand)
-                    .frame(maxWidth: .infinity, minHeight: 64)
-                    // A lighter pill and a filled icon mark the selected tab; navy text stays above 4.5:1.
-                    .background(selected ? Color.white.opacity(0.55) : .clear, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    .contentShape(Rectangle())
+                    .frame(maxWidth: .infinity, minHeight: Theme.minTarget)
+                    // The selected tab sits on a brighter inner pill, like a glass lens.
+                    .background {
+                        if selected {
+                            Capsule()
+                                .fill(.white.opacity(0.75))
+                                .overlay(Capsule().strokeBorder(.white, lineWidth: 1))
+                                .shadow(color: .black.opacity(0.08), radius: 6, y: 2)
+                        }
+                    }
+                    .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(tab.title)
                 .accessibilityAddTraits(selected ? [.isSelected, .isButton] : .isButton)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.top, 10)
-        .padding(.bottom, 6)
-        .background(Theme.brand.ignoresSafeArea(edges: .bottom))
+        .padding(6)
+        .background { glass }
+        .padding(.horizontal, Theme.spacing)
+        .padding(.top, 6)
+        .padding(.bottom, 4)
+    }
+
+    /// A floating frosted-glass capsule. Real Liquid Glass on iOS 26, frosted
+    /// material before that, and solid white when Reduce Transparency is on.
+    @ViewBuilder
+    private var glass: some View {
+        if reduceTransparency {
+            Capsule().fill(Theme.card).shadow(color: .black.opacity(0.12), radius: 12, y: 4)
+        } else if #available(iOS 26.0, *) {
+            Capsule().fill(.clear).glassEffect(.regular, in: Capsule())
+        } else {
+            Capsule()
+                .fill(.ultraThinMaterial)
+                .overlay(Capsule().fill(.white.opacity(0.25)))
+                .overlay(Capsule().strokeBorder(.white.opacity(0.7), lineWidth: 1))
+                .shadow(color: .black.opacity(0.12), radius: 16, y: 6)
+        }
     }
 }
 

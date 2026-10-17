@@ -137,7 +137,7 @@ struct LocationCheckView: View {
             }
             .padding(Theme.spacing)
         }
-        .rippleScreen()
+        .rippleScreen(background: .three)
         .navigationTitle("Check my location")
         .navigationBarTitleDisplayMode(.inline)
     }

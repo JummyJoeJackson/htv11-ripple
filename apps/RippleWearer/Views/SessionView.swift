@@ -1,20 +1,177 @@
 import RippleKit
 import SwiftUI
 
-/// Details moved off the home screen: every text for the latest alarm, the
-/// location sent with it, and how the Watch, server and settings are connected.
+/// Next check-in, what's coming (medication and appointments, coming soon),
+/// recent activity from past alarms, then the texts, location and connection
+/// details for the latest alarm.
 struct SessionView: View {
+    /// False when opened from Home, so the navigation bar keeps its Back button.
+    var isTabRoot = true
+
     var body: some View {
         ScrollView {
-            VStack(spacing: Theme.spacing) {
+            VStack(alignment: .leading, spacing: 12) {
+                ScreenHeader(title: "Sessions", subtitle: "Check-ins and activity")
+                NextCheckInCard()
+                ComingSoonRow(icon: "pills.fill", title: "Medication reminders")
+
+                SectionTitle(title: "Upcoming")
+                ComingSoonRow(icon: "stethoscope", title: "Appointments")
+
+                SectionTitle(title: "Recent activity")
+                RecentActivityCard()
+
+                SectionTitle(title: "Details")
                 MessagesCard()
                 SentLocationCard()
                 ConnectionsCard()
             }
             .padding(Theme.spacing)
         }
-        .rippleScreen()
-        .navigationTitle("Session")
+        .rippleScreen(background: .three)
+        .toolbar(isTabRoot ? .hidden : .visible, for: .navigationBar)
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+// MARK: - Next check-in
+
+private struct NextCheckInCard: View {
+    @Environment(WearerStore.self) private var store
+
+    var body: some View {
+        let _ = store.revision
+        let coordinator = store.coordinator
+        HStack(spacing: Theme.spacing) {
+            Image(systemName: "calendar")
+                .font(.system(size: 26, weight: .semibold))
+                .foregroundStyle(Theme.accent)
+                .frame(width: 60, height: 60)
+                .background(Theme.iconTint, in: Circle())
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Next check-in")
+                    .font(Theme.label)
+                    .foregroundStyle(Theme.secondaryText)
+                Text(nextText(coordinator))
+                    .font(Theme.headline)
+                    .foregroundStyle(Theme.text)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .rippleCard()
+        .accessibilityElement(children: .combine)
+    }
+
+    private func nextText(_ coordinator: AlarmCoordinator) -> String {
+        if !coordinator.monitoring { return "Monitoring is off" }
+        if let next = coordinator.nextCheckInAt { return next.dayAndTime }
+        return "No automatic check-ins"
+    }
+}
+
+/// A feature that isn't built yet, shown as a row with a "Coming soon" tag.
+private struct ComingSoonRow: View {
+    let icon: String
+    let title: String
+
+    var body: some View {
+        HStack(spacing: Theme.spacing) {
+            Image(systemName: icon)
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(Theme.accent)
+                .frame(width: 52, height: 52)
+                .background(Theme.iconTint, in: Circle())
+                .accessibilityHidden(true)
+            Text(title)
+                .font(Theme.body.weight(.semibold))
+                .foregroundStyle(Theme.text)
+            Spacer(minLength: 8)
+            Text("Coming soon")
+                .font(Theme.label)
+                .foregroundStyle(Theme.secondaryText)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, minHeight: Theme.rowHeight, alignment: .leading)
+        .rippleCard()
+        .accessibilityElement(children: .combine)
+    }
+}
+
+// MARK: - Recent activity
+
+/// What happened in recent alarms, newest first: checked in, alert sent,
+/// someone responding, said I'm okay. A duress alarm is never shown.
+private struct RecentActivityCard: View {
+    @Environment(WearerStore.self) private var store
+
+    private struct Event: Identifiable {
+        let id: String
+        let title: String
+        let at: Date
+        let symbol: String
+        let color: Color
+    }
+
+    var body: some View {
+        let _ = store.revision
+        let events = Self.events(from: store.coordinator.history)
+        VStack(spacing: 0) {
+            if events.isEmpty {
+                FormNote("Nothing yet. Check-ins and alerts will show here.")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(16)
+            }
+            ForEach(Array(events.prefix(6).enumerated()), id: \.element.id) { index, event in
+                if index > 0 { RowDivider() }
+                HStack(spacing: 14) {
+                    Image(systemName: event.symbol)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 40, height: 40)
+                        .background(event.color, in: Circle())
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(event.title)
+                            .font(Theme.body.weight(.semibold))
+                            .foregroundStyle(Theme.text)
+                        Text(event.at.dayAndTime)
+                            .font(Theme.label)
+                            .foregroundStyle(Theme.secondaryText)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .frame(minHeight: Theme.rowHeight)
+                .accessibilityElement(children: .combine)
+            }
+        }
+        .rippleCard()
+    }
+
+    private static func events(from history: [Alarm]) -> [Event] {
+        var events: [Event] = []
+        for alarm in history where !alarm.duress {
+            if let closed = alarm.closedAt {
+                if alarm.closeReason == .dismissed && alarm.alertedAt == nil {
+                    events.append(Event(id: alarm.id + "-ok", title: "Checked in", at: closed, symbol: "checkmark", color: Theme.safe))
+                } else if alarm.closeReason == .okayNow {
+                    events.append(Event(id: alarm.id + "-okay", title: "Said I'm okay", at: closed, symbol: "hand.thumbsup.fill", color: Theme.safe))
+                }
+            }
+            if let ack = alarm.acknowledgment {
+                events.append(Event(id: alarm.id + "-ack", title: "\(ack.name) is responding", at: ack.at, symbol: "figure.walk", color: Theme.responding))
+            }
+            if let alerted = alarm.alertedAt {
+                let title = alarm.helpRequestedAt == nil ? "Alert sent" : "Help requested"
+                events.append(Event(id: alarm.id + "-alert", title: title, at: alerted, symbol: "exclamationmark", color: Theme.alert))
+            }
+        }
+        return events.sorted { $0.at > $1.at }
     }
 }
 

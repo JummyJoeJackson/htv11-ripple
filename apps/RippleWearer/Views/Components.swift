@@ -5,11 +5,39 @@ import UIKit
 
 // MARK: - Screen
 
+/// The three soft blue wave backgrounds every screen uses. They live in the
+/// asset catalog as RippleBackground1, 2 and 3; new screens get one through
+/// `rippleScreen(background:)`.
+enum RippleBackground: String, CaseIterable {
+    /// Ripples top right, waves along the bottom. Home.
+    case one = "RippleBackground1"
+    /// Waves top right, ripples bottom left. Lists and forms.
+    case two = "RippleBackground2"
+    /// Ripples top right and bottom right. Detail and setup screens.
+    case three = "RippleBackground3"
+}
+
+/// A full-screen wave background over the pale blue base color. Decorative only.
+struct RippleBackgroundView: View {
+    let background: RippleBackground
+
+    var body: some View {
+        ZStack {
+            Theme.background
+            Image(background.rawValue)
+                .resizable()
+                .scaledToFill()
+        }
+        .ignoresSafeArea()
+        .accessibilityHidden(true)
+    }
+}
+
 extension View {
-    /// The light screen: pale baby blue background, blue links and controls.
-    func rippleScreen() -> some View {
+    /// The light screen: a soft blue wave background, blue links and controls.
+    func rippleScreen(background: RippleBackground = .one) -> some View {
         self
-            .background(Theme.background.ignoresSafeArea())
+            .background(RippleBackgroundView(background: background))
             .tint(Theme.accent)
             .environment(\.colorScheme, .light)
     }
@@ -23,6 +51,80 @@ enum NavigationBarStyle {
         UINavigationBar.appearance().largeTitleTextAttributes = [.foregroundColor: navy]
         UINavigationBar.appearance().titleTextAttributes = [.foregroundColor: navy]
     }()
+}
+
+// MARK: - Screen header
+
+/// A big screen title with an optional one-line subtitle and a round button
+/// on the right, like "Contacts  (+)".
+struct ScreenHeader<Trailing: View>: View {
+    let title: String
+    var subtitle: String? = nil
+    @ViewBuilder var trailing: Trailing
+
+    var body: some View {
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.system(.largeTitle, weight: .bold))
+                    .foregroundStyle(Theme.text)
+                    .accessibilityAddTraits(.isHeader)
+                if let subtitle {
+                    Text(subtitle)
+                        .font(Theme.label)
+                        .foregroundStyle(Theme.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            Spacer(minLength: 8)
+            trailing
+        }
+        .padding(.top, 8)
+    }
+}
+
+extension ScreenHeader where Trailing == EmptyView {
+    init(title: String, subtitle: String? = nil) {
+        self.init(title: title, subtitle: subtitle) { EmptyView() }
+    }
+}
+
+/// A round light-blue icon button for screen headers.
+struct HeaderIconButton: View {
+    let systemImage: String
+    let label: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: 24, weight: .semibold))
+                .foregroundStyle(Theme.accent)
+                .frame(width: Theme.minTarget, height: Theme.minTarget)
+                .background(Theme.iconTint, in: Circle())
+        }
+        .accessibilityLabel(label)
+    }
+}
+
+/// An uppercase section label with a plain-words note after it, like
+/// "TIER 1  Texted first".
+struct SectionTitle: View {
+    let title: String
+    var note: String? = nil
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            SectionLabel(title)
+            if let note {
+                Text(note)
+                    .font(Theme.label)
+                    .foregroundStyle(Theme.secondaryText)
+            }
+        }
+        .padding(.top, 8)
+        .accessibilityElement(children: .combine)
+    }
 }
 
 // MARK: - Cards
@@ -260,20 +362,29 @@ struct RippleList<Content: View>: View {
 
 extension View {
     /// Large type and roomy rows for forms and lists.
-    func rippleForm() -> some View {
+    func rippleForm(background: RippleBackground = .two) -> some View {
         self
             .font(Theme.body)
             .foregroundStyle(Theme.text)
             .controlSize(.large)
             .environment(\.defaultMinListRowHeight, Theme.minTarget)
             .scrollContentBackground(.hidden)
-            .rippleScreen()
+            .rippleScreen(background: background)
     }
 }
 
 extension Date {
     /// "12:46 AM". Times are always shown without seconds.
     var shortTime: String { formatted(date: .omitted, time: .shortened) }
+
+    /// "Today, 2:00 PM", "Yesterday, 3:21 PM" or "Mon, Oct 21, 4:00 PM".
+    var dayAndTime: String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(self) { return "Today, \(shortTime)" }
+        if calendar.isDateInYesterday(self) { return "Yesterday, \(shortTime)" }
+        if calendar.isDateInTomorrow(self) { return "Tomorrow, \(shortTime)" }
+        return formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()) + ", " + shortTime
+    }
 }
 
 enum QRCode {

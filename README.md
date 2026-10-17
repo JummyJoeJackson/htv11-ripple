@@ -20,6 +20,8 @@ Holding the circle for 2 seconds is **duress**: the Watch shows the normal "Dism
 
 **Swipe combos** help when movement is shaky. Swiping up on the circle twice asks for help: contacts are texted straight away, even when monitoring is off. Swiping down twice during an alarm means "I'm okay". It takes two swipes in the same direction, so a single shaky movement can't trigger either one.
 
+**Pinch and clench** work through Apple's AssistiveTouch, which recognises the gestures. With the circle highlighted, a clench means "I'm okay". A double clench opens the Action Menu, where **Get help** asks for help.
+
 ## Key features
 
 - **The phone sends first.** Texts come from the wearer's iPhone and messaging account, so contacts need no app, account or portal.
@@ -46,7 +48,7 @@ Holding the circle for 2 seconds is **duress**: the Watch shows the normal "Dism
 
 | Demonstrated | Simulated | Assumed | Needs validation |
 | --- | --- | --- | --- |
-| Watch input, alarms, real texts to teammates, tiers, the acknowledge link, duress, okay now texts, backup SMS, location permissions, contact expiry | Alarm triggers, the wearer being unable to respond, phone failure | Contacts read their texts and act on them, and the wearer keeps their phone charged and nearby | Sending from a locked phone, gestures, swipe combos and voice with Parkinson's tremor, accidental duress rate, false-alarm rate, battery use, real response times |
+| Watch input, alarms, real texts to teammates, tiers, the acknowledge link, duress, okay now texts, backup SMS, location permissions, contact expiry | Alarm triggers, the wearer being unable to respond, phone failure | Contacts read their texts and act on them, and the wearer keeps their phone charged and nearby | Sending from a locked phone, gestures, swipe combos, pinch and clench, and voice with Parkinson's tremor, accidental duress rate, false-alarm rate, battery use, real response times |
 
 ## Future work
 

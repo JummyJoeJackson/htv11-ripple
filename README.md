@@ -12,8 +12,8 @@ Ripple doesn't try to work out *what* happened. A missed response means only tha
 
 1. **Turn on monitoring.** The wearer taps **Start** on the Watch circle. Check-ins can run on a timer, or a demo admin can start one.
 2. **Check in.** When an alarm starts, the Watch buzzes, turns yellow and shows **I'm okay** with a countdown. The wearer taps the circle, double taps, or says their voice phrase to dismiss it. The Watch listens for the phrase by itself during an alarm. Nothing is sent.
-3. **No response means a text.** If the countdown runs out, the wearer's iPhone texts **Tier 1** contacts from the wearer's own number, through a shortcut called **Ripple Alert**. Each text has a link: "I'm checking on [Name]."
-4. **Escalate.** If nobody taps the link within the acknowledge window, **Tier 2** is texted. When someone does tap it, the Watch shows "[Contact] is responding" and everyone else already texted is told who's checking.
+3. **No response means a text.** If the countdown runs out, the wearer's iPhone texts **Tier 1** contacts from the wearer's own number, through a shortcut called **Ripple Alert**. Each text asks the contact to reply "Ripple accept" followed by their four-digit code.
+4. **Escalate.** If nobody replies within the acknowledge window, **Tier 2** is texted. When a valid reply reaches the wearer's Messages automation, the Watch shows "[Contact] is responding" and everyone else already texted is told who's checking.
 5. **Okay now.** If the wearer taps **I'm okay now**, everyone already texted gets an "okay now" text and pending escalation stops.
 
 Holding the circle for 2 seconds is **duress**: the Watch shows the normal "Dismissed" screen while the alert still goes out.
@@ -39,8 +39,8 @@ Holding the circle for 2 seconds is **duress**: the Watch shows the normal "Dism
 | --- | --- |
 | **Wearer iPhone app** (SwiftUI) | Contacts and tiers, location permissions, temporary contacts, help card, timings, dismiss methods, Watch sync. Runs the alarm and sends texts through the Ripple Alert shortcut. |
 | **Apple Watch app** (SwiftUI) | One large circle with a status label and countdown. Tap, hold, native double tap and voice phrase. During an alarm the microphone listens for the phrase and streams to the iPhone, which recognizes it (watchOS has no speech recognition). Keeps the last settings it received. |
-| **Ripple server** (Swift, Vapor) | Mirrors each alarm, holds the backup deadline, sends backup SMS through Twilio, hosts the acknowledge and consent pages, and relays demo admin commands. |
-| **Web pages** | A one-button acknowledge page and a consent page for temporary contacts. No app, account or login. |
+| **Ripple server** (Swift, Vapor) | Mirrors each alarm, holds the backup deadline, sends backup SMS through Twilio, hosts the temporary-contact consent page, and relays demo admin commands. |
+| **Web pages** | A consent page for temporary contacts. No app, account or login. |
 | **Demo admin iPhone app** (SwiftUI) | Labelled Demo admin. Triggers alarms, cuts the phone connection, expires temporary contacts, disables alarms, resets the demo, and shows per-recipient message status. |
 | **RippleKit** (Swift package) | Shared models, message wording, tier rules and the alarm state machine used by every app and the server |
 
@@ -48,11 +48,11 @@ Holding the circle for 2 seconds is **duress**: the Watch shows the normal "Dism
 
 | Demonstrated | Simulated | Assumed | Needs validation |
 | --- | --- | --- | --- |
-| Watch input, alarms, real texts to teammates, tiers, the acknowledge link, duress, okay now texts, backup SMS, location permissions, contact expiry | Alarm triggers, the wearer being unable to respond, phone failure | Contacts read their texts and act on them, and the wearer keeps their phone charged and nearby | Sending from a locked phone, gestures, swipe combos, pinch and clench, and voice with Parkinson's tremor, accidental duress rate, false-alarm rate, battery use, real response times |
+| Watch input, alarms, real texts to teammates, tiers, reply acknowledgements, duress, okay now texts, backup SMS, location permissions, contact expiry | Alarm triggers, the wearer being unable to respond, phone failure | Contacts read their texts and act on them, and the wearer keeps their phone charged and nearby | Sending from a locked phone, gestures, swipe combos, pinch and clench, and voice with Parkinson's tremor, accidental duress rate, false-alarm rate, battery use, real response times |
 
 ## Future work
 
-Sending from a locked or backgrounded phone, background Watch prompts, physical-button dismissal, inviting temporary contacts from the Watch, acknowledging by replying to the text, and extra message channels.
+Sending from a locked or backgrounded phone, background Watch prompts, physical-button dismissal, inviting temporary contacts from the Watch, and extra message channels.
 
 ## Documentation
 

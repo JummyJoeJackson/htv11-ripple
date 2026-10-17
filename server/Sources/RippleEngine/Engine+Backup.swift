@@ -65,7 +65,7 @@ extension Engine {
         }
 
         // 2. Escalation to Tier 2 when nobody acknowledged within the window.
-        let ack = record.acknowledgment ?? alarm.acknowledgment
+        let ack = alarm.acknowledgment
         let current = db.alarms[record.id] ?? record
         if ack == nil, let alertedAt = alertTime(current) {
             let escalationDueAt = alertedAt.addingTimeInterval(TimeInterval(alarm.ackWindowSeconds))
@@ -156,7 +156,7 @@ extension Engine {
         if alertTime(record) == nil {
             return min(alarm.alertedAt ?? alarm.deadline, alarm.deadline).addingTimeInterval(pad)
         }
-        if record.acknowledgment == nil, alarm.acknowledgment == nil, let alertedAt = alertTime(record),
+        if alarm.acknowledgment == nil, let alertedAt = alertTime(record),
            !RecipientRules.escalationRecipients(alarm, isEligible: { !$0.temporary || self.temporaryEligible($0.id, at: t) }).isEmpty,
            alarm.escalatedAt == nil {
             return alertedAt.addingTimeInterval(TimeInterval(alarm.ackWindowSeconds) + pad)
@@ -175,7 +175,6 @@ extension Engine {
         if !stale.isEmpty {
             db.alarms = db.alarms.filter { !stale.contains($0.key) }
             db.backups = db.backups.filter { !stale.contains($0.value.message.alarmId) }
-            db.ackTokens = db.ackTokens.filter { !stale.contains($0.value.alarmId) }
         }
         dirty = true
     }

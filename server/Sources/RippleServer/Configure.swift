@@ -19,7 +19,7 @@ func configure(_ app: Application) async throws {
     if let tunnel {
         app.lifecycle.use(TunnelLifecycle(tunnel: tunnel))
     }
-    // Links in texts use this address, so it must open on the contacts' phones.
+    // Temporary-contact invitations use this address, so contacts must be able to open it.
     let baseURL = env["RIPPLE_PUBLIC_BASE_URL"] ?? tunnel?.url ?? localURL
     let adminSecret = env["RIPPLE_ADMIN_SECRET"] ?? "ripple-demo"
     let grace = TimeInterval(env["RIPPLE_BACKUP_GRACE_SECONDS"] ?? "") ?? 30
@@ -46,9 +46,9 @@ func configure(_ app: Application) async throws {
     } else {
         app.logger.notice("Enter this server address in the iPhone apps: \(baseURL)")
     }
-    app.logger.notice("Acknowledge links will start with: \(baseURL)/a/…")
+    app.logger.notice("Temporary-contact invitations will start with: \(baseURL)/t/…")
     if !baseURL.hasPrefix("https://") {
-        app.logger.warning("Links in texts only open on phones on this Wi-Fi. For contacts on cellular, install cloudflared (brew install cloudflared) and restart, or set RIPPLE_PUBLIC_BASE_URL.")
+        app.logger.warning("Temporary-contact invitations only open on phones on this Wi-Fi. For contacts on cellular, install cloudflared (brew install cloudflared) and restart, or set RIPPLE_PUBLIC_BASE_URL.")
     }
     app.logger.notice("Backup SMS route: \(sender.name)\(recipients.map { " (demo recipients only: \($0.count))" } ?? "")")
     app.logger.notice("Backup grace period: \(Int(grace)) s")
@@ -66,13 +66,13 @@ func configure(_ app: Application) async throws {
 func startTunnel(env: [String: String], port: Int, logger: Logger) async -> QuickTunnel? {
     guard env["RIPPLE_PUBLIC_BASE_URL"] == nil, env["RIPPLE_TUNNEL"]?.lowercased() != "off" else { return nil }
     guard let cloudflared = QuickTunnel.cloudflaredPath(env: env) else { return nil }
-    logger.notice("Starting a Cloudflare quick tunnel, so links in texts open on any phone…")
+    logger.notice("Starting a Cloudflare quick tunnel, so temporary-contact invitations open on any phone…")
     do {
         let tunnel = try await QuickTunnel.start(executable: cloudflared, port: port)
         logger.notice("Tunnel ready: \(tunnel.url)")
         return tunnel
     } catch {
-        logger.error("The tunnel didn't start, so links will only open on this Wi-Fi. \(error)")
+        logger.error("The tunnel didn't start, so temporary-contact invitations will only open on this Wi-Fi. \(error)")
         return nil
     }
 }

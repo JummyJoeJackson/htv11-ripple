@@ -44,7 +44,7 @@ final class BackupTests: XCTestCase {
             PermanentContact(id: "pat", name: "Pat", phone: "416 555 0103", tier: .two, shareLocation: false),
         ]
         outbox = PhoneOutbox()
-        phone = AlarmCoordinator(config: config, serverBaseURL: "http://ripple.test", clock: { clock.now })
+        phone = AlarmCoordinator(config: config, clock: { clock.now })
         phone.delegate = outbox
         phone.setRunId(setup.runId)
         phone.startMonitoring()
@@ -132,7 +132,10 @@ final class BackupTests: XCTestCase {
         let out = await advance(11) // 31 s since the last heartbeat, past the deadline
         XCTAssertEqual(recipients(out), ["+14165550101", "+14165550102"])
         XCTAssertTrue(out.allSatisfy { $0.body.hasSuffix(MessageTemplates.backupNote) }, "Marked as sent by backup")
-        XCTAssertTrue(out.first { $0.to == "+14165550101" }!.body.contains("Tap if you're checking: http://ripple.test/a/"))
+        let samText = out.first { $0.to == "+14165550101" }!.body
+        let samCode = phone.alarm!.recipients.first { $0.id == "sam" }!.acceptCode!
+        XCTAssertTrue(samText.contains("\n\nReply \"Ripple accept \(samCode)\" if you are able to check in on Alex."))
+        XCTAssertFalse(samText.contains("http://ripple.test/a/"))
 
         let view = try await adminView()
         XCTAssertEqual(view.messages.filter { $0.path == .backup && $0.kind == .alert }.count, 2)
@@ -175,36 +178,6 @@ final class BackupTests: XCTestCase {
 
     // MARK: Acknowledgment
 
-    func testAcknowledgeLinkReachesThePhoneAndStopsEscalation() async throws {
-        phone.startAlarm(source: .admin)
-        try await sync()
-        await advance(15)
-        phone.tick()
-        phoneSubmits()
-        try await sync()
-
-        let samToken = phone.alarm!.recipients.first { $0.id == "sam" }!.ackToken
-        let page = try await engine.ackPage(token: samToken)
-        XCTAssertEqual(page.wearerName, "Alex")
-        XCTAssertTrue(page.open)
-        let acked = try await engine.acknowledge(token: samToken)
-        XCTAssertTrue(acked.youAcknowledged)
-
-        try await sync()
-        XCTAssertEqual(phone.display().status, "Sam is responding")
-        XCTAssertEqual(outbox.sent.filter { $0.kind == .responding }.map(\.recipientId), ["jo"])
-        phoneSubmits()
-        try await sync()
-
-        for _ in 0..<60 {
-            await advance(1)
-            phone.tick()
-            try await sync()
-        }
-        XCTAssertTrue(outbox.sent.filter { $0.kind == .escalation }.isEmpty)
-        XCTAssertTrue(backups.isEmpty)
-    }
-
     func testTextReplyAcceptReachesTheBackendAndStopsTierTwo() async throws {
         phone.startAlarm(source: .admin)
         try await sync()
@@ -215,18 +188,19 @@ final class BackupTests: XCTestCase {
 
         // Sam texts back the code; the Ripple Accept shortcut hands it to the app.
         let sam = phone.alarm!.recipients.first { $0.id == "sam" }!
-        XCTAssertTrue(sam.alertText.contains("or reply RIPPLE ACCEPT \(sam.acceptCode!)"))
+        XCTAssertTrue(sam.alertText.contains("Reply \"Ripple accept \(sam.acceptCode!)\" if you are able to check in on Alex."))
         let result = phone.acceptReply(text: "Ripple accept \(sam.acceptCode!)", from: "+14165550101")
         XCTAssertTrue(result.ok)
+        XCTAssertEqual(phone.display().status, "Sam is responding")
+        XCTAssertEqual(outbox.sent.filter { $0.kind == .responding }.map(\.recipientId), ["jo"])
         phoneSubmits()
-        try await sync() // the backend learns about it, then the phone goes quiet
-
-        let joToken = phone.alarm!.recipients.first { $0.id == "jo" }!.ackToken
-        let page = try await engine.ackPage(token: joToken)
-        XCTAssertEqual(page.responderName, "Sam", "The link page shows Sam is already checking")
+        let response = try await sync() // the backend learns about it, then the phone goes quiet
+        XCTAssertEqual(response.feedback?.acknowledgment?.name, "Sam")
 
         let out = await advance(60)
         XCTAssertTrue(out.isEmpty, "No Tier 2 backup once someone accepted by text")
+        phone.tick()
+        XCTAssertTrue(outbox.sent.filter { $0.kind == .escalation }.isEmpty)
         let view = try await adminView()
         XCTAssertEqual(view.acknowledgment?.name, "Sam")
     }
@@ -238,8 +212,9 @@ final class BackupTests: XCTestCase {
         phone.tick()
         phoneSubmits()
         try await sync() // the phone reported the alert, then goes quiet
-        let samToken = phone.alarm!.recipients.first { $0.id == "sam" }!.ackToken
-        _ = try await engine.acknowledge(token: samToken)
+        let samCode = phone.alarm!.recipients.first { $0.id == "sam" }!.acceptCode!
+        XCTAssertTrue(phone.acceptReply(text: "Ripple accept \(samCode)", from: "+14165550101").ok)
+        try await sync() // The responder notification remains pending on the phone.
         await advance(1)
         XCTAssertTrue(backups.isEmpty, "The phone isn't quiet long enough yet")
         let out = await advance(30)
@@ -247,18 +222,70 @@ final class BackupTests: XCTestCase {
         XCTAssertTrue(out[0].body.hasPrefix("Ripple: Sam is checking on Alex."))
     }
 
-    func testAcknowledgePageClosesWithTheAlarm() async throws {
+    func testClosedAlarmRejectsRepliesAndStopsBackup() async throws {
         phone.startAlarm(source: .admin)
         try await sync()
-        let token = phone.alarm!.recipients[0].ackToken
+        await advance(15)
+        phone.tick()
+        phoneSubmits()
+        let code = phone.alarm!.recipients.first { $0.id == "sam" }!.acceptCode!
         phone.dismiss(alarmId: phone.alarm?.id)
+        XCTAssertFalse(phone.acceptReply(text: "Ripple accept \(code)", from: "+14165550101").ok)
+        let response = try await sync()
+        XCTAssertNil(response.feedback?.acknowledgment)
+        let out = await advance(120)
+        XCTAssertTrue(out.isEmpty)
+    }
+
+    func testLegacyLinkFieldsAreDiscardedWhileSavedResponsesArePreserved() async throws {
+        phone.startAlarm(source: .admin)
         try await sync()
-        do {
-            _ = try await engine.ackPage(token: token)
-            XCTFail("Expected the page to stop working")
-        } catch let error as EngineError {
-            XCTAssertEqual(error.status, 410)
+        let database = await engine.db
+        var json = try JSONSerialization.jsonObject(with: RippleJSON.encoder.encode(database)) as! [String: Any]
+        var alarms = json["alarms"] as! [String: [String: Any]]
+        let alarmId = phone.alarm!.id
+        var record = alarms[alarmId]!
+        let ack = Acknowledgment(recipientId: "sam", name: "Sam", at: clock.now)
+        record["acknowledgment"] = try JSONSerialization.jsonObject(with: RippleJSON.encoder.encode(ack))
+        var snapshot = record["snapshot"] as! [String: Any]
+        snapshot["recipients"] = (snapshot["recipients"] as! [[String: Any]]).map { recipient in
+            var old = recipient
+            old["ackToken"] = "retired-link-token"
+            return old
         }
+        record["snapshot"] = snapshot
+        alarms[alarmId] = record
+        json["alarms"] = alarms
+        json["ackTokens"] = ["retired-hash": ["alarmId": alarmId, "recipientId": "sam", "userId": userId, "runId": phone.runId]]
+
+        let restored = try RippleJSON.decoder.decode(Database.self, from: JSONSerialization.data(withJSONObject: json))
+        XCTAssertEqual(restored.users[userId]?.runId, phone.runId)
+        XCTAssertTrue(restored.admins.values.contains { $0.id == adminId })
+        XCTAssertEqual(restored.admins.keys.sorted(), database.admins.keys.sorted())
+        XCTAssertEqual(restored.deviceTokens, database.deviceTokens)
+        XCTAssertEqual(restored.assignments[adminId], [userId])
+        XCTAssertEqual(restored.alarms[alarmId]?.snapshot.acknowledgment, ack)
+        XCTAssertEqual(restored.alarms[alarmId]?.snapshot.recipients.map(\.acceptCode), phone.alarm!.recipients.map(\.acceptCode))
+
+        let saved = try JSONSerialization.jsonObject(with: RippleJSON.encoder.encode(restored)) as! [String: Any]
+        XCTAssertNil(saved["ackTokens"])
+        let savedRecord = (saved["alarms"] as! [String: [String: Any]])[alarmId]!
+        XCTAssertNil(savedRecord["acknowledgment"])
+        let savedSnapshot = savedRecord["snapshot"] as! [String: Any]
+        XCTAssertTrue((savedSnapshot["recipients"] as! [[String: Any]]).allSatisfy { $0["ackToken"] == nil })
+        let roundTripped = try RippleJSON.decoder.decode(Database.self, from: RippleJSON.encoder.encode(restored))
+        XCTAssertEqual(roundTripped.alarms[alarmId]?.snapshot.acknowledgment, ack)
+
+        let storageURL = FileManager.default.temporaryDirectory.appendingPathComponent("ripple-reply-migration-\(UUID().uuidString).json")
+        defer { try? FileManager.default.removeItem(at: storageURL) }
+        try RippleJSON.encoder.encode(restored).write(to: storageURL)
+        let clock = self.clock!
+        engine = Engine(storageURL: storageURL, config: EngineConfig(publicBaseURL: "http://ripple.test", adminSecret: "secret"), clock: { clock.now })
+        let response = try await sync() // The phone still holds its older, unacknowledged snapshot.
+        XCTAssertEqual(response.feedback?.acknowledgment, ack)
+        XCTAssertEqual(phone.alarm?.acknowledgment, ack)
+        let view = try await adminView()
+        XCTAssertEqual(view.acknowledgment, ack)
     }
 
     // MARK: Duress

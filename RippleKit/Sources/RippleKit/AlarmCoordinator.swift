@@ -24,8 +24,6 @@ public final class AlarmCoordinator {
     }
     /// Latest list from the backend. Only active, unexpired contacts are texted.
     public var temporaryContacts: [TemporaryContactView] = []
-    /// Base for acknowledge links.
-    public var serverBaseURL: String
     public var timeZone: TimeZone = .current
     public weak var delegate: AlarmCoordinatorDelegate?
 
@@ -41,9 +39,8 @@ public final class AlarmCoordinator {
         public var runId: String
     }
 
-    public init(config: RippleConfig, snapshot: Snapshot? = nil, serverBaseURL: String = "", clock: @escaping () -> Date = { Date() }) {
+    public init(config: RippleConfig, snapshot: Snapshot? = nil, clock: @escaping () -> Date = { Date() }) {
         self.config = config
-        self.serverBaseURL = serverBaseURL
         self.clock = clock
         self.runId = snapshot?.runId ?? ""
         if let snapshot {
@@ -182,12 +179,23 @@ public final class AlarmCoordinator {
         return requested
     }
 
+    /// The confirmed iPhone help action notifies both tiers immediately, using
+    /// the normal alert and escalation paths so reply codes and backup agree.
+    @discardableResult
+    public func requestHelpForAllContacts() -> ActionResult {
+        let result = requestHelp()
+        if alarm?.phase == .alerted, alarm?.acknowledgment == nil {
+            sendEscalation()
+        }
+        return result
+    }
+
     private func makeAlarm(source: AlarmSource, countdownSeconds countdown: Int, at t: Date) -> Alarm {
         var recipients: [AlarmRecipient] = config.contacts.compactMap { contact in
             guard let phone = Phone.normalize(contact.phone) else { return nil }
             return AlarmRecipient(
                 id: contact.id, name: contact.name, phone: phone, tier: contact.tier,
-                shareLocation: contact.shareLocation, temporary: false, ackToken: RippleID.make(),
+                shareLocation: contact.shareLocation, temporary: false,
                 alertText: "", escalationText: ""
             )
         }
@@ -195,7 +203,7 @@ public final class AlarmCoordinator {
         for contact in temporaryContacts where contact.isEligible(at: t) {
             recipients.append(AlarmRecipient(
                 id: contact.id, name: contact.name, phone: contact.phone, tier: .one,
-                shareLocation: contact.shareLocation, temporary: true, ackToken: RippleID.make(),
+                shareLocation: contact.shareLocation, temporary: true,
                 alertText: "", escalationText: ""
             ))
         }
@@ -373,7 +381,7 @@ public final class AlarmCoordinator {
     }
 
     /// A contact texted back "RIPPLE ACCEPT 4821". The Ripple Accept shortcut
-    /// passes the reply here; it counts exactly like tapping their link.
+    /// passes the reply here to record who is responding.
     ///
     /// The code must belong to someone who was texted for the open alarm. If
     /// the sender's number is known and differs from that person's number, the
@@ -404,7 +412,7 @@ public final class AlarmCoordinator {
         return ActionResult(ok: true, feedback: quiet ? "" : "\(recipient.name) is responding.")
     }
 
-    /// A contact tapped the acknowledge link. Others already texted are told.
+    /// Records a responding contact and tells others already texted.
     public func applyAcknowledgment(_ ack: Acknowledgment) {
         guard var current = alarm, current.isOpen, current.acknowledgment == nil else { return }
         current.acknowledgment = ack
@@ -583,22 +591,21 @@ public final class AlarmCoordinator {
         for index in alarm.recipients.indices {
             let recipient = alarm.recipients[index]
             let location = recipient.shareLocation ? alarm.location?.mapURL : nil
-            let link = MessageTemplates.ackLink(baseURL: serverBaseURL, token: recipient.ackToken)
             let code = recipient.acceptCode
             if let helpTime {
                 alarm.recipients[index].alertText = MessageTemplates.help(
-                    name: alarm.wearerName, time: helpTime, locationURL: location, helpCard: helpCard, ackLink: link, acceptCode: code
+                    name: alarm.wearerName, time: helpTime, locationURL: location, helpCard: helpCard, acceptCode: code
                 )
                 alarm.recipients[index].escalationText = MessageTemplates.helpEscalation(
-                    name: alarm.wearerName, time: helpTime, locationURL: location, ackLink: link, acceptCode: code
+                    name: alarm.wearerName, time: helpTime, locationURL: location, acceptCode: code
                 )
                 continue
             }
             alarm.recipients[index].alertText = MessageTemplates.alert(
-                name: alarm.wearerName, checkInTime: time, locationURL: location, helpCard: helpCard, ackLink: link, acceptCode: code
+                name: alarm.wearerName, checkInTime: time, locationURL: location, helpCard: helpCard, acceptCode: code
             )
             alarm.recipients[index].escalationText = MessageTemplates.escalation(
-                name: alarm.wearerName, checkInTime: time, locationURL: location, ackLink: link, acceptCode: code
+                name: alarm.wearerName, checkInTime: time, locationURL: location, acceptCode: code
             )
         }
     }

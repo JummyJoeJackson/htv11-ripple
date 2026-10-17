@@ -12,7 +12,7 @@ Everything is Swift. On a Mac you run the backend from Xcode or Terminal, then i
 | Second iPhone for the demo admin app | Any iPhone on iOS 17 or later. |
 | Teammates' phones | They receive the texts. No app needed. |
 | Apple ID | A free personal team is enough to install on your own devices. Builds expire after 7 days. |
-| `cloudflared` on the Mac | `brew install cloudflared`. Lets contacts open the links in texts from any phone, including on cellular. No Cloudflare account needed. |
+| `cloudflared` on the Mac | `brew install cloudflared`. Lets temporary contacts open invitation links from any phone, including on cellular. No Cloudflare account needed. |
 | Optional: Twilio account | Only for the backend's backup SMS. Without it, backup texts are printed in the server console. |
 
 All phones and the Mac should be on the same Wi-Fi network. On venue Wi-Fi that blocks device-to-device traffic, use a phone hotspot or a tunnel (see [Reaching the server](#reaching-the-server)).
@@ -32,7 +32,7 @@ The console prints the address to type into the apps, for example:
 Enter this server address in the iPhone apps: http://192.168.1.20:8080
 ```
 
-If `cloudflared` is installed, the server first starts a free Cloudflare quick tunnel and prints a public `https://….trycloudflare.com` address. Links in texts use it, so contacts' phones can open them from anywhere. The address changes each time the server starts; the wearer's iPhone picks up the new one by itself.
+If `cloudflared` is installed, the server first starts a free Cloudflare quick tunnel and prints a public `https://….trycloudflare.com` address. Temporary-contact invitation links use it, so they can open from anywhere. The address changes each time the server starts; the wearer's iPhone picks up the new one by itself.
 
 Allow incoming connections if macOS asks. Data is saved in `server/.data/ripple.json`; delete that file for a completely fresh start.
 
@@ -43,7 +43,7 @@ Set these as environment variables (in Xcode: **Product → Scheme → Edit Sche
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `RIPPLE_PORT` | `8080` | Port to listen on |
-| `RIPPLE_PUBLIC_BASE_URL` | The tunnel address, or `http://<Mac's Wi-Fi IP>:8080` without `cloudflared` | Start of the acknowledge and consent links in texts. Set it only to use your own public address; it turns the automatic tunnel off. |
+| `RIPPLE_PUBLIC_BASE_URL` | The tunnel address, or `http://<Mac's Wi-Fi IP>:8080` without `cloudflared` | Start of temporary-contact consent links. Set it only to use your own public address; it turns the automatic tunnel off. |
 | `RIPPLE_TUNNEL` | `auto` | `off` stops the server starting a quick tunnel even when `cloudflared` is installed. Links then only open on the same Wi-Fi. |
 | `RIPPLE_CLOUDFLARED` | | Path to `cloudflared`, if it isn't in `/opt/homebrew/bin` or `/usr/local/bin` |
 | `RIPPLE_ADMIN_SECRET` | `ripple-demo` | Password for the demo admin app |
@@ -101,12 +101,18 @@ Each recipient gets their own message, so nobody is in a group text. When Ripple
 
 ### Accepting by text reply
 
-Every alert and second alert ends with "…or reply RIPPLE ACCEPT 4821", with a different 4-digit code for each person. When a contact replies:
+Every alert and second alert includes `Reply "Ripple accept 4821" if you are able to check in on [wearer].`, with a different 4-digit code for each person. The alert, optional note, reply instruction, and optional location are separated by blank lines. Replies are the only acknowledgement path; alerts do not include web acknowledgement links.
+
+The Apple Maps URL is the last line to give Messages the best chance to show a link preview. Preview rendering depends on Messages and the receiving device and is not guaranteed; the plain link still works. The existing messaging shortcuts do not need to be replaced for this wording change.
+
+Reply acceptance requires the wearer's iPhone to receive the reply and run its automation. The backup can still send alerts when the phone goes quiet, but replies to a separate Twilio sender number are not forwarded to that iPhone. There is no web acknowledgement fallback.
+
+When a contact replies:
 
 1. The automation runs **Ripple Accept** with the message, which opens `ripple://accept?text=<the reply>`.
 2. Ripple finds the code in the reply. Case, spacing and punctuation don't matter.
-3. If the code belongs to someone who was texted for the open alert, it counts like tapping their link. The iPhone and Watch show "[Name] is responding", everyone else already texted gets "Ripple: [Name] is checking on [wearer]", and Tier 2 isn't texted.
-4. The backend learns about it on the next sync, so its backup sender won't text Tier 2 either, and the link page shows who is checking.
+3. If the code belongs to someone who was texted for the open alert, Ripple records them as the responder. The iPhone and Watch show "[Name] is responding", everyone else already texted gets "Ripple: [Name] is checking on [wearer]", and Tier 2 isn't texted.
+4. The backend learns about it on the next sync, so its backup sender won't text Tier 2 either and the admin view shows who is checking.
 
 A reply for a closed alert, someone not yet texted, or an unknown code is ignored, with a short note in Ripple. To test without the automation, paste a reply into **Settings → Messaging shortcuts → Try a reply** during an alert.
 
@@ -140,7 +146,7 @@ Start monitoring by tapping **Start** on the Watch circle. Keep the Watch app op
 | --- | --- | --- |
 | Safe | Admin: **Trigger alarm**. Wearer taps the circle. Trigger again; wearer double taps, or clenches with AssistiveTouch on. | Watch returns to green Monitoring. No texts. |
 | No response | Trigger and let the countdown run out. | The iPhone opens Ripple Alert; Tier 1 phones receive the alert, one with a map link. |
-| Unacknowledged alert | Tier 1 ignores the link for 15 seconds. | Tier 2 receives the escalation text. |
+| Unacknowledged alert | Tier 1 does not reply for 15 seconds. | Tier 2 receives the escalation text. |
 | False alarm | After texts go out, the wearer taps **I'm okay now**. | Everyone already texted receives "okay now". |
 | Duress | Trigger; the wearer holds the circle for 2 seconds. | The Watch shows the normal "Dismissed" screen. Tier 1 still receives the alert. |
 | Connectivity failure | Trigger, wait two seconds, then admin: **Cut phone connection**. | About 30 seconds later the backend sends the alert by SMS, marked "Sent by Ripple backup". |
@@ -148,7 +154,7 @@ Start monitoring by tapping **Start** on the Watch circle. Keep the Watch app op
 
 Then show **Reset demo** and that no old alarm comes back.
 
-When someone taps an acknowledge link, the Watch and iPhone show "[Contact] is responding" and the other alerted contacts get "Ripple: [Contact] is checking on [Name]."
+When a valid reply reaches the wearer's Messages automation, the Watch and iPhone show "[Contact] is responding" and the other alerted contacts get "Ripple: [Contact] is checking on [Name]."
 
 ### Temporary contacts
 
@@ -170,7 +176,7 @@ See [Hand gesture setup and device checks](HAND_GESTURES.md) for the exact prese
 
 ## Reaching the server
 
-- **Links in texts** use the tunnel address when `cloudflared` is installed, so they open on any phone, on Wi-Fi or cellular. Without it they use the Mac's Wi-Fi address, which only phones on the same Wi-Fi can open; the server prints a warning.
+- **Temporary-contact invitation links** use the tunnel address when `cloudflared` is installed, so they open on any phone, on Wi-Fi or cellular. Without it they use the Mac's Wi-Fi address, which only phones on the same Wi-Fi can open; the server prints a warning.
 - **The apps** can use the Mac's Wi-Fi address on the same network, or the tunnel address from anywhere. The tunnel address changes each time the server restarts, so the Wi-Fi address is less retyping.
 - With the tunnel, the server is reachable from the internet. Set `RIPPLE_ADMIN_SECRET` to something only your team knows, instead of the default `ripple-demo`.
 - Quick tunnels are Cloudflare's free testing service, with no uptime guarantee. If one fails to start, the server carries on with the Wi-Fi address and says so.
@@ -185,13 +191,14 @@ flowchart LR
     phone <-->|"sync every second: alarm mirror, heartbeat, commands"| api["Ripple server"]
     admin["Demo admin iPhone"] -->|commands| api
     api -->|"backup SMS if the phone goes quiet"| twilio["Twilio"]
-    contact["Contact's phone"] -->|"acknowledge link"| api
+    contact["Contact's phone"] -->|"Ripple accept + code via Messages automation"| phone
+    contact -->|"temporary-contact consent link"| api
 ```
 
 - The wearer's iPhone runs the alarm state machine (`RippleKit/Sources/RippleKit/AlarmCoordinator.swift`) and always sends first.
 - It registers each alarm with the server and syncs about every second. That is its heartbeat.
 - If a text is 30 seconds overdue, or the phone has been quiet for 30 seconds past a deadline, the server sends it through Twilio and marks it as backup. When the phone comes back, it sees what the backup sent and doesn't repeat it.
-- The server hosts the acknowledge page (`/a/<token>`) and the consent page (`/t/<token>`), and relays admin commands. It reports whether each command reached the iPhone.
+- The server hosts the temporary-contact consent page (`/t/<token>`), and relays admin commands. It reports whether each command reached the iPhone.
 
 ## Tests
 

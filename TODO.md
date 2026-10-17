@@ -21,24 +21,9 @@
   - double clench + pinch
   - double clench + double pinch
 
-- ✅ Reply to accept: done on the `response-text` branch. Alert texts end with "or reply RIPPLE ACCEPT ####", a Messages automation runs the Ripple Accept shortcut, and Ripple treats the reply like a tap on the link. See docs/RUNNING.md → Accepting by text reply. Still needs a physical test with the phone locked.
+- ✅ Reply to accept: done on the `response-text` branch. Alert texts ask contacts to reply "Ripple accept ####", a Messages automation runs the Ripple Accept shortcut, and Ripple records the contact as responding. See docs/RUNNING.md → Accepting by text reply. Still needs a physical test with the phone locked.
 
-```
-Yes—replying by text is feasible, and we can do it without giving Ripple access to your inbox. For your current setup, an iPhone Shortcuts automation is the most practical approach.
-I checked the code:
-- [ShortcutSender.swift (line 5)](/Users/juggin/Projects/htv11-winners/apps/RippleWearer/ShortcutSender.swift:5) sends alerts through your existing Ripple Alert shortcut.
-- [Engine+Web.swift (line 39)](/Users/juggin/Projects/htv11-winners/server/Sources/RippleEngine/Engine+Web.swift:39) records a contact’s acknowledgement when they use the link.
-- [AlarmCoordinator.swift (line 372)](/Users/juggin/Projects/htv11-winners/RippleKit/Sources/RippleKit/AlarmCoordinator.swift:372) already handles displaying the responder and notifying other contacts. We could reuse that behavior for text replies.
-Ripple cannot simply request permission to read your Messages inbox. Apple’s SMS-filter extension excludes saved contacts and iMessage; its separate carrier-messaging API requires becoming the default messaging app and has EU restrictions. Neither fits this feature. Apple message-filter documentation, carrier-messaging documentation.
-The Shortcuts approach would work like this:
-1. Ripple texts your contact: “Please check on Justin. Reply RIPPLE ACCEPT 4821 if you’re responding.”
-2. An automation on your iPhone detects a message from that contact containing RIPPLE ACCEPT.
-3. The shortcut passes the responder’s identity and alert code to a new Ripple action.
-4. Ripple validates them against the active alert, then shows “Sam is responding” on your phone and Watch.
-Apple supports message automations filtered by sender and phrase, including automatic execution. Your contact would just reply normally—no app or shortcut needed on their phone. Message triggers, automatic execution.
-“On the way” could work too, but a distinct phrase plus an alert code helps prevent an unrelated conversation or delayed reply from acknowledging the wrong alert. We could keep the processing narrow so Ripple receives only the acknowledgement information.
-The tradeoffs are manual automation setup on your phone and physical testing with the phone locked. It also depends on your phone functioning.
-```
+
 
 Add temp content is not working since the other person needs to scan a QR code that sends them to a localhost link so they can't open it. Just send them a text message and have Ripple monitor via shortcut for a response.
 

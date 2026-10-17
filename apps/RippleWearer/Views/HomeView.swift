@@ -300,7 +300,7 @@ private struct MonitoringCard: View {
 private struct HomeCardGrid: View {
     @Environment(WearerStore.self) private var store
     @Environment(\.dynamicTypeSize) private var typeSize
-    @State private var showEmergency = false
+    @State private var confirmHelp = false
 
     var body: some View {
         let columns = typeSize.isAccessibilitySize
@@ -317,24 +317,25 @@ private struct HomeCardGrid: View {
             HomeCard(icon: "calendar", tint: Theme.safe, title: "Next Appointment", subtitle: "Doctor visits and reminders.") {
                 ComingSoonTag()
             }
-            HomeCard(icon: "phone.fill", tint: Theme.alert, title: "Emergency Help", subtitle: "Call a contact, text everyone, or call 911.") {
+            HomeCard(icon: "message.fill", tint: Theme.alert, title: "Emergency Help", subtitle: "Text your contacts now.") {
                 Button {
-                    showEmergency = true
+                    confirmHelp = true
                 } label: {
-                    Label("Call for Help", systemImage: "phone.fill")
+                    Label("Send Ripple alert", systemImage: "message.fill")
                         .font(Theme.labelBold)
                         .foregroundStyle(Theme.alert)
                         .frame(maxWidth: .infinity, minHeight: Theme.minTarget)
                         .background(Theme.alert.opacity(0.10), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
                 .buttonStyle(.plain)
-                .accessibilityHint("Shows ways to get help: call a contact, text everyone, or call 911.")
+                .accessibilityHint("Asks for confirmation before texting a Ripple alert to all your contacts.")
             }
         }
-        .sheet(isPresented: $showEmergency) {
-            EmergencyOptionsSheet()
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
+        .confirmationDialog("Do you want to send a Ripple alert to all your contacts?", isPresented: $confirmHelp, titleVisibility: .visible) {
+            Button("Send Ripple alert", role: .destructive) { store.requestHelpFromPhone() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("All your contacts will be texted now, including both tiers and active one-hour contacts. Each person can respond with Ripple accept followed by the four-digit code in their alert.")
         }
     }
 }

@@ -18,7 +18,7 @@ python3 scripts/build_ripple_shortcuts.py --sign
 2. In Ripple, open **Settings → Messaging shortcuts** and send a test message. Approve anything Shortcuts asks for.
 3. In Shortcuts, open **Automation**, tap **+**, choose **Message**, set **Message Contains** to `Ripple accept`, choose **Run Immediately**, tap **Next**, and pick **Ripple Accept**.
 
-Alert texts end with "or reply RIPPLE ACCEPT 4821", with a different code
+Alert texts ask contacts to reply "Ripple accept 4821", with a different code
 for each person. Their reply runs the automation, Ripple shows "[Name] is
 responding" on the iPhone and Watch, texts the others, and stops Tier 2.
 

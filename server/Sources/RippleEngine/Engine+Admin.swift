@@ -106,7 +106,7 @@ extension Engine {
             lastSyncAt: user.lastSyncAt,
             alarm: record?.snapshot,
             messages: messages,
-            acknowledgment: record?.acknowledgment ?? record?.snapshot.acknowledgment,
+            acknowledgment: record?.snapshot.acknowledgment,
             closedByAdmin: record?.closedByAdmin ?? false,
             nextBackupAt: record.flatMap { nextBackupAt($0, user: user, at: t) },
             temporaryContacts: temporaryViews(user.id),
@@ -177,7 +177,6 @@ extension Engine {
             let alarmIds = Set(db.alarms.values.filter { $0.userId == userId }.map { $0.id })
             db.alarms = db.alarms.filter { $0.value.userId != userId }
             db.backups = db.backups.filter { !alarmIds.contains($0.value.message.alarmId) }
-            db.ackTokens = db.ackTokens.filter { $0.value.userId != userId }
             db.commands = db.commands.filter { $0.value.userId != userId }
             let contactIds = Set(db.temporaryContacts.values.filter { $0.userId == userId }.map { $0.id })
             db.temporaryContacts = db.temporaryContacts.filter { $0.value.userId != userId }

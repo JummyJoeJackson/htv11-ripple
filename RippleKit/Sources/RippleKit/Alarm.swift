@@ -9,6 +9,32 @@ public enum AlarmSource: String, Codable, Sendable {
     case phone
     /// The wearer asked for help with a swipe combo on the Watch.
     case help
+    /// Apple Watch fall detection recorded a fall in Apple Health. Apple
+    /// detects; Ripple only asks and brings people.
+    case fall
+    /// Apple Watch recorded a high, low or irregular heart rhythm alert in Apple Health.
+    case heartAlert
+}
+
+public extension AlarmSource {
+    /// What the Watch says while it waits for an answer.
+    var checkInStatus: String {
+        switch self {
+        case .fall: return "Fall reported"
+        case .heartAlert: return "Heart alert"
+        case .timer, .admin, .phone, .help: return "Check in"
+        }
+    }
+
+    /// Which Apple Watch alert started the check-in, as alert texts put it.
+    /// Nil for ordinary check-ins.
+    var alertReason: String? {
+        switch self {
+        case .fall: return "a fall"
+        case .heartAlert: return "a heart alert"
+        case .timer, .admin, .phone, .help: return nil
+        }
+    }
 }
 
 public enum AlarmPhase: String, Codable, Sendable {
@@ -275,13 +301,19 @@ public enum MessageTemplates {
         return formatter.string(from: date)
     }
 
-    public static func alert(name: String, checkInTime: String, locationURL: String?, helpCard: String?, acceptCode: String?) -> String {
-        let text = "RIPPLE ALERT: \(name) did not respond to their Watch check-in at \(checkInTime). Please call or check on them."
+    /// `reason`, like "a fall", names the Apple Watch alert that started the
+    /// check-in. It's Apple's report, so the text says so; Ripple claims nothing.
+    public static func alert(name: String, checkInTime: String, locationURL: String?, helpCard: String?, acceptCode: String?, reason: String? = nil) -> String {
+        let text = reason.map {
+            "RIPPLE ALERT: \(name)'s Apple Watch reported \($0), and they did not respond to a check-in at \(checkInTime). Please call or check on them."
+        } ?? "RIPPLE ALERT: \(name) did not respond to their Watch check-in at \(checkInTime). Please call or check on them."
         return alertBody(text, name: name, locationURL: locationURL, helpCard: helpCard, acceptCode: acceptCode)
     }
 
-    public static func escalation(name: String, checkInTime: String, locationURL: String?, acceptCode: String?) -> String {
-        let text = "RIPPLE ALERT: \(name) did not respond at \(checkInTime) and no one has confirmed yet. Please call or check on them."
+    public static func escalation(name: String, checkInTime: String, locationURL: String?, acceptCode: String?, reason: String? = nil) -> String {
+        let text = reason.map {
+            "RIPPLE ALERT: \(name)'s Apple Watch reported \($0) at \(checkInTime). They did not respond and no one has confirmed yet. Please call or check on them."
+        } ?? "RIPPLE ALERT: \(name) did not respond at \(checkInTime) and no one has confirmed yet. Please call or check on them."
         return alertBody(text, name: name, locationURL: locationURL, acceptCode: acceptCode)
     }
 

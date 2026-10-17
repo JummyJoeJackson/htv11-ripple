@@ -20,6 +20,8 @@ Holding the circle for 2 seconds is **duress**: the Watch shows the normal "Dism
 
 **Swipe combos** help when movement is shaky. Swiping up on the circle twice asks for help: contacts are texted straight away, even when monitoring is off. Swiping down twice during an alarm means "I'm okay". It takes two swipes in the same direction, so a single shaky movement can't trigger either one.
 
+**Apple Watch alerts** turn Apple's own fall detection and heart alerts into check-ins, if the wearer turns them on. Apple detects; Ripple makes sure a person follows up.
+
 **Pinch and clench** work through Apple's AssistiveTouch, which recognises the gestures. With the circle highlighted, a clench means "I'm okay". A double clench opens the Action Menu, where **Get help** asks for help.
 
 ## Key features

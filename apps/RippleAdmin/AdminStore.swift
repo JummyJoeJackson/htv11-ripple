@@ -174,6 +174,14 @@ final class AdminStore {
         }
     }
 
+    /// Stands in for Apple Watch recording a fall or heart alert in Apple Health.
+    /// The wearer's settings still decide whether it starts a check-in.
+    func simulateHealthAlert(_ kind: HealthAlertKind) async {
+        await run("Sending…", success: "Simulated \(kind.label.lowercased()) sent. The iPhone checks in if that alert is on.") { api, userId in
+            try await api.sendCommand(userId: userId, AdminCommandRequest(kind: .simulateHealthAlert, healthAlert: kind))
+        }
+    }
+
     func cutConnection(seconds: Int) async {
         await run("Sending…", success: "Cut sent. The iPhone stops heartbeats and sending for \(seconds) s.") { api, userId in
             try await api.sendCommand(userId: userId, AdminCommandRequest(kind: .cutConnection, durationSeconds: seconds))

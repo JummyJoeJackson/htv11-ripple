@@ -115,8 +115,12 @@ public struct RippleConfig: Codable, Equatable, Sendable {
     public var medicationTimes: [MedicationTime]
     /// Minutes to wait for "Took my meds" before a gentle check-in starts.
     public var medicationGraceMinutes: Int
+    /// Check in when Apple Watch records a fall in Apple Health.
+    public var healthFallsEnabled: Bool
+    /// Check in when Apple Watch records a high, low or irregular heart rhythm alert.
+    public var healthHeartEnabled: Bool
 
-    public init(version: Int, wearerName: String, contacts: [PermanentContact], helpCardEnabled: Bool, helpCard: String, checkInIntervalMinutes: Int, countdownSeconds: Int, ackWindowSeconds: Int, doubleTapEnabled: Bool, voiceEnabled: Bool, voicePhrase: String, shortcutName: String, combosEnabled: Bool = true, handGesturesEnabled: Bool = false, handGesturePreset: HandGesturePreset = .pinchClench, medicationTimes: [MedicationTime] = [], medicationGraceMinutes: Int = 30) {
+    public init(version: Int, wearerName: String, contacts: [PermanentContact], helpCardEnabled: Bool, helpCard: String, checkInIntervalMinutes: Int, countdownSeconds: Int, ackWindowSeconds: Int, doubleTapEnabled: Bool, voiceEnabled: Bool, voicePhrase: String, shortcutName: String, combosEnabled: Bool = true, handGesturesEnabled: Bool = false, handGesturePreset: HandGesturePreset = .pinchClench, medicationTimes: [MedicationTime] = [], medicationGraceMinutes: Int = 30, healthFallsEnabled: Bool = false, healthHeartEnabled: Bool = false) {
         self.version = version
         self.wearerName = wearerName
         self.contacts = contacts
@@ -134,12 +138,23 @@ public struct RippleConfig: Codable, Equatable, Sendable {
         self.shortcutName = shortcutName
         self.medicationTimes = medicationTimes
         self.medicationGraceMinutes = medicationGraceMinutes
+        self.healthFallsEnabled = healthFallsEnabled
+        self.healthHeartEnabled = healthHeartEnabled
+    }
+
+    /// The Apple Health alerts the wearer chose to turn into check-ins.
+    public var healthAlerts: Set<HealthAlertKind> {
+        var kinds: Set<HealthAlertKind> = []
+        if healthFallsEnabled { kinds.insert(.fall) }
+        if healthHeartEnabled { kinds.insert(.heart) }
+        return kinds
     }
 
     private enum CodingKeys: String, CodingKey {
         case version, wearerName, contacts, helpCardEnabled, helpCard, checkInIntervalMinutes, countdownSeconds,
              ackWindowSeconds, doubleTapEnabled, voiceEnabled, voicePhrase, combosEnabled, shortcutName,
-             handGesturesEnabled, handGesturePreset, medicationTimes, medicationGraceMinutes
+             handGesturesEnabled, handGesturePreset, medicationTimes, medicationGraceMinutes,
+             healthFallsEnabled, healthHeartEnabled
     }
 
     /// Older settings still load without losing contacts. Hand gestures need
@@ -164,7 +179,10 @@ public struct RippleConfig: Codable, Equatable, Sendable {
             handGesturesEnabled: (try container.decodeIfPresent(Bool.self, forKey: .handGesturesEnabled) ?? false) && preset != nil,
             handGesturePreset: preset ?? .pinchClench,
             medicationTimes: try container.decodeIfPresent([MedicationTime].self, forKey: .medicationTimes) ?? [],
-            medicationGraceMinutes: try container.decodeIfPresent(Int.self, forKey: .medicationGraceMinutes) ?? 30
+            medicationGraceMinutes: try container.decodeIfPresent(Int.self, forKey: .medicationGraceMinutes) ?? 30,
+            // Health alerts need Apple Health permission, so they're opt-in.
+            healthFallsEnabled: try container.decodeIfPresent(Bool.self, forKey: .healthFallsEnabled) ?? false,
+            healthHeartEnabled: try container.decodeIfPresent(Bool.self, forKey: .healthHeartEnabled) ?? false
         )
     }
 

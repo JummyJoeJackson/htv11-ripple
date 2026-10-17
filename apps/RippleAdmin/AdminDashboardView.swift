@@ -30,6 +30,16 @@ struct AdminDashboardView: View {
                 } label: {
                     Label("Trigger alarm on the Watch", systemImage: "applewatch.radiowaves.left.and.right")
                 }
+                Button {
+                    Task { await store.simulateHealthAlert(.fall) }
+                } label: {
+                    Label("Simulate Apple fall alert", systemImage: "figure.fall")
+                }
+                Button {
+                    Task { await store.simulateHealthAlert(.heart) }
+                } label: {
+                    Label("Simulate Apple heart alert", systemImage: "heart.text.square")
+                }
                 Stepper("Cut for: \(cutSeconds) s", value: $cutSeconds, in: 30...300, step: 15)
                 Button {
                     Task { await store.cutConnection(seconds: cutSeconds) }

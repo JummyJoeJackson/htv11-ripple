@@ -63,6 +63,9 @@ public enum DeviceCommandKind: String, Codable, Sendable {
     case disableAlarm
     /// Adjust the short demo countdowns.
     case setTimers
+    /// Act as if Apple Watch had recorded a fall or heart alert in Apple
+    /// Health, for demos. The wearer's settings still decide what happens.
+    case simulateHealthAlert
 
     public var label: String {
         switch self {
@@ -70,6 +73,7 @@ public enum DeviceCommandKind: String, Codable, Sendable {
         case .cutConnection: return "Cut phone connection"
         case .disableAlarm: return "Disable alarm"
         case .setTimers: return "Set demo timers"
+        case .simulateHealthAlert: return "Simulate Apple Watch alert"
         }
     }
 }
@@ -80,14 +84,17 @@ public struct DeviceCommand: Codable, Identifiable, Sendable {
     public var countdownSeconds: Int?
     public var ackWindowSeconds: Int?
     public var durationSeconds: Int?
+    /// Which alert a simulateHealthAlert command stands in for.
+    public var healthAlert: HealthAlertKind?
     public var createdAt: Date
 
-    public init(id: String, kind: DeviceCommandKind, countdownSeconds: Int?, ackWindowSeconds: Int?, durationSeconds: Int?, createdAt: Date) {
+    public init(id: String, kind: DeviceCommandKind, countdownSeconds: Int?, ackWindowSeconds: Int?, durationSeconds: Int?, createdAt: Date, healthAlert: HealthAlertKind? = nil) {
         self.id = id
         self.kind = kind
         self.countdownSeconds = countdownSeconds
         self.ackWindowSeconds = ackWindowSeconds
         self.durationSeconds = durationSeconds
+        self.healthAlert = healthAlert
         self.createdAt = createdAt
     }
 }
@@ -254,11 +261,13 @@ public struct AdminCommandRequest: Codable, Sendable {
     public var countdownSeconds: Int?
     public var ackWindowSeconds: Int?
     public var durationSeconds: Int?
-    public init(kind: DeviceCommandKind, countdownSeconds: Int? = nil, ackWindowSeconds: Int? = nil, durationSeconds: Int? = nil) {
+    public var healthAlert: HealthAlertKind?
+    public init(kind: DeviceCommandKind, countdownSeconds: Int? = nil, ackWindowSeconds: Int? = nil, durationSeconds: Int? = nil, healthAlert: HealthAlertKind? = nil) {
         self.kind = kind
         self.countdownSeconds = countdownSeconds
         self.ackWindowSeconds = ackWindowSeconds
         self.durationSeconds = durationSeconds
+        self.healthAlert = healthAlert
     }
 }
 

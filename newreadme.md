@@ -10,6 +10,17 @@ An Apple Watch safety companion that turns an unanswered check-in into a request
 
 *Built for Hack the Valley 11 · Project KAZE*
 
+## Quick Glance
+
+- **Help when a check-in goes unanswered.** Ripple can alert trusted contacts when the wearer cannot respond.
+- **Designed with Parkinson's in mind.** One large Watch circle, clear status messages, and haptic prompts keep interactions simple.
+- **Touch, voice, or gestures.** Answer with a tap, chosen phrase, double tap, swipes, or one of ten AssistiveTouch presets.
+- **Your people, reached by text.** Contacts need no app; reply acknowledgments and two contact tiers coordinate the response.
+- **A discreet way to ask.** A two-second hold during an alarm looks like a dismissal while alerting continues.
+- **Medication reminders with a safety check.** A missed dose acknowledgment can start a check-in before any contacts are alerted.
+- **Support for the next hour.** Invite a consenting temporary contact who joins Tier 1 for a one-hour session.
+- **Privacy on your terms.** Choose who receives a location snapshot and whether to include your help card.
+
 ## Independence, with someone in your corner
 
 A safety plan needs to account for the moment a person cannot carry it out themselves. Reaching for a phone, finding a contact, explaining what happened, and pressing SOS all depend on being able to act.
@@ -52,11 +63,17 @@ Status uses words and symbols alongside color. Haptics announce a check-in and r
 
 ### Answer in the way that works for you
 
+**Touch, voice, and a whole range of gestures: more ways to say “I'm okay.”**
+
+Tap the large circle. Say your chosen phrase. Double tap your fingers. Swipe down twice. Complete a selected pinch-and-clench sequence. Ripple gives the wearer several ways to answer a check-in and dismiss the alarm, with ten AssistiveTouch presets adding even more choice.
+
+That flexibility is central to the experience. Movement, speech, and comfort can vary from one moment to the next, so the wearer can configure the response method that suits them. The aim is to make confirming you're okay as approachable as possible, with touch available alongside the enabled voice or gesture method.
+
 | Input | What it offers |
 | --- | --- |
 | **Touch** | Tap the large circle to answer a check-in, or confirm you're okay after contacts have been alerted. |
-| **Native double tap** | Run the visible dismissal action on compatible Apple Watch hardware and watchOS. |
 | **Voice phrase** | Say a phrase you choose during an active alarm. The Watch passes microphone audio to the paired iPhone for speech recognition, requesting on-device recognition when supported. Watch dictation provides a fallback when automatic listening is unavailable. |
+| **Native double tap** | Run the visible dismissal action on compatible Apple Watch hardware and watchOS. |
 | **Swipe combinations** | Swipe up twice to request help; swipe down twice to confirm you're okay during an alarm. |
 | **AssistiveTouch sequences** | Choose from ten presets built from pinch, clench, double pinch, and double clench, including combinations such as **pinch + clench**. Separate optional selections dismiss an open alarm or request help when no alarm is open. |
 
@@ -109,18 +126,6 @@ Optional integrations can turn new fall records and high, low, or irregular hear
 
 Apple supplies the underlying health signals; Ripple adds a path to trusted people. This integration requires HealthKit capabilities, permission, and timely data synchronization. The demo app can simulate these events without creating a dangerous situation.
 
-## A backup path when the phone goes quiet
-
-When an alarm is registered with the server, its countdown and recipient information are mirrored there. **That registered alarm can continue toward an alert even if the iPhone later stops communicating.**
-
-The backend watches phone heartbeats and overdue messages, using a default 30-second grace period before taking over under its backup rules. It can send through Twilio SMS, or through macOS Messages for a configured demonstration. Backup messages identify themselves as **Sent by Ripple backup**.
-
-Shared message identifiers and reconciliation let the recovering phone learn what the backend already sent and suppress repeat sends. The server also persists its state so registered deadlines and temporary-contact expiry can survive a restart.
-
-This fallback depends on the server receiving the alarm before disconnection and remaining available itself. A newly requested Watch action still needs the paired iPhone. Text acknowledgments depend on the wearer's iPhone receiving and processing the reply; a separate Twilio backup number does not forward replies into that automation.
-
-The default backend sender is **console mode**, which prints messages without delivering them. Real backup delivery requires a configured messaging route.
-
 ## Privacy you can choose, contact by contact
 
 The wearer controls their support network and what gets shared:
@@ -131,7 +136,7 @@ The wearer controls their support network and what gets shared:
 - **Temporary support has an end.** Backend-enforced expiry prevents an old one-hour contact from receiving new alerts.
 - **Your profile photo stays local.** The chosen image is stored on the iPhone and is not sent to the server or contacts.
 
-Backup delivery requires alarm snapshots and recipient details, including permitted location when available, to reach the Ripple backend. Production security, retention, and consent practices need further development and review.
+The phone mirrors alarm snapshots and recipient details, including permitted location when available, to the Ripple backend. Production security, retention, and consent practices need further development and review.
 
 ## An iPhone app that keeps the details manageable
 
@@ -145,16 +150,16 @@ Settings also make Watch synchronization visible: the phone and Watch report con
 
 ## Built to show how the difficult cases behave
 
-A separate **Demo admin** iPhone app lets the team trigger alarms, simulate Apple Health events, cut phone communication, expire temporary contacts, adjust timers, disable alarms, and reset a demonstration. It displays heartbeats, command progress, backup deadlines, message outcomes, and an event timeline. Access is authenticated and paired to the demo wearer.
+A separate **Demo admin** iPhone app lets the team trigger alarms, simulate Apple Health events, cut phone communication, expire temporary contacts, adjust timers, disable alarms, and reset a demonstration. It displays heartbeats, command progress, message outcomes, and an event timeline. Access is authenticated and paired to the demo wearer.
 
-That gives the KAZE presentation a concrete way to exercise all seven scenarios:
+The following table maps Ripple to KAZE's seven scenarios and identifies the current connectivity gap:
 
 | Scenario | Ripple's prototype behavior |
 | --- | --- |
 | **Safe** | An answer during the countdown closes the check-in without texting contacts. |
 | **No response** | The deadline initiates an alert to eligible first-tier contacts. |
 | **Duress** | A two-second hold appears to dismiss the alarm while alerting continues. |
-| **Connectivity failure** | After an alarm is registered, the server can take over delivery when the phone goes quiet. |
+| **Connectivity failure** | Current limitation: Watch actions and primary alert sending rely on the paired iPhone. Automatic delivery after phone disconnection is not a verified demo capability. |
 | **Unacknowledged alert** | Tier 2 is contacted after the acknowledgment window expires. |
 | **False alarm** | **I'm okay now** updates people already alerted and stops pending escalation. |
 | **Privacy** | Location follows per-contact settings; expired and removed temporary contacts receive no new alerts. |
@@ -165,13 +170,14 @@ Resetting creates a new demo run and clears old alarm work so a previous countdo
 
 Ripple's core is implemented across three native SwiftUI apps, a shared **RippleKit** package, and a **Swift + Vapor** backend. The phone and server share alarm models, recipient rules, and message wording. WatchConnectivity links the wrist interface to the iPhone, while Apple Shortcuts provides the prototype's phone messaging path.
 
-The repository includes clock-controlled XCTest coverage for countdowns, escalation, duress, replies, medication prompts, gesture matching, privacy rules, temporary contacts, and backup handoff. GitHub Actions is configured to test the shared package and backend, build all three apps for simulators, and check generated messaging shortcuts.
+The repository includes clock-controlled XCTest coverage for countdowns, escalation, duress, replies, medication prompts, gesture matching, privacy rules, and temporary contacts. GitHub Actions is configured to test the shared package and backend, build all three apps for simulators, and check generated messaging shortcuts.
 
 | Status | What it means here |
 | --- | --- |
-| **Implemented in the repo** | Watch and phone interfaces, check-in logic, messaging integrations, tiered escalation, coded replies, duress, temporary contacts, medication prompts, location controls, backup rules, and demo controls. |
+| **Implemented in the repo** | Watch and phone interfaces, check-in logic, messaging integrations, tiered escalation, coded replies, duress, temporary contacts, medication prompts, location controls, and demo controls. |
 | **Simulated for demonstrations** | A wearer being unable to respond, manually triggered alarms and health events, and phone failure through the admin control. No drug exposure, intentional incapacitation, or real emergency calls belong in testing. |
-| **Operational assumptions** | The wearer has a charged, paired iPhone and Watch; required permissions and shortcuts are available; the server and message route are reachable for backup; contacts receive alerts and choose to act. The phone's primary shortcut sending path currently requires the app to be active. |
+| **Operational assumptions** | The wearer has a charged, paired iPhone and Watch; required permissions and shortcuts are available; contacts receive alerts and choose to act. The phone's primary shortcut sending path currently requires the app to be active. |
+| **Experimental backend code** | Server-side backup scheduling, sender adapters, and logic tests exist, but end-to-end fallback delivery is unverified. The default sender only logs messages. Backup delivery is not presented as a working demo feature. |
 | **Still needs validation** | Locked-phone and background behavior, Watch runtime limits, on-device AssistiveTouch and double-tap delivery, voice in noisy environments, use with Parkinson's motor and speech changes, accidental activations, false alarms, battery life, and actual delivery and response times. HealthKit event delivery also needs physical-device verification. |
 
 Message status distinguishes **pending, submitted, failed, unknown, and cancelled**. Submission is not proof that a text was received or read. The prototype initiates a request for assistance; it does not diagnose incapacitation, detect drink spiking, independently detect falls, or guarantee a response.
@@ -180,7 +186,7 @@ Message status distinguishes **pending, submitted, failed, unknown, and cancelle
 
 The planning documents explore walk-session check-ins after prolonged step inactivity, optional step and medication context in alerts, movement-disorder context, and rhythmic comfort haptics. These are future directions, not current sensing capabilities. Appointment support is a **Coming soon** placeholder; symptom check-ins are also a planned direction.
 
-Further work includes dependable background operation, a supported physical-button input path, and validation with the people Ripple is designed to serve. The priority is to establish that the existing response loop is usable and dependable in everyday conditions before expanding its scope.
+Further work includes dependable background operation, a configured and validated alert-delivery fallback for phone disconnection, a supported physical-button input path, and validation with the people Ripple is designed to serve. The priority is to establish that the existing response loop is usable and dependable in everyday conditions before expanding its scope.
 
 ## Explore the project
 

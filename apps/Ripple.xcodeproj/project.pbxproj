@@ -441,6 +441,7 @@
 				INFOPLIST_FILE = "Config/RippleWatch-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Ripple;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "During an alarm, Ripple listens for your phrase, so you can dismiss it by voice.";
+				INFOPLIST_KEY_NSMotionUsageDescription = "During a walk session, Ripple counts your steps so it can check in if they stop.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "$(RIPPLE_BUNDLE_PREFIX).wearer";
 				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = NO;
@@ -470,6 +471,7 @@
 				INFOPLIST_FILE = "Config/RippleWatch-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Ripple;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "During an alarm, Ripple listens for your phrase, so you can dismiss it by voice.";
+				INFOPLIST_KEY_NSMotionUsageDescription = "During a walk session, Ripple counts your steps so it can check in if they stop.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "$(RIPPLE_BUNDLE_PREFIX).wearer";
 				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = NO;

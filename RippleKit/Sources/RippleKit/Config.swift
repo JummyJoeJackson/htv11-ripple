@@ -96,10 +96,17 @@ public struct RippleConfig: Codable, Equatable, Sendable {
     /// Accept the selected AssistiveTouch shortcut sequence to dismiss an alarm.
     public var handGesturesEnabled: Bool
     public var handGesturePreset: HandGesturePreset
+    /// The Watch offers walk sessions while monitoring.
+    public var walkEnabled: Bool
+    /// During a walk, no steps for this long after walking starts a check-in.
+    public var walkStopSeconds: Int
     /// Name of the user-installed shortcut that sends the texts.
     public var shortcutName: String
 
-    public init(version: Int, wearerName: String, contacts: [PermanentContact], helpCardEnabled: Bool, helpCard: String, checkInIntervalMinutes: Int, countdownSeconds: Int, ackWindowSeconds: Int, doubleTapEnabled: Bool, voiceEnabled: Bool, voicePhrase: String, shortcutName: String, combosEnabled: Bool = true, handGesturesEnabled: Bool = false, handGesturePreset: HandGesturePreset = .pinchClench) {
+    /// "A few minutes" without steps. The demo timers use 20 seconds.
+    public static let defaultWalkStopSeconds = 120
+
+    public init(version: Int, wearerName: String, contacts: [PermanentContact], helpCardEnabled: Bool, helpCard: String, checkInIntervalMinutes: Int, countdownSeconds: Int, ackWindowSeconds: Int, doubleTapEnabled: Bool, voiceEnabled: Bool, voicePhrase: String, shortcutName: String, combosEnabled: Bool = true, handGesturesEnabled: Bool = false, handGesturePreset: HandGesturePreset = .pinchClench, walkEnabled: Bool = true, walkStopSeconds: Int = RippleConfig.defaultWalkStopSeconds) {
         self.version = version
         self.wearerName = wearerName
         self.contacts = contacts
@@ -114,17 +121,20 @@ public struct RippleConfig: Codable, Equatable, Sendable {
         self.combosEnabled = combosEnabled
         self.handGesturesEnabled = handGesturesEnabled
         self.handGesturePreset = handGesturePreset
+        self.walkEnabled = walkEnabled
+        self.walkStopSeconds = walkStopSeconds
         self.shortcutName = shortcutName
     }
 
     private enum CodingKeys: String, CodingKey {
         case version, wearerName, contacts, helpCardEnabled, helpCard, checkInIntervalMinutes, countdownSeconds,
              ackWindowSeconds, doubleTapEnabled, voiceEnabled, voicePhrase, combosEnabled, shortcutName,
-             handGesturesEnabled, handGesturePreset
+             handGesturesEnabled, handGesturePreset, walkEnabled, walkStopSeconds
     }
 
     /// Older settings still load without losing contacts. Hand gestures need
-    /// explicit opt-in, and unknown future presets stay disabled.
+    /// explicit opt-in, and unknown future presets stay disabled. Walk
+    /// sessions are on when settings predate them.
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let preset = try? container.decode(HandGesturePreset.self, forKey: .handGesturePreset)
@@ -143,7 +153,9 @@ public struct RippleConfig: Codable, Equatable, Sendable {
             shortcutName: try container.decode(String.self, forKey: .shortcutName),
             combosEnabled: try container.decodeIfPresent(Bool.self, forKey: .combosEnabled) ?? true,
             handGesturesEnabled: (try container.decodeIfPresent(Bool.self, forKey: .handGesturesEnabled) ?? false) && preset != nil,
-            handGesturePreset: preset ?? .pinchClench
+            handGesturePreset: preset ?? .pinchClench,
+            walkEnabled: try container.decodeIfPresent(Bool.self, forKey: .walkEnabled) ?? true,
+            walkStopSeconds: try container.decodeIfPresent(Int.self, forKey: .walkStopSeconds) ?? RippleConfig.defaultWalkStopSeconds
         )
     }
 
@@ -167,7 +179,9 @@ public struct RippleConfig: Codable, Equatable, Sendable {
 
     /// The part of the configuration the Watch needs.
     public var watchConfig: WatchConfig {
-        WatchConfig(version: version, doubleTapEnabled: doubleTapEnabled, voiceEnabled: voiceEnabled, voicePhrase: voicePhrase, combosEnabled: combosEnabled, handGesturesEnabled: handGesturesEnabled, handGesturePreset: handGesturePreset)
+        WatchConfig(version: version, doubleTapEnabled: doubleTapEnabled, voiceEnabled: voiceEnabled, voicePhrase: voicePhrase,
+                    combosEnabled: combosEnabled, handGesturesEnabled: handGesturesEnabled, handGesturePreset: handGesturePreset,
+                    walkEnabled: walkEnabled, walkStopSeconds: walkStopSeconds)
     }
 }
 

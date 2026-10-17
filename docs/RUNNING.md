@@ -145,6 +145,7 @@ Start monitoring by tapping **Start** on the Watch circle. Keep the Watch app op
 | Duress | Trigger; the wearer holds the circle for 2 seconds. | The Watch shows the normal "Dismissed" screen. Tier 1 still receives the alert. |
 | Connectivity failure | Trigger, wait two seconds, then admin: **Cut phone connection**. | About 30 seconds later the backend sends the alert by SMS, marked "Sent by Ripple backup". |
 | Privacy | Invite a temporary contact and have them agree. Admin: **Expire temporary contact now**, then trigger and let it run out. | Only the location-on contact gets a map link. The expired contact gets nothing. |
+| Walk stop (extra) | With the demo timers, tap **Start walk** on the Watch, walk at least 10 steps, then stand still. | The step count goes up while walking. Once you stand still, the Watch counts "Still 5 s of 20 s", and at 20 seconds it shows "You stopped walking" with the normal countdown. Answer it, or let it run out to send the alert. |
 
 Then show **Reset demo** and that no old alarm comes back.
 
@@ -153,6 +154,10 @@ When someone taps an acknowledge link, the Watch and iPhone show "[Contact] is r
 ### Temporary contacts
 
 On the wearer's iPhone: **Contacts → Invite for one hour**. The other person scans the QR code (or opens the shared link) and taps **I agree**. They join Tier 1 for one hour from that moment. **Remove now** ends it early. Expired or removed contacts never receive new alerts.
+
+### Walk sessions
+
+While monitoring, the Watch shows **Start walk** under the circle. During a walk it counts steps with the Watch's pedometer and shows the count. If the wearer has walked at least 10 steps and then no new steps arrive for the set time (2 minutes by default, 20 seconds with the demo timers), the iPhone starts a normal check-in that says "You stopped walking". It only asks; it never claims a fall or a freeze, and the alert text is the usual one. After a check-in, another needs 10 more steps first. Tap **End walk** to stop; stopping monitoring ends the walk too. The first walk asks for Motion & Fitness permission on the Watch. Turn walks off or change the time in **Settings → Walk sessions** on the wearer's iPhone.
 
 ### Swipe combos
 
@@ -214,6 +219,7 @@ GitHub Actions runs both and builds all three apps for the simulator on every pu
 | Voice | During an alarm the Watch microphone listens for the phrase by itself, with nothing to press. watchOS has no speech recognition, so the Watch streams the audio to the wearer's iPhone, which recognizes it (on the iPhone when supported). It needs both apps open, and the iPhone reachable. The app keeps running with the wrist down, but whether the microphone keeps recording then is untested. Anyone nearby who says the phrase also dismisses, so pick one nobody says by accident (the default is "I am currently fine"). If listening can't start, the Watch shows the tap-to-dictate microphone button instead. |
 | Physical buttons | Not used; the side button and Digital Crown belong to the system. |
 | AssistiveTouch | Apple recognises the four base inputs and runs assigned shortcuts. Ripple matches the chosen dismissal sequence. Background intent delivery, consecutive gesture timing, and Ripple staying visible require physical Watch testing; see [the setup guide](HAND_GESTURES.md). |
+| Walk sessions | Steps are counted on the Watch, so the iPhone must be reachable for a check-in to start; the Watch keeps asking until it is. Besides live updates, the Watch asks for its step total every 3 seconds during a walk, so the count catches up if live updates pause while the screen is off. Check this on the Watch: start a walk, lower your wrist, keep walking for a minute, then raise it; the step count should have kept up. The pedometer may report steps in batches, so a very short stop time could check in while still walking. |
 | Help location | Help texts go out immediately, so they include a map link only if an alarm was already running and had a location fix. |
 | Backup | It covers a phone that stops syncing. If the phone sent a text but couldn't report it before going quiet, the backup may send a second copy, marked as backup. |
 | Data | Demo data is deleted on reset. Tokens and phone numbers are stored in a JSON file on the Mac; this is a prototype, not production storage. |

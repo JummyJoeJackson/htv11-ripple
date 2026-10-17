@@ -269,6 +269,40 @@ final class AlarmCoordinatorTests: XCTestCase {
         XCTAssertTrue(loaded.combosEnabled)
     }
 
+    // MARK: Walk session
+
+    func testStepsStoppingStartsANormalCheckIn() {
+        let result = coordinator.handle(WatchAction(kind: .walkStopped, alarmId: nil))
+        XCTAssertTrue(result.ok)
+        XCTAssertEqual(coordinator.alarm?.source, .walk)
+        XCTAssertEqual(coordinator.display().mode, .checkIn)
+        XCTAssertEqual(coordinator.display().status, "You stopped walking")
+        XCTAssertTrue(recorder.sent.isEmpty, "Nothing is texted while the wearer can still answer")
+        coordinator.dismiss(alarmId: coordinator.alarm?.id)
+        advance(60)
+        XCTAssertTrue(recorder.sent.isEmpty)
+    }
+
+    func testStepsStoppingWithNoAnswerAlertsLikeAnyCheckIn() {
+        coordinator.walkStopped()
+        advance(15)
+        XCTAssertEqual(Set(sent(.alert)), ["sam", "jo"])
+    }
+
+    func testStepsStoppingDuringAnOpenAlarmChangesNothing() {
+        coordinator.startAlarm(source: .admin)
+        let alarmId = coordinator.alarm?.id
+        XCTAssertTrue(coordinator.walkStopped().ok, "The Watch can stop asking")
+        XCTAssertEqual(coordinator.alarm?.id, alarmId)
+        XCTAssertEqual(coordinator.alarm?.source, .admin)
+    }
+
+    func testStepsStoppingWithMonitoringOffDoesNothing() {
+        coordinator.stopMonitoring()
+        XCTAssertFalse(coordinator.walkStopped().ok)
+        XCTAssertNil(coordinator.alarm)
+    }
+
     // MARK: Connectivity failure
 
     func testBackupSendsAreNotRepeatedByThePhone() {

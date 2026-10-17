@@ -57,8 +57,14 @@ public struct WatchConfig: Codable, Equatable, Sendable {
     public var combosEnabled: Bool
     public var handGesturesEnabled: Bool
     public var handGesturePreset: HandGesturePreset
+    /// The Watch offers walk sessions while monitoring.
+    public var walkEnabled: Bool
+    /// During a walk, no steps for this long after walking starts a check-in.
+    public var walkStopSeconds: Int
 
-    public init(version: Int, doubleTapEnabled: Bool, voiceEnabled: Bool, voicePhrase: String, combosEnabled: Bool = true, handGesturesEnabled: Bool = false, handGesturePreset: HandGesturePreset = .pinchClench) {
+    public init(version: Int, doubleTapEnabled: Bool, voiceEnabled: Bool, voicePhrase: String, combosEnabled: Bool = true,
+                handGesturesEnabled: Bool = false, handGesturePreset: HandGesturePreset = .pinchClench,
+                walkEnabled: Bool = true, walkStopSeconds: Int = RippleConfig.defaultWalkStopSeconds) {
         self.version = version
         self.doubleTapEnabled = doubleTapEnabled
         self.voiceEnabled = voiceEnabled
@@ -66,14 +72,18 @@ public struct WatchConfig: Codable, Equatable, Sendable {
         self.combosEnabled = combosEnabled
         self.handGesturesEnabled = handGesturesEnabled
         self.handGesturePreset = handGesturePreset
+        self.walkEnabled = walkEnabled
+        self.walkStopSeconds = walkStopSeconds
     }
 
     private enum CodingKeys: String, CodingKey {
-        case version, doubleTapEnabled, voiceEnabled, voicePhrase, combosEnabled, handGesturesEnabled, handGesturePreset
+        case version, doubleTapEnabled, voiceEnabled, voicePhrase, combosEnabled, handGesturesEnabled, handGesturePreset,
+             walkEnabled, walkStopSeconds
     }
 
     /// Older settings still load; new hand gestures need explicit opt-in.
     /// Unknown future presets are disabled rather than mapped to another action.
+    /// Walk sessions are on when settings predate them.
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let preset = try? container.decode(HandGesturePreset.self, forKey: .handGesturePreset)
@@ -84,7 +94,9 @@ public struct WatchConfig: Codable, Equatable, Sendable {
             voicePhrase: try container.decode(String.self, forKey: .voicePhrase),
             combosEnabled: try container.decodeIfPresent(Bool.self, forKey: .combosEnabled) ?? true,
             handGesturesEnabled: (try container.decodeIfPresent(Bool.self, forKey: .handGesturesEnabled) ?? false) && preset != nil,
-            handGesturePreset: preset ?? .pinchClench
+            handGesturePreset: preset ?? .pinchClench,
+            walkEnabled: try container.decodeIfPresent(Bool.self, forKey: .walkEnabled) ?? true,
+            walkStopSeconds: try container.decodeIfPresent(Int.self, forKey: .walkStopSeconds) ?? RippleConfig.defaultWalkStopSeconds
         )
     }
 
@@ -102,6 +114,8 @@ public enum WatchActionKind: String, Codable, Sendable {
     case hold
     /// Any state: swipe up twice. Texts contacts now, without a countdown. Never duress.
     case help
+    /// Walk session: steps stopped after walking. Starts a normal check-in.
+    case walkStopped
 }
 
 public enum DismissMethod: String, Codable, Sendable {

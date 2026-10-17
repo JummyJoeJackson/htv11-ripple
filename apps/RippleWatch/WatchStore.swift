@@ -33,10 +33,20 @@ final class WatchStore {
     private(set) var handGestureCount = 0
     private(set) var lastHandGesture: String?
     private(set) var handGestureStatus = ""
+    /// A walk session is on: a stop in steps starts a check-in.
+    private(set) var walking = false
+    /// Steps since the walk session started.
+    private(set) var walkSteps = 0
+    /// When the wearer last stepped, once they've walked enough for a stop to count.
+    private(set) var walkStillSince: Date?
 
     private let link = WatchLink()
     @ObservationIgnored private let microphone = WatchMicrophone()
     @ObservationIgnored private let runtime = WatchRuntime()
+    @ObservationIgnored private let pedometer = WatchPedometer()
+    @ObservationIgnored private var walkMonitor = WalkMonitor(stopAfter: TimeInterval(RippleConfig.defaultWalkStopSeconds))
+    /// Steps stopped and the iPhone hasn't opened a check-in yet.
+    @ObservationIgnored private var walkCheckInPending = false
     @ObservationIgnored private var hapticTask: Task<Void, Never>?
     @ObservationIgnored private var pingTask: Task<Void, Never>?
     @ObservationIgnored private var timeoutTask: Task<Void, Never>?
@@ -80,6 +90,12 @@ final class WatchStore {
             guard let self, let session = self.voiceSessionId else { return }
             self.link.sendVoiceAudio(session: session, audio: audio)
         }
+        pedometer.onSteps = { [weak self] steps, time in
+            self?.stepsCounted(steps, at: time)
+        }
+        pedometer.onProblem = { [weak self] problem in
+            self?.walkProblem(problem)
+        }
         if config.voiceEnabled { WatchMicrophone.requestPermission() }
         link.activate()
         pingTask = Task { [weak self] in
@@ -89,6 +105,7 @@ final class WatchStore {
                     self.phoneReachable = self.link.isReachable
                     if self.config.version > 0 { self.link.acknowledgeConfig(self.config.version) }
                     self.refreshRuntime()
+                    self.checkWalk()
                 }
                 try? await Task.sleep(nanoseconds: 3_000_000_000)
             }
@@ -102,6 +119,7 @@ final class WatchStore {
             resetHandGestures()
         }
         let previousAlarm = display.mode == .checkIn ? display.alarmId : nil
+        let wasAlarm = display.mode.isAlarm
         display = newDisplay
         if let data = try? RippleJSON.encoder.encode(newDisplay) {
             UserDefaults.standard.set(data, forKey: Keys.display)
@@ -114,6 +132,17 @@ final class WatchStore {
         }
         if !newDisplay.mode.isAlarm {
             confirmStop = false
+        }
+        if newDisplay.mode.isAlarm {
+            // The check-in is open, whatever started it.
+            walkCheckInPending = false
+        } else if wasAlarm {
+            // The wearer just answered, so stopping to do it doesn't count.
+            walkMonitor.waitForWalking()
+            updateWalkStatus()
+        }
+        if newDisplay.mode == .off && walking {
+            endWalk()
         }
         refreshRuntime()
     }
@@ -133,6 +162,10 @@ final class WatchStore {
         link.acknowledgeConfig(newConfig.version)
         if newConfig.voiceEnabled { WatchMicrophone.requestPermission() }
         updateListening()
+        walkMonitor.stopAfter = TimeInterval(newConfig.walkStopSeconds)
+        if !newConfig.walkEnabled && walking {
+            endWalk()
+        }
     }
 
     // MARK: Circle
@@ -174,6 +207,77 @@ final class WatchStore {
             feedback = WatchFeedback(text: "Didn't catch that. Tap the circle instead.", ok: false)
             WKInterfaceDevice.current().play(.failure)
         }
+    }
+
+    // MARK: Walk session
+
+    /// From the button under the circle while monitoring. During a walk, if
+    /// the wearer was walking and their steps stop for the set time, the
+    /// iPhone starts a normal check-in. It doesn't detect falls or freezes.
+    func toggleWalk() {
+        if walking {
+            endWalk()
+            feedback = WatchFeedback(text: "Walk ended", ok: true)
+            WKInterfaceDevice.current().play(.stop)
+        } else {
+            startWalk()
+        }
+    }
+
+    private func startWalk() {
+        guard config.walkEnabled, display.mode == .monitoring else { return }
+        if let problem = WatchPedometer.problem {
+            walkProblem(problem)
+            return
+        }
+        walkMonitor = WalkMonitor(stopAfter: TimeInterval(config.walkStopSeconds))
+        walkSteps = 0
+        walkCheckInPending = false
+        walking = true
+        pedometer.start(from: Date())
+        feedback = WatchFeedback(text: "Walk started", ok: true)
+        WKInterfaceDevice.current().play(.start)
+    }
+
+    private func endWalk() {
+        pedometer.stop()
+        walking = false
+        walkSteps = 0
+        walkCheckInPending = false
+        walkStillSince = nil
+    }
+
+    /// From live updates and from the direct query; the larger total wins.
+    private func stepsCounted(_ steps: Int, at time: Date) {
+        guard walking else { return }
+        walkMonitor.update(totalSteps: steps, at: time)
+        walkSteps = walkMonitor.steps
+        updateWalkStatus()
+    }
+
+    private func updateWalkStatus() {
+        walkStillSince = walking && walkMonitor.armed ? walkMonitor.lastStepAt : nil
+    }
+
+    private func walkProblem(_ problem: String) {
+        if walking { endWalk() }
+        feedback = WatchFeedback(text: problem, ok: false)
+        WKInterfaceDevice.current().play(.failure)
+    }
+
+    /// Runs with every ping. Asks the iPhone again until a check-in is open,
+    /// since it may be briefly out of reach when the steps stop.
+    private func checkWalk() {
+        guard walking else { return }
+        pedometer.refresh()
+        // During an alarm the wearer is already being asked.
+        guard display.mode == .monitoring else { return }
+        if walkMonitor.checkStopped(at: Date()) {
+            walkCheckInPending = true
+            updateWalkStatus()
+        }
+        guard walkCheckInPending, link.isReachable, display.phoneAvailable, !sending else { return }
+        send(.walkStopped)
     }
 
     // MARK: Staying awake

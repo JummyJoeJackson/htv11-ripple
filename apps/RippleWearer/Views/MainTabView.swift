@@ -1,5 +1,6 @@
 import RippleKit
 import SwiftUI
+import UIKit
 
 /// Home, Contacts, Session and Settings behind a large bottom bar. During a
 /// check-in or an alert the bar hides and Home comes to the front, so the
@@ -8,6 +9,7 @@ struct MainTabView: View {
     @Environment(WearerStore.self) private var store
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var selection: AppTab = .home
+    @State private var keyboardVisible = false
     /// Room left under each screen's content for the floating bar, plus a gap.
     /// Grows with the text size, like the bar does.
     @ScaledMetric(relativeTo: .footnote) private var barClearance: CGFloat = 96
@@ -31,15 +33,24 @@ struct MainTabView: View {
                 NavigationStack { SettingsView() }
             }
         }
-        .contentMargins(.bottom, inAlarm ? 16 : barClearance, for: .scrollContent)
+        .contentMargins(.bottom, inAlarm || keyboardVisible ? 16 : barClearance, for: .scrollContent)
         .overlay(alignment: .bottom) {
-            VStack(spacing: 8) {
-                FeedbackBar()
-                if !inAlarm {
-                    TabBar(selection: $selection)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
+            // Keep the floating bar clear of the keyboard's Done control.
+            if !keyboardVisible {
+                VStack(spacing: 8) {
+                    FeedbackBar()
+                    if !inAlarm {
+                        TabBar(selection: $selection)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
                 }
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+            keyboardVisible = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            keyboardVisible = false
         }
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: inAlarm)
         .onChange(of: inAlarm) { _, alarm in

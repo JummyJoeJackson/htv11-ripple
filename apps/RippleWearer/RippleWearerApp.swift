@@ -5,10 +5,19 @@ import UIKit
 struct RippleWearerApp: App {
     @State private var store = WearerStore()
 
+    init() {
+        // Navigation bar title colors, set before any screen appears.
+        _ = NavigationBarStyle.applied
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environment(store)
+                // New York, Apple's serif, everywhere. It scales with Dynamic Type.
+                .fontDesign(.serif)
+                // The light palette is contrast-checked for light mode.
+                .preferredColorScheme(.light)
                 .onOpenURL { url in store.handle(url: url) }
         }
     }
@@ -21,7 +30,7 @@ struct RootView: View {
     var body: some View {
         Group {
             if store.isSetUp {
-                HomeView()
+                MainTabView()
             } else {
                 OnboardingView()
             }

@@ -1,3 +1,4 @@
+import RippleKit
 import SwiftUI
 
 struct OnboardingView: View {
@@ -8,12 +9,10 @@ struct OnboardingView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            RippleForm {
                 Section {
                     Text("Ripple gets you help when you can't respond to an alarm on your Apple Watch. If you don't answer, your iPhone texts the contacts you choose.")
-                    Text("Hackathon prototype. It doesn't detect falls or any medical condition, and it isn't an emergency service.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
+                    FormNote("Hackathon prototype. It doesn't detect falls or any medical condition, and it isn't an emergency service.")
                 }
 
                 Section {
@@ -22,14 +21,16 @@ struct OnboardingView: View {
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                 } header: {
-                    Text("Server address")
+                    SectionHeader("Server address")
                 } footer: {
-                    Text("The Ripple server prints this address when it starts. Your iPhone must be on the same Wi-Fi, or use a tunnel URL.")
+                    FormNote("The Ripple server shows this address when it starts. Your iPhone must be on the same Wi-Fi, or use a tunnel link.")
                 }
 
-                Section("Your name") {
+                Section {
                     TextField("The name your contacts will see", text: $name)
                         .textContentType(.name)
+                } header: {
+                    SectionHeader("Your name")
                 }
 
                 Section {
@@ -41,16 +42,17 @@ struct OnboardingView: View {
                         }
                     } label: {
                         Text(working ? "Connecting…" : "Connect")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity, minHeight: 44)
                     }
+                    .buttonStyle(.ripplePrimary)
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
                     .disabled(working || address.trimmingCharacters(in: .whitespaces).isEmpty || name.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
 
                 if let banner = store.banner, !banner.ok {
                     Section {
                         Label(banner.text, systemImage: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.red)
+                            .foregroundStyle(Theme.checkIn)
                     }
                 }
             }
@@ -60,4 +62,12 @@ struct OnboardingView: View {
             if address.isEmpty { address = store.serverAddress }
         }
     }
+}
+
+#Preview("Onboarding") {
+    OnboardingView().environment(WearerStore())
+}
+
+#Preview("Onboarding, largest text") {
+    OnboardingView().environment(WearerStore()).dynamicTypeSize(.accessibility3)
 }

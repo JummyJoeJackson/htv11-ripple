@@ -11,9 +11,11 @@ import SwiftUI
 /// | Alert sent       | I'm okay now | Okay-now texts, close    | Duress: looks like dismissal |
 ///
 /// With swipe combos on: swipe up twice asks for help in any state; swipe
-/// down twice is "I'm okay" during an alarm.
+/// down twice is "I'm okay" during an alarm. With the voice phrase on, the
+/// microphone listens for it during an alarm without anything to press.
 struct CircleScreen: View {
     @Environment(WatchStore.self) private var store
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         let display = store.display
@@ -64,12 +66,18 @@ struct CircleScreen: View {
             }
 
             if store.config.voiceEnabled && display.mode.isAlarm {
-                VoiceButton(phrase: store.config.voicePhrase) { text in
-                    store.voiceInput(text)
+                if store.listening {
+                    ListeningLabel(phrase: store.config.voicePhrase, heard: store.heardText)
+                } else {
+                    VoiceButton(phrase: store.config.voicePhrase) { text in
+                        store.voiceInput(text)
+                    }
                 }
             }
         }
         .padding(.horizontal, 4)
+        // Raising the wrist restarts the microphone straight away if the system stopped it.
+        .onChange(of: scenePhase) { _, _ in store.updateListening() }
         .confirmationDialog("Stop monitoring?", isPresented: Binding(get: { store.confirmStop }, set: { store.confirmStop = $0 })) {
             Button("Stop monitoring", role: .destructive) { store.confirmStopMonitoring() }
             Button("Keep monitoring", role: .cancel) {}
@@ -175,8 +183,26 @@ private struct WatchCountdown: View {
     }
 }
 
+/// Shown while the microphone listens for the phrase during an alarm. Once
+/// something is heard it shows the words, so the wearer knows it's working.
+private struct ListeningLabel: View {
+    let phrase: String
+    let heard: String
+
+    var body: some View {
+        Label(heard.isEmpty ? "Say \"\(phrase)\"" : "\"\(heard)\"", systemImage: "waveform")
+            .font(.footnote)
+            .foregroundStyle(heard.isEmpty ? Color.primary : Color.secondary)
+            .lineLimit(1)
+            .truncationMode(.head)
+            .minimumScaleFactor(0.7)
+            .accessibilityLabel("Listening. Say \(phrase) to dismiss.")
+    }
+}
+
 /// Dismiss by saying the configured phrase, using Watch dictation while the
-/// app is open. Always a normal dismissal; duress stays touch only.
+/// app is open. The fallback when the microphone can't listen by itself.
+/// Always a normal dismissal; duress stays touch only.
 private struct VoiceButton: View {
     let phrase: String
     let onText: (String) -> Void

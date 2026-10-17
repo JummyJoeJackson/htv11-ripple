@@ -371,6 +371,7 @@
 				INFOPLIST_FILE = "Config/RippleWearer-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Ripple;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "During a safety session, Ripple takes one location fix when an alarm starts, so contacts you allowed get a map link in the alert text.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "During an alarm, Ripple recognizes the speech your Apple Watch hears, so saying your phrase dismisses the alarm.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -402,6 +403,7 @@
 				INFOPLIST_FILE = "Config/RippleWearer-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Ripple;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "During a safety session, Ripple takes one location fix when an alarm starts, so contacts you allowed get a map link in the alert text.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "During an alarm, Ripple recognizes the speech your Apple Watch hears, so saying your phrase dismisses the alarm.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -431,6 +433,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Ripple;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "During an alarm, Ripple listens for your phrase, so you can dismiss it by voice.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "$(RIPPLE_BUNDLE_PREFIX).wearer";
 				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = NO;
@@ -458,6 +461,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Ripple;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "During an alarm, Ripple listens for your phrase, so you can dismiss it by voice.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "$(RIPPLE_BUNDLE_PREFIX).wearer";
 				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = NO;

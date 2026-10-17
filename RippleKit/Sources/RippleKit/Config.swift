@@ -151,7 +151,7 @@ public struct RippleConfig: Codable, Equatable, Sendable {
             ackWindowSeconds: 15,
             doubleTapEnabled: true,
             voiceEnabled: false,
-            voicePhrase: "I'm okay",
+            voicePhrase: "I am currently fine",
             shortcutName: "Ripple Alert"
         )
     }

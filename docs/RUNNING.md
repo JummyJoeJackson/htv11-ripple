@@ -64,7 +64,7 @@ The first time, iOS asks you to trust the developer: **Settings → General → 
 
 1. Open **Ripple**, enter the server address and the wearer's name.
 2. **Contacts**: add teammates by name and phone number. Put at least one in **Tier 1** and one in **Tier 2**. Turn on **Share my location in alerts** for one of them only (for the privacy scenario).
-3. **Settings**: keep the 15-second demo timers, turn on double tap, and optionally a voice phrase. Tap **Save**. **Watch settings** should show "Up to date".
+3. **Settings**: keep the 15-second demo timers, turn on double tap, and optionally a voice phrase. Tap **Save**. **Watch settings** should show "Up to date". With the voice phrase on, allow speech recognition on the iPhone and the microphone on the Watch when asked.
 4. Build the **Ripple Alert** shortcut (below) and send a test message from **Settings → Messaging shortcut**.
 
 ### The Ripple Alert shortcut
@@ -186,7 +186,7 @@ GitHub Actions runs both and builds all three apps for the simulator on every pu
 | --- | --- |
 | Shortcuts | Sending works with Ripple in the foreground on an unlocked iPhone. Locked or backgrounded sending is unverified. The Shortcuts app appears briefly on the wearer's screen while sending, including during duress. |
 | Watch | The demo assumes the Watch app is open. Set **Settings → General → Return to Clock** to one hour on the Watch. Background prompts and wrist-down behaviour aren't handled. |
-| Voice | The phrase uses Watch dictation after tapping the microphone button. There's no always-listening wake phrase. |
+| Voice | During an alarm the Watch microphone listens for the phrase by itself, with nothing to press. watchOS has no speech recognition, so the Watch streams the audio to the wearer's iPhone, which recognizes it (on the iPhone when supported). It needs both apps open, and the iPhone reachable. Whether listening survives the wrist going down is untested. Anyone nearby who says the phrase also dismisses, so pick one nobody says by accident (the default is "I am currently fine"). If listening can't start, the Watch shows the tap-to-dictate microphone button instead. |
 | Physical buttons | Not used; the side button and Digital Crown belong to the system. |
 | AssistiveTouch | Apple recognises pinch and clench, not Ripple. Whether **Get help** appears in the Action Menu, and how often a shaky hand clenches the circle by accident (a false "I'm okay"), need testing on the Watch. |
 | Help location | Help texts go out immediately, so they include a map link only if an alarm was already running and had a location fix. |

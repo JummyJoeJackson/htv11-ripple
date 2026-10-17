@@ -80,7 +80,7 @@ public struct WatchConfig: Codable, Equatable, Sendable {
         )
     }
 
-    public static let fallback = WatchConfig(version: 0, doubleTapEnabled: true, voiceEnabled: false, voicePhrase: "I'm okay")
+    public static let fallback = WatchConfig(version: 0, doubleTapEnabled: true, voiceEnabled: false, voicePhrase: "I am currently fine")
 }
 
 public enum WatchActionKind: String, Codable, Sendable {
@@ -147,6 +147,33 @@ public struct WatchConfigAck: Codable, Sendable {
     public init(version: Int) { self.version = version }
 }
 
+/// Listening for the voice phrase. watchOS has no speech recognition, so
+/// during an alarm the Watch streams its microphone to the iPhone, which
+/// recognizes it and sends back what it heard.
+public enum VoiceAudio {
+    /// Mono 16-bit little-endian PCM at this rate.
+    public static let sampleRate: Double = 16_000
+}
+
+/// From the iPhone: what one listening session has heard so far, or why the
+/// iPhone can't listen.
+public struct VoiceHeard: Codable, Sendable {
+    public var sessionId: String
+    /// The best guess.
+    public var text: String
+    /// Other guesses, also checked for the phrase.
+    public var alternatives: [String]
+    /// Set when the iPhone can't recognize speech, for example without permission.
+    public var problem: String?
+
+    public init(sessionId: String, text: String, alternatives: [String] = [], problem: String? = nil) {
+        self.sessionId = sessionId
+        self.text = text
+        self.alternatives = alternatives
+        self.problem = problem
+    }
+}
+
 /// WatchConnectivity carries property-list dictionaries, so each message is a
 /// type name plus a JSON payload.
 public enum WatchEnvelope {
@@ -160,6 +187,10 @@ public enum WatchEnvelope {
     public static let configAck = "configAck"
     public static let ping = "ping"
     public static let hello = "hello"
+    public static let voiceAudio = "voiceAudio"
+    public static let voiceStop = "voiceStop"
+    public static let voiceHeard = "voiceHeard"
+    public static let sessionKey = "session"
 
     public static func make<T: Encodable>(_ type: String, _ value: T) -> [String: Any] {
         guard let data = try? RippleJSON.encoder.encode(value) else {
@@ -178,6 +209,20 @@ public enum WatchEnvelope {
 
     public static func type(of message: [String: Any]) -> String? {
         message[typeKey] as? String
+    }
+
+    /// Microphone audio goes as raw bytes, not JSON, to keep messages small.
+    public static func makeVoiceAudio(session: String, audio: Data) -> [String: Any] {
+        [typeKey: voiceAudio, sessionKey: session, payloadKey: audio]
+    }
+
+    public static func decodeVoiceAudio(from message: [String: Any]) -> (session: String, audio: Data)? {
+        guard let session = message[sessionKey] as? String, let audio = message[payloadKey] as? Data else { return nil }
+        return (session, audio)
+    }
+
+    public static func makeVoiceStop(session: String) -> [String: Any] {
+        [typeKey: voiceStop, sessionKey: session]
     }
 
     public static func decode<T: Decodable>(_ type: T.Type, from message: [String: Any], key: String = payloadKey) -> T? {

@@ -24,6 +24,8 @@ Holding the circle for 2 seconds is **duress**: the Watch shows the normal "Dism
 
 **Pinch and clench** work through Apple's AssistiveTouch, which recognises the gestures. With the circle highlighted, a clench means "I'm okay". A double clench opens the Action Menu, where **Get help** asks for help.
 
+**Hand gesture sequences** are a separate setup, where AssistiveTouch runs a Ripple shortcut for each gesture instead. In Settings the wearer picks one sequence to dismiss an alarm and, optionally, another to trigger one by asking for help, which works even with monitoring off. Neither picker offers the other's choice or anything overlapping it, so one gesture can't set off the other. See [docs/HAND_GESTURES.md](docs/HAND_GESTURES.md).
+
 ## Key features
 
 - **The phone sends first.** Texts come from the wearer's iPhone and messaging account, so contacts need no app, account or portal.
@@ -32,7 +34,7 @@ Holding the circle for 2 seconds is **duress**: the Watch shows the normal "Dism
 - **Temporary contacts.** Invite someone by text; their `Ripple join` reply starts one hour as a contact on the backend. They join Tier 1 until the session ends or the wearer removes them; expiration is silent, with no confirmation, reminder, or expiry texts.
 - **Duress.** A 2-second hold looks exactly like a dismissal on the Watch and the iPhone, and the alert text is the normal one, so nothing reveals it.
 - **Privacy by permission.** Location is off by default and set per contact. Ripple takes one location fix when an alarm starts and never tracks in the background. An optional help card, written by the wearer, is added to alerts only if they turn it on.
-- **Hard to trigger by accident.** Stopping monitoring needs a hold and a confirmation. Double tap and voice can only dismiss; duress is touch only. Swipe combos need two swipes in the same direction. Tremor that moves back and forth doesn't count as a swipe, and a finger bouncing off the glass counts once.
+- **Hard to trigger by accident.** Stopping monitoring needs a hold and a confirmation. Double tap and voice can only dismiss; duress is touch only. Swipe combos need two swipes in the same direction, and the hand gesture that triggers an alarm always takes two gestures. Tremor that moves back and forth doesn't count as a swipe, and a finger bouncing off the glass counts once.
 - **Accessible by design.** Every gesture has a touch alternative. Status colours always come with text: green Monitoring, yellow Check in, red Alert sent, blue Contact responding, gray Off.
 
 ## Components

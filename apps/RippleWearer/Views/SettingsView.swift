@@ -160,13 +160,27 @@ struct SettingsView: View {
                     Toggle("Hand gestures to dismiss", isOn: $draft.handGesturesEnabled)
                 }
                 IconRow(icon: "list.number") {
-                    Picker("Gesture sequence", selection: $draft.handGesturePreset) {
-                        ForEach(HandGesturePreset.allCases) { preset in
+                    // Each picker leaves out the other's choice and anything
+                    // overlapping it, so one gesture can't set off the other.
+                    Picker("Dismiss gesture", selection: $draft.handGesturePreset) {
+                        ForEach(HandGesturePreset.dismissChoices(besides: draft.handGestureHelpPreset)) { preset in
                             Text(preset.label).tag(preset)
                         }
                     }
                     .pickerStyle(.menu)
                     .disabled(!draft.handGesturesEnabled)
+                }
+                IconRow(icon: "exclamationmark.bubble") {
+                    Toggle("Hand gestures to trigger alarm", isOn: $draft.handGestureHelpEnabled)
+                }
+                IconRow(icon: "list.number") {
+                    Picker("Alarm gesture", selection: $draft.handGestureHelpPreset) {
+                        ForEach(HandGesturePreset.helpChoices(besides: draft.handGesturePreset)) { preset in
+                            Text(preset.label).tag(preset)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .disabled(!draft.handGestureHelpEnabled)
                 }
                 NavigationLink {
                     HandGestureSetupView()
@@ -176,7 +190,7 @@ struct SettingsView: View {
             } header: {
                 SectionHeader("Hand gestures")
             } footer: {
-                FormNote("Turns off Apple's double tap.")
+                FormNote("The alarm gesture texts your contacts right away. Choices that could set off the other gesture are hidden. Turns off Apple's double tap.")
             }
 
             Section {
@@ -320,12 +334,13 @@ struct SectionHeader: View {
 }
 
 /// AssistiveTouch runs one background input shortcut per recognised gesture.
-/// Ripple decides whether those inputs complete the saved dismissal sequence.
+/// Ripple decides whether those inputs complete the saved dismiss or alarm
+/// sequence.
 struct HandGestureSetupView: View {
     var body: some View {
         Form {
             Section {
-                Text("Apple Watch recognises the gestures. Each shortcut sends one gesture to Ripple, which checks the sequence you chose in Settings.")
+                Text("Apple Watch recognises the gestures. Each shortcut sends one gesture to Ripple, which checks the sequences you chose in Settings.")
                 Text("These four shortcuts are gesture inputs. Keep your existing Ripple Alert messaging shortcut separate.")
             }
 
@@ -352,13 +367,14 @@ struct HandGestureSetupView: View {
             }
 
             Section {
-                SetupStep(number: 6, text: "In Ripple Settings, turn on Hand gestures to dismiss, choose your sequence, and tap Save. Under Watch sync, wait for the iPhone and Watch versions to match.")
+                SetupStep(number: 6, text: "In Ripple Settings, turn on Hand gestures to dismiss, choose a dismiss gesture, and tap Save. Under Watch sync, wait for the iPhone and Watch versions to match.")
                 SetupStep(number: 7, text: "With no alarm open, leave Ripple visible on your Watch and perform each gesture. Check Ripple's Gesture # counter and gesture name to confirm the input arrived while Ripple stayed visible.")
                 SetupStep(number: 8, text: "Try your selected sequence in order, with no more than 5 seconds between steps. A double pinch or double clench is one input from Apple's recogniser, not two separate shortcut runs.")
+                SetupStep(number: 9, text: "To trigger an alarm with a gesture, tell your contacts first. Then turn on Hand gestures to trigger alarm, choose an alarm gesture, and tap Save. Doing it texts your contacts, even with no alarm open.")
             } header: {
                 Text("Choose and check a sequence")
             } footer: {
-                Text("Without an active alarm, inputs only update the receipt display. A matching sequence during an alarm dismisses it through Ripple's usual I'm okay action. Changing the dropdown later needs Save and Watch sync, with the same four shortcuts.")
+                Text("The dismiss gesture works during an alarm, through Ripple's usual I'm okay action. The alarm gesture texts your contacts at any time, like swiping up twice. Other inputs only update the receipt display. Changing either dropdown later needs Save and Watch sync, with the same four shortcuts.")
             }
         }
         .navigationTitle("Gesture shortcuts")

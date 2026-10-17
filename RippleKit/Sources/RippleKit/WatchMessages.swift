@@ -61,8 +61,11 @@ public struct WatchConfig: Codable, Equatable, Sendable {
     public var combosEnabled: Bool
     public var handGesturesEnabled: Bool
     public var handGesturePreset: HandGesturePreset
+    /// The sequence that asks for help in any state, like swiping up twice.
+    public var handGestureHelpEnabled: Bool
+    public var handGestureHelpPreset: HandGesturePreset
 
-    public init(version: Int, doubleTapEnabled: Bool, voiceEnabled: Bool, voicePhrase: String, combosEnabled: Bool = true, handGesturesEnabled: Bool = false, handGesturePreset: HandGesturePreset = .pinchClench) {
+    public init(version: Int, doubleTapEnabled: Bool, voiceEnabled: Bool, voicePhrase: String, combosEnabled: Bool = true, handGesturesEnabled: Bool = false, handGesturePreset: HandGesturePreset = .pinchClench, handGestureHelpEnabled: Bool = false, handGestureHelpPreset: HandGesturePreset? = nil) {
         self.version = version
         self.doubleTapEnabled = doubleTapEnabled
         self.voiceEnabled = voiceEnabled
@@ -70,17 +73,23 @@ public struct WatchConfig: Codable, Equatable, Sendable {
         self.combosEnabled = combosEnabled
         self.handGesturesEnabled = handGesturesEnabled
         self.handGesturePreset = handGesturePreset
+        self.handGestureHelpEnabled = handGestureHelpEnabled
+        self.handGestureHelpPreset = handGestureHelpPreset ?? .defaultHelp(besides: handGesturePreset)
     }
 
     private enum CodingKeys: String, CodingKey {
-        case version, doubleTapEnabled, voiceEnabled, voicePhrase, combosEnabled, handGesturesEnabled, handGesturePreset
+        case version, doubleTapEnabled, voiceEnabled, voicePhrase, combosEnabled, handGesturesEnabled, handGesturePreset,
+             handGestureHelpEnabled, handGestureHelpPreset
     }
 
     /// Older settings still load; new hand gestures need explicit opt-in.
-    /// Unknown future presets are disabled rather than mapped to another action.
+    /// Unknown future presets, and a help preset that overlaps the dismiss
+    /// preset, are disabled rather than mapped to another action.
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let preset = try? container.decode(HandGesturePreset.self, forKey: .handGesturePreset)
+        let helpPreset = (try? container.decode(HandGesturePreset.self, forKey: .handGestureHelpPreset))
+            .flatMap { HandGesturePreset.helpChoices(besides: preset ?? .pinchClench).contains($0) ? $0 : nil }
         self.init(
             version: try container.decode(Int.self, forKey: .version),
             doubleTapEnabled: try container.decode(Bool.self, forKey: .doubleTapEnabled),
@@ -88,7 +97,9 @@ public struct WatchConfig: Codable, Equatable, Sendable {
             voicePhrase: try container.decode(String.self, forKey: .voicePhrase),
             combosEnabled: try container.decodeIfPresent(Bool.self, forKey: .combosEnabled) ?? true,
             handGesturesEnabled: (try container.decodeIfPresent(Bool.self, forKey: .handGesturesEnabled) ?? false) && preset != nil,
-            handGesturePreset: preset ?? .pinchClench
+            handGesturePreset: preset ?? .pinchClench,
+            handGestureHelpEnabled: (try container.decodeIfPresent(Bool.self, forKey: .handGestureHelpEnabled) ?? false) && helpPreset != nil,
+            handGestureHelpPreset: helpPreset
         )
     }
 
@@ -104,7 +115,8 @@ public enum WatchActionKind: String, Codable, Sendable {
     case dismiss
     /// Alarm: hold the circle for 2 seconds. Duress. Touch only.
     case hold
-    /// Any state: swipe up twice. Texts contacts now, without a countdown. Never duress.
+    /// Any state: swipe up twice, or the help hand gesture sequence. Texts
+    /// contacts now, without a countdown. Never duress.
     case help
     /// A dose is due: tap the circle. Records "Took my meds"; never starts or ends an alarm.
     case tookMeds
@@ -112,7 +124,8 @@ public enum WatchActionKind: String, Codable, Sendable {
 
 public enum DismissMethod: String, Codable, Sendable {
     /// `combo` covers swipe combinations and the selected AssistiveTouch
-    /// shortcut sequence. Hand gesture sequences only confirm "I'm okay".
+    /// shortcut sequences. Like swipes, they confirm "I'm okay" or ask for
+    /// help; duress stays the touch-only hold.
     case touch, doubleTap, voice, combo
 }
 

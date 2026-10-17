@@ -75,51 +75,15 @@ struct SettingsView: View {
             }
 
             Section {
-                ForEach($draft.medicationTimes) { $time in
+                NavigationLink {
+                    MedicationView()
+                } label: {
                     IconRow(icon: "pills") {
-                        DatePicker("Dose", selection: Binding(
-                            get: { time.asTodayDate },
-                            set: { time.setTime(from: $0) }
-                        ), displayedComponents: .hourAndMinute)
+                        LabeledContent("Dose times", value: medicationSummary)
                     }
                 }
-                .onDelete { draft.medicationTimes.remove(atOffsets: $0) }
-                Button {
-                    draft.medicationTimes.append(MedicationTime(hour: 8, minute: 0))
-                } label: {
-                    Label("Add a dose time", systemImage: "plus.circle")
-                }
-                .buttonStyle(.rippleLink)
-                if !draft.medicationTimes.isEmpty {
-                    IconRow(icon: "hourglass") {
-                        Picker("Wait for \"Took my meds\"", selection: $draft.medicationGraceMinutes) {
-                            ForEach([1, 5, 15, 30, 45, 60, 90, 120], id: \.self) { minutes in
-                                Text("\(minutes) min").tag(minutes)
-                            }
-                        }
-                        .pickerStyle(.menu)
-                    }
-                }
-                if medicationChanged {
-                    Label("Unsaved changes", systemImage: "exclamationmark.circle")
-                        .font(Theme.label)
-                        .foregroundStyle(Theme.checkIn)
-                }
-                Button {
-                    saveMedication()
-                } label: {
-                    Label("Save medication times", systemImage: "checkmark.circle.fill")
-                        .font(Theme.labelBold)
-                        .frame(maxWidth: .infinity, minHeight: Theme.minTarget)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(Theme.accent)
-                .disabled(!medicationChanged)
-                    .accessibilityHint("Saves your dose times and sends them to your Watch.")
             } header: {
                 SectionHeader("Medication")
-            } footer: {
-                FormNote("No tap in time starts a check-in.")
             }
 
             Section {
@@ -169,6 +133,9 @@ struct SettingsView: View {
                     updated.shortcutName = updated.shortcutName.trimmingCharacters(in: .whitespacesAndNewlines)
                     // "How you answer" saves on its own screen, so keep what it saved.
                     updated = AnswerChoice(store.config).applied(to: updated)
+                    // Dose times save on their own screen, so keep what it saved.
+                    updated.medicationTimes = store.config.medicationTimes
+                    updated.medicationGraceMinutes = store.config.medicationGraceMinutes
                     store.save(updated)
                     store.banner = Banner(text: "Saved. Sending to your Watch.", ok: true)
                 } label: {
@@ -177,7 +144,7 @@ struct SettingsView: View {
                 .buttonStyle(.ripplePrimary)
                 .listRowInsets(EdgeInsets())
                 .listRowBackground(Color.clear)
-                .disabled(draft.wearerName.trimmingCharacters(in: .whitespaces).isEmpty || AnswerChoice(store.config).applied(to: draft) == store.config)
+                .disabled(draft.wearerName.trimmingCharacters(in: .whitespaces).isEmpty || unchanged)
             }
 
             Section {
@@ -250,19 +217,18 @@ struct SettingsView: View {
         return text
     }
 
-    /// The dose times or wait shown differ from what's saved.
-    private var medicationChanged: Bool {
-        draft.medicationTimes != store.config.medicationTimes || draft.medicationGraceMinutes != store.config.medicationGraceMinutes
+    /// Nothing on this screen differs from what's saved. "How you answer"
+    /// and dose times save on their own screens, so they don't count.
+    private var unchanged: Bool {
+        var compared = AnswerChoice(store.config).applied(to: draft)
+        compared.medicationTimes = store.config.medicationTimes
+        compared.medicationGraceMinutes = store.config.medicationGraceMinutes
+        return compared == store.config
     }
 
-    /// Saves only the medication settings, leaving everything else as saved.
-    private func saveMedication() {
-        guard loaded, medicationChanged else { return }
-        var updated = store.config
-        updated.medicationTimes = draft.medicationTimes
-        updated.medicationGraceMinutes = draft.medicationGraceMinutes
-        store.save(updated)
-        store.banner = Banner(text: "Medication times saved.", ok: true)
+    private var medicationSummary: String {
+        let count = store.config.medicationTimes.count
+        return count == 0 ? "None" : "\(count) a day"
     }
 
     private var watchSyncText: String {

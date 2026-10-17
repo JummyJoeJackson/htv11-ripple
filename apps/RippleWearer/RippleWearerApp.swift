@@ -16,8 +16,6 @@ struct RippleWearerApp: App {
             RootView()
                 .environment(store)
                 .appLanguage(language)
-                // New York, Apple's serif, everywhere. It scales with Dynamic Type.
-                .fontDesign(.serif)
                 // The light palette is contrast-checked for light mode.
                 .preferredColorScheme(.light)
                 .onOpenURL { url in store.handle(url: url) }

@@ -62,23 +62,28 @@ public enum Theme {
 
     // MARK: Type. All Dynamic Type styles, so larger accessibility sizes scale.
 
-    /// 28 pt bold at the default size.
+    // All text is SF Pro, the system font: bold page titles, semibold card
+    // headings and buttons, regular descriptions.
+
+    /// 34 pt bold, for the greeting and page titles.
+    public static let largeTitle = Font.largeTitle.weight(.bold)
+    /// 28 pt bold.
     public static let screenTitle = Font.title.weight(.bold)
     /// 15 pt, shown uppercase with letter spacing, like "WHO WAS TEXTED".
     public static let sectionLabel = Font.subheadline.weight(.semibold)
-    public static let sectionLabelTracking: CGFloat = 1.5
-    /// 20 pt semibold, for card and row titles.
-    public static let cardTitle = Font.title3.weight(.semibold)
+    public static let sectionLabelTracking: CGFloat = 1.2
+    /// 17 pt semibold, for card and row titles.
+    public static let cardTitle = Font.headline
 
-    /// 17 pt at the default size.
+    /// 17 pt regular.
     public static let body = Font.body
-    /// 22 pt at the default size.
-    public static let headline = Font.title2.weight(.bold)
-    /// 16 pt at the default size. The smallest text anywhere except section labels.
-    public static let label = Font.callout
-    public static let labelBold = Font.callout.weight(.semibold)
-    /// 17 pt bold, for button titles.
-    public static let button = Font.headline.weight(.bold)
+    /// 20 pt semibold, for status headlines.
+    public static let headline = Font.title3.weight(.semibold)
+    /// 15 pt regular. The smallest text anywhere except section labels.
+    public static let label = Font.subheadline
+    public static let labelBold = Font.subheadline.weight(.semibold)
+    /// 17 pt semibold, for button titles.
+    public static let button = Font.headline
 }
 
 extension Color {
@@ -147,8 +152,6 @@ public struct PrimaryButtonStyle: ButtonStyle {
     public func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(Theme.button)
-            .textCase(.uppercase)
-            .tracking(1.5)
             .multilineTextAlignment(.center)
             .foregroundStyle(isEnabled ? Theme.onBrand : Theme.secondaryText)
             .padding(.horizontal, 20)

@@ -13,8 +13,8 @@ struct RippleWatchApp: App {
         WindowGroup {
             CircleScreen()
                 .environment(store)
-                // New York, Apple's serif, to match the iPhone.
-                .fontDesign(.serif)
+                // SF Pro semibold throughout, easy to read at a glance.
+                .fontWeight(.semibold)
         }
     }
 }

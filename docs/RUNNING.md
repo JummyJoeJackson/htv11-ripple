@@ -157,7 +157,7 @@ Start monitoring by tapping **Start** on the Watch circle. Keep the Watch app op
 | Duress | Trigger; the wearer holds the circle for 2 seconds. | The Watch shows the normal "Dismissed" screen. Tier 1 still receives the alert. |
 | Connectivity failure | Trigger, wait two seconds, then admin: **Cut phone connection**. | About 30 seconds later the backend sends the alert by SMS, marked "Sent by Ripple backup". |
 | Privacy | Invite a temporary contact and have them agree. Admin: **Expire temporary contact now**, then trigger and let it run out. | Only the location-on contact gets a map link. The expired contact gets nothing. |
-| Apple Watch alert (extra) | On the wearer's iPhone, turn on **Settings → Apple Watch alerts → Falls** and save. Admin: **Simulate Apple fall alert**, then let it run out. | The Watch shows "Fall reported" with the normal countdown. With no answer, Tier 1's text says "…'s Apple Watch reported a fall". Label it simulated: nobody falls on stage. |
+| Apple Watch alert (extra) | With monitoring on, admin: **Simulate Apple fall alert**, then let it run out. | The Watch shows "Fall reported" with the normal countdown. With no answer, Tier 1's text says "…'s Apple Watch reported a fall". Label it simulated: nobody falls on stage. |
 
 Then show **Reset demo** and that no old alarm comes back.
 
@@ -177,7 +177,7 @@ Apple Watch already detects hard falls and high, low or irregular heart rhythms,
 
 Reading Health needs the HealthKit capability, which isn't in the project by default so builds keep signing with any Apple account. To get real alerts, in Xcode select the **RippleWearer** target, open **Signing & Capabilities**, click **+ Capability**, add **HealthKit**, and tick **Background Delivery**. If your account can't add it, Xcode says so; remove it again and use the simulated alerts. Then turn the alerts on in Ripple's Settings and allow access when Health asks. Without the capability, Settings shows "Not in this build".
 
-For demos, the admin app's **Simulate Apple fall alert** and **Simulate Apple heart alert** act as if Health had saved one. The wearer's settings still decide whether a check-in starts.
+For demos, the admin app's **Simulate Apple fall alert** and **Simulate Apple heart alert** act as if Health had saved one. Like **Trigger alarm**, they start a check-in whatever the wearer's settings, as long as monitoring is on; the toggles only decide what happens with real Health alerts.
 
 ### Swipe combos
 

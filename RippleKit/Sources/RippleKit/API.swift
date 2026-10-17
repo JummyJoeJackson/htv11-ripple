@@ -64,7 +64,7 @@ public enum DeviceCommandKind: String, Codable, Sendable {
     /// Adjust the short demo countdowns.
     case setTimers
     /// Act as if Apple Watch had recorded a fall or heart alert in Apple
-    /// Health, for demos. The wearer's settings still decide what happens.
+    /// Health, for demos. Like triggerAlarm, it works whatever the wearer's settings.
     case simulateHealthAlert
 
     public var label: String {

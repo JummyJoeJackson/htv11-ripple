@@ -378,14 +378,16 @@ final class WearerStore {
     // MARK: Apple Health alerts
 
     /// Apple Watch recorded a fall or a heart alert in Apple Health, or the
-    /// demo admin simulated one. Starts a check-in if the wearer turned that
-    /// alert on; Ripple adds the people, Apple did the detecting.
+    /// demo admin simulated one. A real alert starts a check-in only if the
+    /// wearer turned that alert on. A simulated one always does, like
+    /// "Trigger alarm", so the demo doesn't depend on a setting.
+    /// Ripple adds the people; Apple did the detecting.
     @discardableResult
     private func healthAlertArrived(_ kind: HealthAlertKind, simulated: Bool = false) -> ActionResult {
         guard !inOutage else {
             return ActionResult(ok: false, feedback: "iPhone unavailable")
         }
-        guard config.healthAlerts.contains(kind) else {
+        guard simulated || config.healthAlerts.contains(kind) else {
             return ActionResult(ok: false, feedback: "\(kind.label) check-ins are off in Ripple's settings.")
         }
         let result = coordinator.healthAlert(kind)

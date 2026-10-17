@@ -100,7 +100,7 @@ private struct TabBar: View {
                             .font(.system(size: 20, weight: .semibold))
                             .foregroundStyle(selected ? Theme.accent : Theme.text)
                             .frame(height: 24)
-                        Text(tab.title)
+                        Text(LocalizedStringKey(tab.title))
                             .font(.footnote.weight(.semibold))
                             .foregroundStyle(Theme.text)
                             .lineLimit(1)
@@ -119,7 +119,7 @@ private struct TabBar: View {
                     .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(tab.title)
+                .accessibilityLabel(Text(LocalizedStringKey(tab.title)))
                 .accessibilityAddTraits(selected ? [.isSelected, .isButton] : .isButton)
             }
         }

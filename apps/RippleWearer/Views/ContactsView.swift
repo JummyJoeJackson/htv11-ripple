@@ -58,7 +58,7 @@ struct ContactsView: View {
                     Button {
                         showInvite = true
                     } label: {
-                        Label("Invite someone for one hour", systemImage: "qrcode")
+                        Label("Invite someone for one hour", systemImage: "message")
                     }
                     .buttonStyle(.rippleLink)
                     .font(Theme.labelBold)
@@ -335,8 +335,8 @@ private struct ContactEditView: View {
     }
 }
 
-/// Invite someone for a one-hour session. They agree on a web page, which
-/// records their consent; they're not texted until then.
+/// The invitation is texted through Ripple Alert. A Ripple join reply starts
+/// the backend's one-hour session; no lifecycle messages are sent afterward.
 private struct InviteTemporaryView: View {
     @Environment(WearerStore.self) private var store
     @Environment(\.dismiss) private var dismiss
@@ -349,7 +349,7 @@ private struct InviteTemporaryView: View {
         NavigationStack {
             Group {
                 if let invitation {
-                    InvitationQRView(invitation: invitation)
+                    InvitationStatusView(invitation: invitation)
                 } else {
                     RippleForm {
                         Section {
@@ -362,7 +362,7 @@ private struct InviteTemporaryView: View {
                         Section {
                             Toggle("Share my location in alerts", isOn: $shareLocation)
                         } footer: {
-                            FormNote("They join Tier 1 for one hour.")
+                            FormNote("Their hour starts when they reply \"Ripple join\" with their code.")
                         }
                         Section {
                             Button {
@@ -370,7 +370,7 @@ private struct InviteTemporaryView: View {
                                     invitation = await store.inviteTemporary(name: name, phone: phone, shareLocation: shareLocation)
                                 }
                             } label: {
-                                Text("Create invitation")
+                                Text("Send invitation text")
                             }
                             .buttonStyle(.ripplePrimary)
                             .listRowInsets(EdgeInsets())
@@ -385,7 +385,7 @@ private struct InviteTemporaryView: View {
                     }
                 }
             }
-            .navigationTitle(invitation == nil ? "One-hour contact" : "Ask them to scan")
+            .navigationTitle(invitation == nil ? "One-hour contact" : "Text invitation")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -396,31 +396,40 @@ private struct InviteTemporaryView: View {
     }
 }
 
-private struct InvitationQRView: View {
+private struct InvitationStatusView: View {
+    @Environment(WearerStore.self) private var store
     let invitation: InviteTemporaryResponse
+
+    private var contact: TemporaryContactView {
+        store.temporaryContacts.first { $0.id == invitation.contact.id } ?? invitation.contact
+    }
 
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                if let image = QRCode.image(for: invitation.inviteURL) {
-                    Image(uiImage: image)
-                        .interpolation(.none)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(maxWidth: 280)
-                        .padding(16)
-                        .background(Color.white, in: RoundedRectangle(cornerRadius: 16))
-                        .accessibilityLabel("QR code for the temporary contact invitation")
-                }
-                Text("\(invitation.contact.name) scans this and taps \"I agree\". Their one hour starts then.")
-                    .font(Theme.body)
-                    .foregroundStyle(Theme.text)
-                    .multilineTextAlignment(.center)
-                if let url = URL(string: invitation.inviteURL) {
-                    ShareLink(item: url) {
-                        Label("Send the link instead", systemImage: "square.and.arrow.up")
+                TimelineView(.periodic(from: .now, by: 30)) { context in
+                    VStack(spacing: 16) {
+                        if contact.isEligible(at: context.date), let expires = contact.expiresAt {
+                            Label("\(contact.name) is a contact", systemImage: "checkmark.circle.fill")
+                                .foregroundStyle(Theme.safe)
+                            Text("In Tier 1 until \(expires.shortTime). No expiration text will be sent.")
+                        } else if contact.state == .invited {
+                            Label("Waiting for \(contact.name)'s reply", systemImage: "message")
+                            Text("They reply \"Ripple join \(invitation.joinCode)\" to start their one hour. Check Messages to confirm the invitation was sent.")
+                            Button("Send invitation again") {
+                                store.resendTemporaryInvitation(invitation)
+                            }
+                            .buttonStyle(.rippleSecondary)
+                        } else {
+                            Text("This invitation or session has ended.")
+                        }
                     }
-                    .buttonStyle(.rippleSecondary)
+                }
+                .font(Theme.body)
+                .foregroundStyle(Theme.text)
+                .multilineTextAlignment(.center)
+                if let banner = store.banner, !banner.ok {
+                    Text(banner.text).font(Theme.label).foregroundStyle(Theme.checkIn)
                 }
             }
             .padding(24)

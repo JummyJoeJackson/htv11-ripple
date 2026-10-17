@@ -11,7 +11,7 @@ enum ServerPaths {
             .deletingLastPathComponent() // RippleServer
             .deletingLastPathComponent() // Sources
             .deletingLastPathComponent() // server
-        if FileManager.default.fileExists(atPath: fromSource.appendingPathComponent("Public").path) {
+        if FileManager.default.fileExists(atPath: fromSource.appendingPathComponent("Package.swift").path) {
             return fromSource.path
         }
         return FileManager.default.currentDirectoryPath

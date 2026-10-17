@@ -134,6 +134,10 @@ public extension RippleAPI {
         try await send("POST", "v1/wearer/temporary", body: body, idempotencyKey: RippleID.make())
     }
 
+    func joinTemporary(_ body: JoinTemporaryRequest) async throws -> JoinTemporaryResponse {
+        try await send("POST", "v1/wearer/temporary/join", body: body)
+    }
+
     func removeTemporary(id: String) async throws -> TemporaryContactsResponse {
         try await send("POST", "v1/wearer/temporary/\(id)/remove", body: EmptyBody())
     }

@@ -94,6 +94,8 @@ struct TemporaryContactRecord: Codable {
     var invitedAt: Date
     var consentAt: Date?
     var expiresAt: Date?
+    /// Optional so older active sessions keep their existing expiry on upgrade.
+    var joinCodeHash: String?
 }
 
 struct EventRecord: Codable {
@@ -122,8 +124,6 @@ struct Database: Codable {
     var backups: [String: BackupRecord] = [:]
     var commands: [String: CommandRecord] = [:]
     var temporaryContacts: [String: TemporaryContactRecord] = [:]
-    /// Consent-link token hash -> temporary contact id.
-    var inviteTokens: [String: String] = [:]
     var events: [EventRecord] = []
     var idempotency: [String: IdempotencyRecord] = [:]
 }

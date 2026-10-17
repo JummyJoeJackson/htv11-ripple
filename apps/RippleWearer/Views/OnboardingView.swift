@@ -177,14 +177,14 @@ private struct StepLayout<Content: View, Buttons: View>: View {
                         .padding(.top, 8)
                         .accessibilityHidden(true)
                 }
-                Text(title)
+                Text(LocalizedStringKey(title))
                     .font(Theme.screenTitle)
                     .foregroundStyle(Theme.text)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityAddTraits(.isHeader)
-                Text(subtitle)
+                Text(LocalizedStringKey(subtitle))
                     .font(Theme.body)
                     .foregroundStyle(Theme.secondaryText)
                     .multilineTextAlignment(.center)
@@ -228,7 +228,7 @@ private struct LabeledField: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(label)
+            Text(LocalizedStringKey(label))
                 .font(Theme.label)
                 .foregroundStyle(Theme.secondaryText)
             TextField(placeholder, text: $text)
@@ -328,6 +328,14 @@ private struct SplashScreen: View {
                 .accessibilityHidden(true)
 
             VStack(spacing: 18) {
+                HStack {
+                    Spacer()
+                    LanguagePicker()
+                        .labelStyle(.titleAndIcon)
+                        .tint(Theme.text)
+                        .padding(.horizontal, 6)
+                        .background(.white.opacity(0.7), in: Capsule())
+                }
                 Spacer()
                 Image("RippleLogo")
                     .resizable()
@@ -547,7 +555,7 @@ private struct PermissionStepRow: View {
                 .frame(width: 32, height: 32)
                 .background(Theme.accent, in: Circle())
                 .accessibilityHidden(true)
-            Text(text)
+            Text(LocalizedStringKey(text))
                 .font(Theme.body.weight(.semibold))
                 .foregroundStyle(Theme.text)
                 .fixedSize(horizontal: false, vertical: true)

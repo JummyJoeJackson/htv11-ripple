@@ -1,4 +1,3 @@
-import CoreImage
 import RippleKit
 import SwiftUI
 import UIKit
@@ -65,12 +64,12 @@ struct ScreenHeader<Trailing: View>: View {
     var body: some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(title)
+                Text(LocalizedStringKey(title))
                     .font(.system(.largeTitle, weight: .bold))
                     .foregroundStyle(Theme.text)
                     .accessibilityAddTraits(.isHeader)
                 if let subtitle {
-                    Text(subtitle)
+                    Text(LocalizedStringKey(subtitle))
                         .font(Theme.label)
                         .foregroundStyle(Theme.secondaryText)
                         .fixedSize(horizontal: false, vertical: true)
@@ -117,7 +116,7 @@ struct SectionTitle: View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
             SectionLabel(title)
             if let note {
-                Text(note)
+                Text(LocalizedStringKey(note))
                     .font(Theme.label)
                     .foregroundStyle(Theme.secondaryText)
             }
@@ -138,12 +137,12 @@ struct SectionLabel: View {
     }
 
     var body: some View {
-        Text(text)
+        Text(LocalizedStringKey(text))
             .font(Theme.sectionLabel)
             .tracking(Theme.sectionLabelTracking)
             .textCase(.uppercase)
             .foregroundStyle(Theme.secondaryText)
-            .accessibilityLabel(text)
+            .accessibilityLabel(Text(LocalizedStringKey(text)))
             .accessibilityAddTraits(.isHeader)
     }
 }
@@ -231,11 +230,11 @@ struct NavRow: View {
                 .background(Theme.iconTint, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
-                Text(title)
+                Text(LocalizedStringKey(title))
                     .font(Theme.cardTitle)
                     .foregroundStyle(Theme.text)
                 if let detail {
-                    Text(detail)
+                    Text(LocalizedStringKey(detail))
                         .font(Theme.label)
                         .foregroundStyle(Theme.secondaryText)
                 }
@@ -264,7 +263,7 @@ struct StatusRow: View {
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
-            Text(label)
+            Text(LocalizedStringKey(label))
                 .foregroundStyle(Theme.text)
             Spacer(minLength: 8)
             if let ok {
@@ -272,7 +271,7 @@ struct StatusRow: View {
                     .foregroundStyle(ok ? Theme.safe : Theme.checkIn)
                     .accessibilityHidden(true)
             }
-            Text(value)
+            Text(LocalizedStringKey(value))
                 .multilineTextAlignment(.trailing)
                 .foregroundStyle(Theme.secondaryText)
         }
@@ -291,7 +290,7 @@ struct FormNote: View {
     }
 
     var body: some View {
-        Text(text)
+        Text(LocalizedStringKey(text))
             .font(Theme.label)
             .italic()
             .foregroundStyle(Theme.secondaryText)
@@ -397,18 +396,6 @@ extension Date {
         if calendar.isDateInYesterday(self) { return "Yesterday, \(shortTime)" }
         if calendar.isDateInTomorrow(self) { return "Tomorrow, \(shortTime)" }
         return formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()) + ", " + shortTime
-    }
-}
-
-enum QRCode {
-    static func image(for text: String) -> UIImage? {
-        let filter = CIFilter(name: "CIQRCodeGenerator")
-        filter?.setValue(Data(text.utf8), forKey: "inputMessage")
-        filter?.setValue("M", forKey: "inputCorrectionLevel")
-        guard let output = filter?.outputImage?.transformed(by: CGAffineTransform(scaleX: 10, y: 10)) else { return nil }
-        let context = CIContext()
-        guard let cgImage = context.createCGImage(output, from: output.extent) else { return nil }
-        return UIImage(cgImage: cgImage)
     }
 }
 

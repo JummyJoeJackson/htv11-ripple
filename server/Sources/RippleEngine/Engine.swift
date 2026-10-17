@@ -2,7 +2,7 @@ import Foundation
 import RippleKit
 
 public struct EngineConfig: Sendable {
-    /// Base for temporary-contact consent links, for example http://192.168.1.20:8080.
+    /// Public server address, also used for provider callbacks.
     public var publicBaseURL: String
     /// If set, backup texts to any other number are refused (designated demo recipients).
     public var demoRecipients: Set<String>?
@@ -178,10 +178,6 @@ public actor Engine {
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "h:mm:ss a"
         return formatter.string(from: date)
-    }
-
-    func link(_ path: String) -> String {
-        config.publicBaseURL + path
     }
 
     /// The alarm's messages from the phone and the backend, keyed by id. Backup records win.

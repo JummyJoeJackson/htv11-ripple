@@ -306,9 +306,8 @@ final class BackupTests: XCTestCase {
 
     func testExpiredTemporaryContactGetsNothing() async throws {
         let invite = try await engine.inviteTemporary(userId: userId, InviteTemporaryRequest(name: "Riley", phone: "416 555 0199", shareLocation: false), key: nil)
-        let token = invite.inviteURL.components(separatedBy: "/t/").last!
-        let consent = try await engine.acceptInvite(token: token)
-        XCTAssertEqual(consent.state, .active)
+        let consent = try await engine.joinTemporary(userId: userId, JoinTemporaryRequest(runId: phone.runId, code: invite.joinCode))
+        XCTAssertEqual(consent.contact.state, .active)
         try await sync()
         XCTAssertEqual(phone.temporaryContacts.first?.state, .active)
 
@@ -321,12 +320,11 @@ final class BackupTests: XCTestCase {
         XCTAssertEqual(recipients(out), ["+14165550101", "+14165550102"])
     }
 
-    func testRemovedInvitationLinkStopsWorking() async throws {
+    func testRemovedInvitationReplyIsRejected() async throws {
         let invite = try await engine.inviteTemporary(userId: userId, InviteTemporaryRequest(name: "Riley", phone: "416 555 0199", shareLocation: true), key: nil)
-        let token = invite.inviteURL.components(separatedBy: "/t/").last!
         _ = try await engine.removeTemporary(userId: userId, contactId: invite.contact.id)
         do {
-            _ = try await engine.acceptInvite(token: token)
+            _ = try await engine.joinTemporary(userId: userId, JoinTemporaryRequest(runId: phone.runId, code: invite.joinCode))
             XCTFail("Expected the invitation to be gone")
         } catch let error as EngineError {
             XCTAssertTrue([404, 410].contains(error.status))

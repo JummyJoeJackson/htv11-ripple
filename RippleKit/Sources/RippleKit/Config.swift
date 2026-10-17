@@ -37,7 +37,7 @@ public enum TemporaryContactState: String, Codable, Sendable {
 
     public var label: String {
         switch self {
-        case .invited: return "Waiting for consent"
+        case .invited: return "Waiting for reply"
         case .active: return "Active"
         case .expired: return "Expired"
         case .removed: return "Removed"
@@ -46,7 +46,7 @@ public enum TemporaryContactState: String, Codable, Sendable {
 }
 
 /// Someone who agreed to be a contact for a one-hour session. Stored on the
-/// backend because they consent on a web page.
+/// backend, which starts the session when their text reply is accepted.
 public struct TemporaryContactView: Codable, Hashable, Identifiable, Sendable {
     public var id: String
     public var name: String

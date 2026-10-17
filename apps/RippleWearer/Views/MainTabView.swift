@@ -8,14 +8,17 @@ struct MainTabView: View {
     @Environment(WearerStore.self) private var store
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var selection: AppTab = .home
+    /// Room left under each screen's content for the floating bar, plus a gap.
+    /// Grows with the text size, like the bar does.
+    @ScaledMetric(relativeTo: .footnote) private var barClearance: CGFloat = 96
 
     var body: some View {
         // Read the revision so the bar hides and shows as the alarm changes.
         let _ = store.revision
         let inAlarm = store.coordinator.display(phoneAvailable: !store.inOutage).mode.isAlarm
-        // The glass bar floats over the screens. The safe-area inset gives each
-        // screen room for it, so backgrounds run to the bottom edge and lists
-        // stop above the bar when scrolled to the end.
+        // The glass bar floats over the screens, so backgrounds run to the bottom
+        // edge. Every scrolling screen gets a bottom margin the height of the bar,
+        // so its last item always scrolls fully above it.
         Group {
             switch selection {
             case .home:
@@ -28,14 +31,14 @@ struct MainTabView: View {
                 NavigationStack { SettingsView() }
             }
         }
+        .contentMargins(.bottom, inAlarm ? 16 : barClearance, for: .scrollContent)
         .overlay(alignment: .bottom) {
-            FeedbackBar()
-                .padding(.bottom, 12)
-        }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            if !inAlarm {
-                TabBar(selection: $selection)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            VStack(spacing: 8) {
+                FeedbackBar()
+                if !inAlarm {
+                    TabBar(selection: $selection)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
             }
         }
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: inAlarm)

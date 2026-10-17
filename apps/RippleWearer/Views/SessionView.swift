@@ -11,7 +11,7 @@ struct SessionView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
-                ScreenHeader(title: "Sessions", subtitle: "Check-ins and activity")
+                ScreenHeader(title: "Sessions", subtitle: "Your check-ins, alerts and texts")
                 NextCheckInCard()
                 ComingSoonRow(icon: "pills.fill", title: "Medication reminders")
 
@@ -69,7 +69,7 @@ private struct NextCheckInCard: View {
     private func nextText(_ coordinator: AlarmCoordinator) -> String {
         if !coordinator.monitoring { return "Monitoring is off" }
         if let next = coordinator.nextCheckInAt { return next.dayAndTime }
-        return "No automatic check-ins"
+        return "Automatic check-ins are off"
     }
 }
 

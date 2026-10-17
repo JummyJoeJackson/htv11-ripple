@@ -68,15 +68,15 @@ struct EmergencyOptionsSheet: View {
                     Button("Close") { dismiss() }
                 }
             }
-            .confirmationDialog(confirmTitle, isPresented: Binding(get: { pending != nil }, set: { if !$0 { pending = nil } }),
+            .confirmationDialog(Text(confirmTitle), isPresented: Binding(get: { pending != nil }, set: { if !$0 { pending = nil } }),
                                 titleVisibility: .visible, presenting: pending) { action in
-                Button(confirmButton(action), role: .destructive) { run(action) }
+                Button(LocalizedStringKey(confirmButton(action)), role: .destructive) { run(action) }
                 Button("Cancel", role: .cancel) {}
             }
         }
     }
 
-    private var confirmTitle: String {
+    private var confirmTitle: LocalizedStringKey {
         switch pending {
         case .call(let name, _): return "Call \(name)?"
         case .textAll: return "Text all your contacts for help?"
@@ -137,7 +137,7 @@ struct EmergencyOptionsSheet: View {
 private struct OptionRow: View {
     let icon: String
     let tint: Color
-    let title: String
+    let title: LocalizedStringKey
     let detail: String
     let action: () -> Void
 
@@ -154,7 +154,7 @@ private struct OptionRow: View {
                     Text(title)
                         .font(Theme.body.weight(.semibold))
                         .foregroundStyle(Theme.text)
-                    Text(detail)
+                    Text(LocalizedStringKey(detail))
                         .font(Theme.label)
                         .foregroundStyle(Theme.secondaryText)
                 }

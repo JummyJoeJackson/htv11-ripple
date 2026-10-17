@@ -34,7 +34,7 @@ struct HomeView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(greeting)
+                        greeting
                             .font(.system(.largeTitle, weight: .bold))
                             .foregroundStyle(Theme.text)
                             .fixedSize(horizontal: false, vertical: true)
@@ -83,10 +83,11 @@ struct HomeView: View {
         .tint(Theme.accent)
     }
 
-    /// "Hello, Alex!" from the name the app already stores, or "Ripple" without one.
-    private var greeting: String {
+    /// "Hello, Alex!" from the name the app already stores, or "Ripple" without
+    /// one. Written as a translatable sentence with the name filled in.
+    private var greeting: Text {
         let first = store.config.wearerName.split(separator: " ").first.map(String.init) ?? ""
-        return first.isEmpty ? "Ripple" : "Hello, \(first)!"
+        return first.isEmpty ? Text(verbatim: "Ripple") : Text("Hello, \(first)!")
     }
 
     /// At most one primary and one secondary action for each state.
@@ -136,14 +137,15 @@ struct HomeView: View {
 
 // MARK: - Status card
 
-/// Everything the status card shows, worked out from the coordinator.
+/// Everything the status card shows, worked out from the coordinator. The
+/// words are translatable sentences, with names and times filled in.
 struct HomeStatus {
     var mode: CircleMode
-    var headline: String
-    var detail: String?
+    var headline: LocalizedStringKey
+    var detail: LocalizedStringKey?
     var deadline: Date?
 
-    init(mode: CircleMode, headline: String, detail: String? = nil, deadline: Date? = nil) {
+    init(mode: CircleMode, headline: LocalizedStringKey, detail: LocalizedStringKey? = nil, deadline: Date? = nil) {
         self.mode = mode
         self.headline = headline
         self.detail = detail
@@ -159,24 +161,40 @@ struct HomeStatus {
             detail = "Your Watch won't check on you. Turn it on here or on your Watch."
         case .monitoring:
             headline = "Monitoring is active"
-            detail = nextCheckIn.map { "Next check-in at \($0.shortTime)." }
+            if let next = nextCheckIn {
+                detail = "Next check-in at \(next.shortTime)."
+            } else {
+                detail = nil
+            }
         case .checkIn:
             headline = "Your Watch is asking if you're okay"
             detail = "Tap the circle on your Watch, or \"I'm okay\" below. If time runs out, your contacts get a text."
         case .alertSent:
-            let texted = (alarm?.alertedAt ?? alarm?.startedAt).map { "Your contacts were texted at \($0.shortTime)." }
+            let texted = (alarm?.alertedAt ?? alarm?.startedAt)?.shortTime
             if alarm?.helpRequestedAt != nil {
-                // The wearer swiped up for help on the Watch.
+                // The wearer asked for help on the Watch or the iPhone.
                 headline = "You asked for help."
-                detail = [texted, "No one has responded yet."].compactMap { $0 }.joined(separator: " ")
+                if let texted {
+                    detail = "Your contacts were texted at \(texted). No one has responded yet."
+                } else {
+                    detail = "No one has responded yet."
+                }
             } else {
                 headline = "No one has responded yet."
-                detail = texted
+                if let texted {
+                    detail = "Your contacts were texted at \(texted)."
+                } else {
+                    detail = nil
+                }
             }
         case .responding:
-            let ack = alarm?.acknowledgment
-            headline = "\(ack?.name ?? "A contact") is checking on you."
-            detail = ack.map { "Since \($0.at.shortTime)" }
+            if let ack = alarm?.acknowledgment {
+                headline = "\(ack.name) is checking on you."
+                detail = "Since \(ack.at.shortTime)"
+            } else {
+                headline = "A contact is checking on you."
+                detail = nil
+            }
         }
     }
 }
@@ -194,7 +212,8 @@ struct StatusCardView: View {
             }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Status: \(status.mode.pillLabel). \(status.headline)")
+        .accessibilityLabel(Text("Status:") + Text(verbatim: " ") + Text(LocalizedStringKey(status.mode.pillLabel))
+                            + Text(verbatim: ". ") + Text(status.headline))
     }
 }
 
@@ -215,19 +234,20 @@ private struct MonitoringCard: View {
 
     /// What monitoring actually does, in plain words: how often the Watch
     /// buzzes, how long there is to answer, and what happens if there's no answer.
-    private var detail: String? {
-        guard status.mode == .monitoring else { return status.detail }
+    private var detail: Text? {
+        guard status.mode == .monitoring else { return status.detail.map { Text($0) } }
         let config = store.config
-        let answer = "Tap it within \(config.countdownSeconds) s, or your contacts get a text."
-        var parts: [String]
+        let space = Text(verbatim: " ")
+        let answer = Text("Tap it within \(config.countdownSeconds) s, or your contacts get a text.")
+        var text: Text
         if config.checkInIntervalMinutes > 0 {
-            parts = ["Every \(config.checkInIntervalMinutes) min your Watch buzzes and asks if you're okay.", answer]
-            if let next = store.coordinator.nextCheckInAt { parts.append("Next: \(next.shortTime).") }
+            text = Text("Every \(config.checkInIntervalMinutes) min your Watch buzzes and asks if you're okay.") + space + answer
+            if let next = store.coordinator.nextCheckInAt { text = text + space + Text("Next: \(next.shortTime).") }
         } else {
-            parts = ["Automatic check-ins are off. If an alarm starts, your Watch buzzes.", answer]
+            text = Text("Automatic check-ins are off. If an alarm starts, your Watch buzzes.") + space + answer
         }
-        if !watchConnected { parts.append("Open Ripple on your Watch.") }
-        return parts.joined(separator: " ")
+        if !watchConnected { text = text + space + Text("Open Ripple on your Watch.") }
+        return text
     }
 
     var body: some View {
@@ -246,7 +266,7 @@ private struct MonitoringCard: View {
                         Spacer(minLength: 8)
                         HStack(spacing: 6) {
                             Circle().fill(color).frame(width: 10, height: 10)
-                            Text(pillText)
+                            Text(LocalizedStringKey(pillText))
                                 .font(Theme.labelBold)
                                 .foregroundStyle(Theme.text)
                         }
@@ -254,7 +274,7 @@ private struct MonitoringCard: View {
                         .padding(.vertical, 6)
                         .background(color.opacity(0.14), in: Capsule())
                         .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(pillText)
+                        .accessibilityLabel(Text(LocalizedStringKey(pillText)))
                     }
                     Text(status.headline)
                         .font(Theme.headline)
@@ -273,7 +293,7 @@ private struct MonitoringCard: View {
                         .accessibilityElement(children: .combine)
                     }
                     if let detail {
-                        Text(detail)
+                        detail
                             .font(Theme.label)
                             .foregroundStyle(Theme.secondaryText)
                             .fixedSize(horizontal: false, vertical: true)
@@ -354,11 +374,11 @@ private struct HomeCard<Footer: View>: View {
                 .frame(width: 52, height: 52)
                 .background(tint.opacity(0.12), in: Circle())
                 .accessibilityHidden(true)
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(Theme.cardTitle)
                 .foregroundStyle(Theme.text)
                 .fixedSize(horizontal: false, vertical: true)
-            Text(subtitle)
+            Text(LocalizedStringKey(subtitle))
                 .font(Theme.label)
                 .foregroundStyle(Theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)

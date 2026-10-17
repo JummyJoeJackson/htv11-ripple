@@ -199,6 +199,7 @@ struct AnswerSetupScreen: View {
                 if let binding = Binding($choice) {
                     AnswerMethodPicker(choice: binding)
                     Button("Save") {
+                        Haptics.success()
                         store.save(binding.wrappedValue.applied(to: store.config))
                         store.banner = Banner(text: "Saved. Sending to your Watch.", ok: true)
                         dismiss()

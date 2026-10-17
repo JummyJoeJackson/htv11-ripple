@@ -128,7 +128,7 @@ private struct StepProgress: View {
                 Button(action: onBack) {
                     Label("Back", systemImage: "chevron.left")
                         .font(Theme.labelBold)
-                        .frame(minWidth: Theme.minTarget, minHeight: 44, alignment: .leading)
+                        .frame(minWidth: Theme.minTarget, minHeight: Theme.minTarget, alignment: .leading)
                 }
                 .foregroundStyle(Theme.accent)
                 .accessibilityHint("Goes to the previous step.")
@@ -418,7 +418,6 @@ private struct ProfileStep: View {
                 FieldDivider()
                 LabeledField(label: "Last name (optional)", placeholder: "Chen", text: $lastName, contentType: .familyName)
             }
-            FormNote("No email or password needed.")
         } buttons: {
             Button("Continue", action: onNext)
                 .buttonStyle(.ripplePrimary)
@@ -467,7 +466,10 @@ private struct ContactStep: View {
                     .frame(minHeight: Theme.listRowHeight)
             }
         } buttons: {
-            Button(existing.isEmpty ? "Save contact" : "Add contact") { save() }
+            Button(existing.isEmpty ? "Save contact" : "Add contact") {
+                Haptics.success()
+                save()
+            }
                 .buttonStyle(.ripplePrimary)
                 .disabled(!canSave)
             TextLinkButton(title: existing.isEmpty ? "Skip for now" : "Continue", action: onNext)

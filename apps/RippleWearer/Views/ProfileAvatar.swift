@@ -82,7 +82,7 @@ struct AvatarPicker: View {
                     Label(hasPhoto ? "Change photo" : "Add a photo", systemImage: "photo")
                         .font(Theme.labelBold)
                         .foregroundStyle(Theme.accent)
-                        .frame(minHeight: 44, alignment: .leading)
+                        .frame(minHeight: Theme.minTarget, alignment: .leading)
                 }
                 .accessibilityHint("Picks a profile photo from your library. It stays on this iPhone.")
                 if hasPhoto {
@@ -91,7 +91,7 @@ struct AvatarPicker: View {
                         version += 1
                     }
                     .font(Theme.label)
-                    .frame(minHeight: 44, alignment: .leading)
+                    .frame(minHeight: Theme.minTarget, alignment: .leading)
                 }
             }
             Spacer(minLength: 0)

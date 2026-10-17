@@ -42,11 +42,6 @@ struct HomeView: View {
                             }
                             .accessibilityLabel("Your profile and settings")
                         }
-                        if !display.mode.isAlarm {
-                            Text("Your care at a glance")
-                                .font(.title3)
-                                .foregroundStyle(Theme.secondaryText)
-                        }
                     }
 
                     if store.outageUntil != nil {
@@ -73,6 +68,9 @@ struct HomeView: View {
                         }
                         .buttonStyle(.plain)
                     } else {
+                        if !hasContacts {
+                            AddContactCard()
+                        }
                         HomeCardGrid()
                     }
                 }
@@ -93,12 +91,17 @@ struct HomeView: View {
         return first.isEmpty ? Text(verbatim: "Ripple") : Text("Hello, \(first)!")
     }
 
+    private var hasContacts: Bool {
+        !store.config.contacts.isEmpty || !store.temporaryContacts.isEmpty
+    }
+
     /// At most one primary and one secondary action for each state.
     @ViewBuilder
     private func actions(for mode: CircleMode) -> some View {
         switch mode {
         case .off:
             Button {
+                Haptics.tap()
                 store.startMonitoring()
             } label: {
                 Label("Start monitoring", systemImage: "play.fill")
@@ -106,35 +109,84 @@ struct HomeView: View {
             .buttonStyle(.ripplePrimary)
             .accessibilityHint("Your Watch will buzz and ask if you're okay.")
         case .monitoring:
+            // The action people need least, so it's an outline button and
+            // Send Ripple alert below stands out more.
             Button {
+                Haptics.tap()
                 store.stopMonitoring()
             } label: {
                 Label("Stop monitoring", systemImage: "stop.fill")
             }
-            .buttonStyle(.ripplePrimary)
+            .buttonStyle(.rippleSecondary)
             .accessibilityHint("Turns off check-ins until you start again.")
         case .checkIn:
             Button {
                 store.dismissFromPhone()
+                confirm("You're okay. No one was texted.")
             } label: {
                 Label("I'm okay", systemImage: "checkmark")
             }
             .buttonStyle(.ripplePrimary)
             .accessibilityHint("Answers the check-in. No one is texted.")
         case .alertSent, .responding:
-            VStack(spacing: 12) {
-                Button {
-                    store.dismissFromPhone()
-                } label: {
-                    Label("I'm okay now", systemImage: "hand.thumbsup.fill")
-                }
-                .buttonStyle(.ripplePrimary)
-                .accessibilityHint("Texts everyone already contacted that you're okay.")
-                FormNote("Contacts get an \"I'm okay\" text.")
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity)
+            Button {
+                store.dismissFromPhone()
+                confirm("Your contacts were told you're okay.")
+            } label: {
+                Label("I'm okay now", systemImage: "hand.thumbsup.fill")
             }
+            .buttonStyle(.ripplePrimary)
+            .accessibilityHint("Texts everyone already contacted that you're okay.")
         }
+    }
+
+    /// Swaps the small banner for a full-screen "✓" when the action worked.
+    private func confirm(_ text: String) {
+        guard let banner = store.banner, banner.ok, !banner.text.isEmpty else {
+            Haptics.warning()
+            return
+        }
+        Haptics.success()
+        store.banner = nil
+        store.confirmation = Confirmation(text: text)
+    }
+}
+
+/// With no one to text yet, Home shows one friendly card instead of looking empty.
+private struct AddContactCard: View {
+    @Environment(\.openTab) private var openTab
+
+    var body: some View {
+        Button {
+            Haptics.tap()
+            openTab(.contacts)
+        } label: {
+            HStack(spacing: Theme.spacing) {
+                Image(systemName: "person.badge.plus")
+                    .font(.system(size: 26, weight: .semibold))
+                    .foregroundStyle(Theme.onBrand)
+                    .frame(width: 56, height: 56)
+                    .background(Theme.brand, in: Circle())
+                    .accessibilityHidden(true)
+                Text("Add someone to text")
+                    .font(Theme.cardTitle)
+                    .foregroundStyle(Theme.text)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 8)
+                Image(systemName: "arrow.right")
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(Theme.accent)
+                    .accessibilityHidden(true)
+            }
+            .padding(20)
+            .frame(maxWidth: .infinity, minHeight: Theme.listRowHeight, alignment: .leading)
+            .rippleCard()
+            .overlay(RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous)
+                .strokeBorder(Theme.accent.opacity(0.35), style: StrokeStyle(lineWidth: 2, dash: [6, 5])))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("Opens Contacts.")
     }
 }
 
@@ -147,58 +199,75 @@ struct HomeStatus {
     var headline: LocalizedStringKey
     var detail: LocalizedStringKey?
     var deadline: Date?
+    /// A time shown big, with a small word above it, like "Texted" / "12:46 AM".
+    var timeLabel: LocalizedStringKey?
+    var time: Date?
 
-    init(mode: CircleMode, headline: LocalizedStringKey, detail: LocalizedStringKey? = nil, deadline: Date? = nil) {
+    init(mode: CircleMode, headline: LocalizedStringKey, detail: LocalizedStringKey? = nil, deadline: Date? = nil,
+         timeLabel: LocalizedStringKey? = nil, time: Date? = nil) {
         self.mode = mode
         self.headline = headline
         self.detail = detail
         self.deadline = deadline
+        self.timeLabel = timeLabel
+        self.time = time
     }
 
     init(display: WatchDisplay, alarm: Alarm?, nextCheckIn: Date?) {
         mode = display.mode
         deadline = display.mode == .checkIn ? display.deadline : nil
+        detail = nil
         switch display.mode {
         case .off:
             headline = "Monitoring is off"
-            detail = "Turn it on to get check-ins."
         case .monitoring:
             headline = "Monitoring is active"
             if let next = nextCheckIn {
-                detail = "Next check-in at \(next.shortTime)."
-            } else {
-                detail = nil
+                timeLabel = "Next check-in"
+                time = next
             }
         case .checkIn:
-            headline = "Your Watch is asking if you're okay"
-            detail = "Tap your Watch or \"I'm okay\" below."
+            headline = "Are you okay?"
         case .alertSent:
-            let texted = (alarm?.alertedAt ?? alarm?.startedAt)?.shortTime
+            // The wearer asked for help on the Watch or the iPhone.
+            headline = alarm?.helpRequestedAt != nil ? "You asked for help." : "No one has responded yet."
             if alarm?.helpRequestedAt != nil {
-                // The wearer asked for help on the Watch or the iPhone.
-                headline = "You asked for help."
-                if let texted {
-                    detail = "Your contacts were texted at \(texted). No one has responded yet."
-                } else {
-                    detail = "No one has responded yet."
-                }
-            } else {
-                headline = "No one has responded yet."
-                if let texted {
-                    detail = "Your contacts were texted at \(texted)."
-                } else {
-                    detail = nil
-                }
+                detail = "No one has responded yet."
+            }
+            if let texted = alarm?.alertedAt ?? alarm?.startedAt {
+                timeLabel = "Contacts texted"
+                time = texted
             }
         case .responding:
             if let ack = alarm?.acknowledgment {
                 headline = "\(ack.name) is checking on you."
-                detail = "Since \(ack.at.shortTime)"
+                timeLabel = "Since"
+                time = ack.at
             } else {
                 headline = "A contact is checking on you."
-                detail = nil
             }
         }
+    }
+}
+
+/// A small word above a big time, like "Next dose" / "10:00 PM".
+struct BigTime: View {
+    let label: LocalizedStringKey
+    let time: Date
+    var color = Theme.text
+    var labelColor = Theme.secondaryText
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(label)
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(labelColor)
+            Text(time.shortTime)
+                .font(.title.weight(.bold))
+                .monospacedDigit()
+                .foregroundStyle(color)
+        }
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -215,8 +284,20 @@ struct StatusCardView: View {
             }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text("Status:") + Text(verbatim: " ") + Text(LocalizedStringKey(status.mode.pillLabel))
-                            + Text(verbatim: ". ") + Text(status.headline))
+        .accessibilityLabel(accessibilityText)
+    }
+
+    private var accessibilityText: Text {
+        var text = Text("Status:") + Text(verbatim: " ") + Text(LocalizedStringKey(status.mode.pillLabel))
+            + Text(verbatim: ". ") + Text(status.headline)
+        if let detail = status.detail { text = text + Text(verbatim: " ") + Text(detail) }
+        if let label = status.timeLabel, let time = status.time {
+            text = text + Text(verbatim: ". ") + Text(label) + Text(verbatim: " \(time.shortTime)")
+        }
+        if status.mode == .monitoring {
+            text = text + Text(verbatim: ". ") + Text(watchConnected ? "Watch connected" : "Open Ripple on your Watch")
+        }
+        return text
     }
 }
 
@@ -235,15 +316,10 @@ private struct MonitoringCard: View {
         }
     }
 
-    /// What monitoring actually does, in plain words: how often the Watch
-    /// buzzes, how long there is to answer, and what happens if there's no answer.
-    private var detail: Text? {
-        guard status.mode == .monitoring else { return status.detail.map { Text($0) } }
-        let config = store.config
-        if config.checkInIntervalMinutes > 0, let next = store.coordinator.nextCheckInAt {
-            return Text("Next check-in at \(next.shortTime).")
-        }
-        return Text("\(config.countdownSeconds) s to answer when your Watch buzzes.")
+    /// The next check-in, only when check-ins repeat on a timer.
+    private var nextCheckIn: Date? {
+        guard status.mode == .monitoring, store.config.checkInIntervalMinutes > 0 else { return nil }
+        return store.coordinator.nextCheckInAt
     }
 
     var body: some View {
@@ -283,26 +359,25 @@ private struct MonitoringCard: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityAddTraits(.isHeader)
                     if let deadline = status.deadline {
-                        HStack(alignment: .firstTextBaseline, spacing: 6) {
-                            CountdownText(deadline: deadline)
-                                .font(.title.weight(.bold))
-                                .foregroundStyle(Theme.checkIn)
-                            Text("left to answer")
-                                .font(Theme.body)
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text("Time to answer")
+                                .font(.footnote.weight(.semibold))
                                 .foregroundStyle(Theme.secondaryText)
+                            CountdownText(deadline: deadline)
+                                .font(.largeTitle.weight(.bold))
+                                .foregroundStyle(Theme.checkIn)
                         }
                         .accessibilityElement(children: .combine)
                     }
-                    if let detail {
-                        detail
-                            .font(.subheadline)
-                            .foregroundStyle(Theme.secondaryText)
-                            .fixedSize(horizontal: false, vertical: true)
+                    if let next = nextCheckIn {
+                        BigTime(label: "Next check-in", time: next)
                     }
-                    if status.mode == .monitoring && !watchConnected {
-                        Label("Open Ripple on your Watch", systemImage: "applewatch")
+                    if status.mode == .monitoring {
+                        // An icon and color show the Watch link at a glance, with a short word for VoiceOver and color blindness.
+                        Label(watchConnected ? "Watch connected" : "Open Ripple on your Watch",
+                              systemImage: watchConnected ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
                             .font(.footnote.weight(.semibold))
-                            .foregroundStyle(Theme.checkIn)
+                            .foregroundStyle(watchConnected ? Theme.safe : Theme.checkIn)
                             .padding(.top, 2)
                     }
                 }
@@ -331,8 +406,9 @@ private struct HomeCardGrid: View {
     var body: some View {
         // Full-width cards, one under the other: help first, then medication.
         VStack(spacing: Theme.spacing) {
-            HomeCard(icon: "message.fill", tint: Theme.alert, title: "Emergency Help", subtitle: "Text your contacts.") {
+            HomeCard(icon: "message.fill", tint: Theme.alert, title: "Emergency Help") {
                 Button {
+                    Haptics.tap()
                     confirmHelp = true
                 } label: {
                     Label("Send Ripple alert", systemImage: "message.fill")
@@ -344,13 +420,23 @@ private struct HomeCardGrid: View {
                 .buttonStyle(.plain)
                 .accessibilityHint("Asks for confirmation before texting a Ripple alert to all your contacts.")
             }
-            HomeCard(icon: "pills.fill", tint: Theme.accent, title: "Medication Reminders", subtitle: "Stay on track.",
+            HomeCard(icon: "pills.fill", tint: Theme.accent, title: "Medication Reminders",
                      destination: AnyView(MedicationView())) {
                 MedicationFooter()
             }
         }
         .confirmationDialog("Text all your contacts?", isPresented: $confirmHelp, titleVisibility: .visible) {
-            Button("Send Ripple alert", role: .destructive) { store.requestHelpFromPhone() }
+            Button("Send Ripple alert", role: .destructive) {
+                store.requestHelpFromPhone()
+                if let banner = store.banner, banner.ok {
+                    Haptics.success()
+                    store.banner = nil
+                    store.confirmation = Confirmation(text: "Your contacts are being texted.", systemImage: "message.fill",
+                                                      color: Theme.alert)
+                } else {
+                    Haptics.warning()
+                }
+            }
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("All your contacts get a text now.")
@@ -374,7 +460,7 @@ private struct HomeCard<Footer: View>: View {
     let icon: String
     let tint: Color
     let title: String
-    let subtitle: String
+    var subtitle: String? = nil
     /// When set, the top of the card opens this screen and shows a chevron.
     var destination: AnyView? = nil
     @ViewBuilder let footer: Footer
@@ -389,10 +475,12 @@ private struct HomeCard<Footer: View>: View {
                         header
                         Spacer(minLength: 8)
                         Image(systemName: "chevron.right")
-                            .font(.footnote.weight(.semibold))
-                            .foregroundStyle(Theme.secondaryText)
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(Theme.text)
                             .accessibilityHidden(true)
                     }
+                    // The whole row is the target, at least 60 pt tall.
+                    .frame(minHeight: Theme.minTarget)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -421,10 +509,12 @@ private struct HomeCard<Footer: View>: View {
                         .font(Theme.cardTitle)
                         .foregroundStyle(Theme.text)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text(LocalizedStringKey(subtitle))
-                        .font(.footnote)
-                        .foregroundStyle(Theme.secondaryText)
-                        .fixedSize(horizontal: false, vertical: true)
+                    if let subtitle {
+                        Text(LocalizedStringKey(subtitle))
+                            .font(.footnote)
+                            .foregroundStyle(Theme.secondaryText)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             }
     }
@@ -441,6 +531,13 @@ private struct MedicationFooter: View {
         if coordinator.pendingDoseAt != nil {
             Button {
                 store.tookMedsFromPhone()
+                if let banner = store.banner, banner.ok {
+                    Haptics.success()
+                    store.banner = nil
+                    store.confirmation = Confirmation(text: "Dose marked as taken.", systemImage: "pills.fill", color: Theme.accent)
+                } else {
+                    Haptics.warning()
+                }
             } label: {
                 Label("I took them", systemImage: "checkmark")
                     .font(Theme.labelBold)
@@ -457,22 +554,16 @@ private struct MedicationFooter: View {
                 MedicationView()
             } label: {
                 HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Next dose")
-                            .font(.footnote)
-                            .foregroundStyle(Theme.secondaryText)
-                        Text(next.shortTime)
-                            .font(.title3.weight(.bold))
-                            .foregroundStyle(Theme.text)
-                    }
+                    BigTime(label: "Next dose", time: next)
                     Spacer(minLength: 4)
                     Image(systemName: "chevron.right")
-                        .font(.footnote.weight(.semibold))
+                        .font(.title3.weight(.semibold))
                         .foregroundStyle(Theme.text)
                         .accessibilityHidden(true)
                 }
-                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .frame(maxWidth: .infinity, minHeight: Theme.minTarget, alignment: .leading)
                 .padding(.horizontal, 12)
+                .padding(.vertical, 6)
                 .background(Theme.accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 .contentShape(Rectangle())
             }
@@ -485,7 +576,7 @@ private struct MedicationFooter: View {
                 Label("Add dose times", systemImage: "plus")
                     .font(Theme.labelBold)
                     .foregroundStyle(Theme.accent)
-                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .frame(maxWidth: .infinity, minHeight: Theme.minTarget)
                     .background(Theme.accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
             .accessibilityHint("Opens your medication times.")
@@ -529,6 +620,10 @@ private struct SolidStatusCard: View {
                     .font(Theme.body)
                     .foregroundStyle(.white)
                     .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if let label = status.timeLabel, let time = status.time {
+                BigTime(label: label, time: time, color: .white, labelColor: .white)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -731,13 +826,11 @@ private struct AlertScreenPreview: View {
             ScrollView {
                 VStack(spacing: Theme.spacing) {
                     StatusCardView(status: responding
-                        ? HomeStatus(mode: .responding, headline: "Maya Chen is checking on you.", detail: "Since 12:47 AM")
-                        : HomeStatus(mode: .alertSent, headline: "No one has responded yet.", detail: "Your contacts were texted at 12:46 AM."))
+                        ? HomeStatus(mode: .responding, headline: "Maya Chen is checking on you.", timeLabel: "Since", time: .now)
+                        : HomeStatus(mode: .alertSent, headline: "No one has responded yet.", timeLabel: "Contacts texted", time: .now))
                     AlertContactsCard(rows: responding ? PreviewData.respondingRows : PreviewData.alertRows)
                     Button {} label: { Label("I'm okay now", systemImage: "hand.thumbsup.fill") }
                         .buttonStyle(.ripplePrimary)
-                    FormNote("Texts already sent can't be undone. Contacts will get an \"I'm okay\" text.")
-                        .multilineTextAlignment(.center)
                     RowGroup {
                         NavRow(title: "Session details", systemImage: "list.bullet.rectangle", detail: "Texts and connections")
                     }
@@ -758,9 +851,9 @@ private struct AlertScreenPreview: View {
 #Preview("Status card, every state") {
     ScrollView {
         VStack(spacing: Theme.spacing) {
-            StatusCardView(status: HomeStatus(mode: .off, headline: "Monitoring is off.", detail: "Start monitoring here or on your Watch."))
-            StatusCardView(status: HomeStatus(mode: .monitoring, headline: "Your Watch will check in with you.", detail: "Next check-in at 1:15 AM"))
-            StatusCardView(status: HomeStatus(mode: .checkIn, headline: "Answer on your Watch.", detail: "Tap the circle, or tap \"I'm okay\" below.", deadline: .now.addingTimeInterval(14)))
+            StatusCardView(status: HomeStatus(mode: .off, headline: "Monitoring is off"))
+            StatusCardView(status: HomeStatus(mode: .monitoring, headline: "Monitoring is active"), watchConnected: true)
+            StatusCardView(status: HomeStatus(mode: .checkIn, headline: "Are you okay?", deadline: .now.addingTimeInterval(14)))
         }
         .padding(Theme.spacing)
     }
@@ -769,7 +862,7 @@ private struct AlertScreenPreview: View {
 
 #Preview("Status card, largest text") {
     ScrollView {
-        StatusCardView(status: HomeStatus(mode: .checkIn, headline: "Answer on your Watch.", detail: "Tap the circle, or tap \"I'm okay\" below.", deadline: .now.addingTimeInterval(14)))
+        StatusCardView(status: HomeStatus(mode: .checkIn, headline: "Are you okay?", deadline: .now.addingTimeInterval(14)))
             .padding(Theme.spacing)
     }
     .rippleScreen()

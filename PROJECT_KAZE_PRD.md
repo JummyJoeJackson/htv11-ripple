@@ -21,6 +21,8 @@ The design covers all seven Kaze demo scenarios: safe, no response, duress, conn
 - Optional **help card**: a short note added to alert texts, written by the wearer, such as "I have Parkinson's. I may look confused. My medication is in my left pocket." Off by default.
 - Configure preferred supported Watch gestures and a voice phrase for dismissing alarms. Touch remains available as the fallback.
 - Configure check-in timing, the response countdown, and the acknowledge window before Tier 2 is texted. Short timers may be used for demos.
+- Optional **medication times**: the times the wearer usually takes each dose, used to schedule check-ins (see [Parkinson's-aware check-ins](#parkinsons-aware-check-ins)). Off by default.
+- Optional **context line** in alert texts, with separate toggles for last steps, last medication, and help card. Off by default.
 - Send configuration to the paired Watch and show whether synchronization succeeded. The Watch should retain the last successfully received configuration.
 - Show basic monitoring, alarm, connection, backend, and message status. This app is primarily for setup, not a complicated live dashboard.
 
@@ -68,6 +70,43 @@ This app exists solely to simplify testing and presentations:
 
 Admin commands must exercise the same alarm behavior as the wearer app. Resetting must clear old pending countdowns, acknowledge windows, and backend deadlines so they cannot fire in the next run. Label this app Demo admin; it is not a caregiver app.
 
+## Parkinson's-aware check-ins
+
+These features decide *when* to check in and what context to send. None of them detects a fall, a freeze, or any condition, and none of them sends an alert on its own. Each one only starts a normal check-in, and the wearer answers it the usual way.
+
+### Medication-timed check-ins
+
+- The wearer enters their usual medication times on the iPhone.
+- Check-ins are scheduled near when a dose usually wears off. That's the "off" period, when moving and using the phone is hardest.
+- At each dose time the Watch shows one **Took my meds** tap. A missed tap starts a gentle check-in with the normal countdown.
+- No sensors are needed. The app stores only the dose times and the time of the last tap.
+
+### Sudden stop during a walk
+
+- The wearer can start a **walk session** from the Watch.
+- During the session, read step counts with CMPedometer.
+- If steps stop suddenly for a few minutes, start a check-in. This catches a possible freeze or fall without claiming to detect one.
+- Uses real step data and is easy to demo by standing still. Validate whether step updates continue while the Watch screen is off.
+
+### Tremor and dyskinesia context (simulated)
+
+- Apple Watch has a Movement Disorder API that records tremor and dyskinesia, but it requires Apple's approval. Simulate the data for the demo and list it as simulated in the honesty table.
+- Use it only as context, such as "tremor was high in the last hour" in the alert. Never use it as a trigger or a diagnosis.
+
+### Context line in the alert
+
+With the wearer's permission, the alert text adds one short context line built from data the app already has:
+
+> "Last steps 4 min ago. Last meds 1:00 PM. Help card: I may look confused. Meds in left pocket."
+
+The contact arrives knowing what to expect. Each part appears only if the wearer turned it on, and the line never states a diagnosis or a cause.
+
+### Built for Parkinson's bodies
+
+- Touch and double tap come first, since voice can get soft. Voice stays optional.
+- Big targets and hold actions, so tremor doesn't cause accidental taps.
+- Optional **rhythmic haptic beat** during a check-in. Rhythm cues are a known strategy for freezing; present it as comfort only, not treatment.
+
 ## Phone-number messaging
 
 **Every alert goes to a configured phone number, sent first from the wearer's iPhone and messaging account.** Contacts do not need an app, account, email address, or portal. For testing, the user's iPhone sends actual messages to teammates' phones.
@@ -84,7 +123,7 @@ Message templates:
 
 | Event | Message |
 | --- | --- |
-| Alert | "Halo alert: [Name] did not respond to their Watch check-in at [time]. Please call or check on them. [Location link, if allowed] [Help card, if on] Tap if you're checking: [link]" |
+| Alert | "Halo alert: [Name] did not respond to their Watch check-in at [time]. Please call or check on them. [Location link, if allowed] [Context line or help card, if on] Tap if you're checking: [link]" |
 | Escalation to Tier 2 | "Halo alert: [Name] did not respond at [time] and no one has confirmed yet. Please call or check on them. [link]" |
 | Someone responding | "Halo: [Contact] is checking on [Name]." |
 | Okay now | "Halo: [Name] says they're okay now ([time]). No action needed." |
@@ -142,18 +181,18 @@ The backend stores only alarm ids, timestamps, phone numbers, and message text f
 
 1. Configure contacts, tiers, location permissions, response methods, and alarm timing on the wearer iPhone; synchronize with the Watch.
 2. Enable monitoring using the Watch circle.
-3. An enabled check-in timer or a demo-admin command starts an alarm, haptic, and response countdown. The iPhone registers the alarm with the backend.
+3. An enabled check-in timer, a medication-time check-in, a sudden stop during a walk session, or a demo-admin command starts an alarm, haptic, and response countdown. The iPhone registers the alarm with the backend.
 4. A tap or a supported configured response cancels the current alarm before messages are sent. A 2 second hold dismisses on screen but continues as duress.
 5. If the countdown expires unanswered, the wearer's iPhone app launches Halo Alert to text Tier 1.
 6. The acknowledge window runs. No acknowledgment means Tier 2 is texted.
 7. If the phone goes silent at any point, the backend sends the remaining messages by SMS.
 8. "I'm okay now" ends the alarm and texts everyone already alerted. Resetting the demo cancels all remaining work. Duplicate commands must not restart an alarm or create duplicate alerts.
 
-Use SwiftUI for the three apps and WatchConnectivity for paired iPhone–Watch configuration and actions. Keep shared state minimal: monitoring on/off, current alarm/countdown, duress flag (never displayed), configuration version, contacts with tiers, location permission, and expiry times, acknowledgment status, and per-recipient message status with sending path. A lightweight backend connects the admin phone to the wearer phone, hosts the acknowledge page, and holds the backup deadline.
+Use SwiftUI for the three apps and WatchConnectivity for paired iPhone–Watch configuration and actions. Keep shared state minimal: monitoring on/off, current alarm/countdown, duress flag (never displayed), configuration version, contacts with tiers, location permission, and expiry times, acknowledgment status, per-recipient message status with sending path, and, if enabled, medication times, the last "Took my meds" tap, and the time of the last steps. A lightweight backend connects the admin phone to the wearer phone, hosts the acknowledge page, and holds the backup deadline.
 
 ## MVP and demo checks
 
-The core scope is the three apps, configuration sync, one-circle Watch UI with guarded Stop and duress hold, working touch and supported Apple-gesture dismissal, permanent and one-hour phone contacts with tiers and location permissions, a real phone-to-phone messaging path, the acknowledge link with Tier 2 escalation, "okay now" follow-up texts, and the backend backup sender. Voice dismissal is a desired input to validate; help card, physical-button dismissal, and Watch invitations are conditional extras.
+The core scope is the three apps, configuration sync, one-circle Watch UI with guarded Stop and duress hold, working touch and supported Apple-gesture dismissal, permanent and one-hour phone contacts with tiers and location permissions, a real phone-to-phone messaging path, the acknowledge link with Tier 2 escalation, "okay now" follow-up texts, and the backend backup sender. Voice dismissal is a desired input to validate; help card, physical-button dismissal, and Watch invitations are conditional extras. The Parkinson's-aware check-ins (medication timing, walk-session step stops, the alert context line, and the rhythmic haptic) are extras that build on the core alarm; simulated tremor context is presentation only.
 
 Demonstrate all seven Kaze scenarios with 15 second demo timers:
 
@@ -169,16 +208,18 @@ Demonstrate all seven Kaze scenarios with 15 second demo timers:
 
 Then show reset without an old alarm returning. Demonstrate voice only when it actually works, and clearly label any manual message confirmation or simulated behavior.
 
+If the extras are built, also show: skip the "Took my meds" tap and see a gentle check-in start; start a walk session, stand still, and see a check-in start; and let one alert expire so a teammate receives the context line.
+
 Present this honesty table:
 
 | Category | What to report |
 | --- | --- |
-| Demonstrated | Watch input, alarms, real texts to teammates, tiers, acknowledge link, duress, okay now texts, backup SMS, location permissions, contact expiry. |
-| Simulated | Alarm triggers, the wearer being unable to respond, phone failure. |
-| Assumed | Contacts read texts and act on them. The wearer keeps the phone charged and nearby. |
-| Needs validation | Locked-phone sending, gestures and voice with Parkinson's tremor, accidental duress rate, false alarm rate, battery use, real response times. |
+| Demonstrated | Watch input, alarms, real texts to teammates, tiers, acknowledge link, duress, okay now texts, backup SMS, location permissions, contact expiry. If built: medication-timed check-ins, step-stop check-ins from real step data, the alert context line. |
+| Simulated | Alarm triggers, the wearer being unable to respond, phone failure, tremor and dyskinesia data. |
+| Assumed | Contacts read texts and act on them. The wearer keeps the phone charged and nearby. The wearer enters accurate medication times. |
+| Needs validation | Locked-phone sending, gestures and voice with Parkinson's tremor, accidental duress rate, false alarm rate, battery use, real response times, step-stop thresholds and background step updates, whether rhythmic haptics feel comforting. |
 
-No helper portals, venue-staff network, physician view, AI assistant, medication reminders, sensor detection, or medical interpretation are required for this MVP. Test background behavior, locked-phone operation, voice recognition, and gesture accessibility separately before making reliability claims.
+No helper portals, venue-staff network, physician view, AI assistant, fall or freeze detection, or medical interpretation are required for this MVP. Medication times and step data only schedule or start check-ins. Test background behavior, locked-phone operation, voice recognition, and gesture accessibility separately before making reliability claims.
 
 ## Platform references
 
@@ -188,3 +229,5 @@ No helper portals, venue-staff network, physician view, AI assistant, medication
 - [Apple: Watch buttons and gestures](https://support.apple.com/en-us/105063)
 - [Apple: native double-tap integration](https://developer.apple.com/documentation/watchos-apps/enabling-double-tap)
 - [Twilio: send an SMS](https://www.twilio.com/docs/messaging/quickstart)
+- [Apple: CMPedometer](https://developer.apple.com/documentation/coremotion/cmpedometer)
+- [Apple: CMMovementDisorderManager](https://developer.apple.com/documentation/coremotion/cmmovementdisordermanager)

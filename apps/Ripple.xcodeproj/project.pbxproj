@@ -378,9 +378,9 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/RippleWearer-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Ripple;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "If you turn it on, Ripple checks in when your Apple Watch records a fall or a heart alert in Health. It reads only those alerts.";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Ripple connects to the Ripple server on your Wi-Fi network.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "During a safety session, Ripple takes one location fix when an alarm starts, so contacts you allowed get a map link in the alert text.";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "If you turn it on, Ripple checks in when your Apple Watch records a fall or a heart alert in Health. It reads only those alerts.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "During an alarm, Ripple recognizes the speech your Apple Watch hears, so saying your phrase dismisses the alarm.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -412,9 +412,9 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/RippleWearer-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Ripple;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "If you turn it on, Ripple checks in when your Apple Watch records a fall or a heart alert in Health. It reads only those alerts.";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Ripple connects to the Ripple server on your Wi-Fi network.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "During a safety session, Ripple takes one location fix when an alarm starts, so contacts you allowed get a map link in the alert text.";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "If you turn it on, Ripple checks in when your Apple Watch records a fall or a heart alert in Health. It reads only those alerts.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "During an alarm, Ripple recognizes the speech your Apple Watch hears, so saying your phrase dismisses the alarm.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

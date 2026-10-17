@@ -312,7 +312,7 @@ final class WatchStore {
     /// Called by each background intent. Every input leaves a local receipt,
     /// including when nothing is listening, so setup can be tested harmlessly.
     /// Only a complete selected sequence acts: the dismiss sequence answers an
-    /// open alarm, and the help sequence asks for help in any state.
+    /// open alarm, and the alarm sequence starts one only when none is open.
     func receiveHandGesture(_ step: HandGestureStep, at time: Date = Date()) async {
         handGestureCount += 1
         lastHandGesture = step.label
@@ -325,7 +325,9 @@ final class WatchStore {
         }
         let bindings = activeHandGestures
         guard !bindings.isEmpty else {
-            resetHandGestures(status: "No alarm; input recorded")
+            resetHandGestures(status: display.mode.isAlarm
+                ? "Dismiss gesture is off; input recorded"
+                : "No alarm; input recorded")
             return
         }
         guard !sending else {
@@ -344,14 +346,24 @@ final class WatchStore {
             // Preserve the recognizer's bounce history across repeated deliveries.
             handGestureExpiryTask?.cancel()
             handGestureExpiryTask = nil
-            handGestureStatus = "Start: \(nextHandGestures)"
+            handGestureStatus = handGestureHint ?? ""
         case .partial:
-            handGestureStatus = "Next: \(nextHandGestures)"
+            handGestureStatus = "\(display.mode.isAlarm ? "Dismiss alarm" : "Start alarm") — next: \(nextHandGestures)"
             expireHandGestures()
         case .matched(let action):
             handGestureExpiryTask?.cancel()
-            handGestureStatus = "Matched; confirming…"
+            handGestureStatus = action == .help ? "Starting alarm; confirming…" : "Dismissing alarm; confirming…"
+            let matchedBinding = bindings.first { $0.action == action }
+            let matchedAlarmId = display.alarmId
             await waitForPhone()
+            // Reconnection yields to incoming alarm/config updates. Never send
+            // a trigger matched before an alarm opened, or dismiss a new alarm.
+            guard let matchedBinding,
+                  activeHandGestures.contains(matchedBinding),
+                  display.alarmId == matchedAlarmId else {
+                resetHandGestures(status: "Alarm or gesture settings changed; try again")
+                return
+            }
             // Await the reply (or the existing timeout) before the intent returns,
             // so watchOS doesn't suspend the useful work after an early result.
             await withCheckedContinuation { continuation in
@@ -363,17 +375,16 @@ final class WatchStore {
         }
     }
 
-    /// The dismiss sequence counts only while an alarm is open. The help
-    /// sequence counts in every state, like swiping up twice.
+    /// Only one purpose is active: dismiss an open alarm, or start a new one.
     private var activeHandGestures: [HandGestureBinding] {
-        var bindings: [HandGestureBinding] = []
-        if config.handGesturesEnabled, display.mode.isAlarm, display.alarmId != nil {
-            bindings.append(HandGestureBinding(preset: config.handGesturePreset, action: .okay))
-        }
-        if config.handGestureHelpEnabled {
-            bindings.append(HandGestureBinding(preset: config.handGestureHelpPreset, action: .help))
-        }
-        return bindings
+        config.handGestureBindings(for: display)
+    }
+
+    /// Always shown, including before the first gesture and after state changes.
+    var handGestureHint: String? {
+        guard let binding = activeHandGestures.first else { return nil }
+        let action = binding.action == .help ? "Start alarm" : "Dismiss alarm"
+        return "\(action): \(binding.preset.label)"
     }
 
     private var nextHandGestures: String {

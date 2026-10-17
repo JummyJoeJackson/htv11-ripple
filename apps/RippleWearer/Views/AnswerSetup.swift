@@ -108,10 +108,10 @@ private struct MethodCard: View {
                     .background(selected ? Theme.accent : Theme.iconTint, in: Circle())
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(method.title)
+                    Text(LocalizedStringKey(method.title))
                         .font(Theme.body.weight(.semibold))
                         .foregroundStyle(Theme.text)
-                    Text(method.detail)
+                    Text(LocalizedStringKey(method.detail))
                         .font(Theme.label)
                         .foregroundStyle(Theme.secondaryText)
                 }
@@ -177,7 +177,7 @@ private struct SetupLine: View {
 
     var body: some View {
         Label {
-            Text(text)
+            Text(LocalizedStringKey(text))
                 .font(Theme.label)
                 .foregroundStyle(Theme.text)
                 .fixedSize(horizontal: false, vertical: true)

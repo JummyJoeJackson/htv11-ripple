@@ -19,6 +19,12 @@ struct SettingsView: View {
             }
 
             Section {
+                LanguagePicker()
+            } header: {
+                SectionHeader("Language")
+            }
+
+            Section {
                 AvatarPicker(size: 64)
                 IconRow(icon: "person.fill") {
                     TextField("Your name", text: $draft.wearerName)

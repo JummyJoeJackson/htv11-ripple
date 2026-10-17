@@ -8,7 +8,7 @@ struct RipplePinchIntent: AppIntent {
     static let description = IntentDescription("Record a pinch in Ripple on Apple Watch. Only a complete configured sequence dismisses an active alarm.")
     static let openAppWhenRun = false
     @available(watchOS 26.0, *)
-    static var supportedModes: IntentModes { .background }
+    static var openAppWhenRun: Bool { false }
 
     @MainActor
     func perform() async throws -> some IntentResult {
@@ -22,7 +22,7 @@ struct RippleClenchIntent: AppIntent {
     static let description = IntentDescription("Record a clench in Ripple on Apple Watch. Only a complete configured sequence dismisses an active alarm.")
     static let openAppWhenRun = false
     @available(watchOS 26.0, *)
-    static var supportedModes: IntentModes { .background }
+    static var openAppWhenRun: Bool { false }
 
     @MainActor
     func perform() async throws -> some IntentResult {
@@ -36,7 +36,7 @@ struct RippleDoublePinchIntent: AppIntent {
     static let description = IntentDescription("Record a double pinch as one input in Ripple on Apple Watch. Only a complete configured sequence dismisses an active alarm.")
     static let openAppWhenRun = false
     @available(watchOS 26.0, *)
-    static var supportedModes: IntentModes { .background }
+    static var openAppWhenRun: Bool { false }
 
     @MainActor
     func perform() async throws -> some IntentResult {
@@ -50,7 +50,7 @@ struct RippleDoubleClenchIntent: AppIntent {
     static let description = IntentDescription("Record a double clench as one input in Ripple on Apple Watch. Only a complete configured sequence dismisses an active alarm.")
     static let openAppWhenRun = false
     @available(watchOS 26.0, *)
-    static var supportedModes: IntentModes { .background }
+    static var openAppWhenRun: Bool { false }
 
     @MainActor
     func perform() async throws -> some IntentResult {

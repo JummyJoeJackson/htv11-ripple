@@ -51,6 +51,9 @@ Intermediate check-ins, custom wrist gestures, background notifications, user-de
 
 The full product requirements are in [PROJECT_KAZE_PRD.md](PROJECT_KAZE_PRD.md).
 
+- How to run the Swift MVP on a Mac, iPhone and Apple Watch: [docs/RUNNING.md](docs/RUNNING.md)
+- Implementation plan: [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)
+
 ## License
 
 See [LICENSE](LICENSE).

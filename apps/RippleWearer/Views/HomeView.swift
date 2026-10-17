@@ -40,7 +40,7 @@ struct HomeView: View {
                             .fixedSize(horizontal: false, vertical: true)
                             .accessibilityAddTraits(.isHeader)
                         if !display.mode.isAlarm {
-                            Text("Your check-ins and help, in one place")
+                            Text("Your care at a glance")
                                 .font(Theme.body)
                                 .foregroundStyle(Theme.secondaryText)
                         }
@@ -126,7 +126,7 @@ struct HomeView: View {
                 }
                 .buttonStyle(.ripplePrimary)
                 .accessibilityHint("Texts everyone already contacted that you're okay.")
-                FormNote("Sent texts can't be undone. Contacts get an \"I'm okay\" text.")
+                FormNote("Contacts get an \"I'm okay\" text.")
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity)
             }
@@ -156,13 +156,13 @@ struct HomeStatus {
         switch display.mode {
         case .off:
             headline = "Monitoring is off"
-            detail = "Your Watch won't check on you. Turn it on here or on your Watch."
+            detail = "Turn it on to get check-ins."
         case .monitoring:
             headline = "Monitoring is active"
             detail = nextCheckIn.map { "Next check-in at \($0.shortTime)." }
         case .checkIn:
             headline = "Your Watch is asking if you're okay"
-            detail = "Tap the circle on your Watch, or \"I'm okay\" below. If time runs out, your contacts get a text."
+            detail = "Tap your Watch or \"I'm okay\" below."
         case .alertSent:
             let texted = (alarm?.alertedAt ?? alarm?.startedAt).map { "Your contacts were texted at \($0.shortTime)." }
             if alarm?.helpRequestedAt != nil {
@@ -218,14 +218,14 @@ private struct MonitoringCard: View {
     private var detail: String? {
         guard status.mode == .monitoring else { return status.detail }
         let config = store.config
-        let answer = "Tap it within \(config.countdownSeconds) s, or your contacts get a text."
         var parts: [String]
         if config.checkInIntervalMinutes > 0 {
-            parts = ["Every \(config.checkInIntervalMinutes) min your Watch buzzes and asks if you're okay.", answer]
+            parts = ["Check-in every \(config.checkInIntervalMinutes) min."]
             if let next = store.coordinator.nextCheckInAt { parts.append("Next: \(next.shortTime).") }
         } else {
-            parts = ["Automatic check-ins are off. If an alarm starts, your Watch buzzes.", answer]
+            parts = ["Your Watch will buzz if an alarm starts."]
         }
+        parts.append("\(config.countdownSeconds) s to answer.")
         if !watchConnected { parts.append("Open Ripple on your Watch.") }
         return parts.joined(separator: " ")
     }
@@ -308,7 +308,7 @@ private struct HomeCardGrid: View {
             : [GridItem(.flexible(), spacing: Theme.spacing), GridItem(.flexible())]
         LazyVGrid(columns: columns, spacing: Theme.spacing) {
             HomeCard(icon: "pills.fill", tint: Theme.accent, title: "Medication Reminders", subtitle: "Stay on track with your medications.") {
-                ComingSoonTag()
+                MedicationFooter()
             }
             HomeCard(icon: "list.bullet.clipboard.fill", tint: Color(red: 0x4F / 255, green: 0x46 / 255, blue: 0xE5 / 255),
                      title: "Daily Symptom Check-in", subtitle: "Share how you're feeling today.") {
@@ -331,11 +331,11 @@ private struct HomeCardGrid: View {
                 .accessibilityHint("Asks for confirmation before texting a Ripple alert to all your contacts.")
             }
         }
-        .confirmationDialog("Do you want to send a Ripple alert to all your contacts?", isPresented: $confirmHelp, titleVisibility: .visible) {
+        .confirmationDialog("Text all your contacts?", isPresented: $confirmHelp, titleVisibility: .visible) {
             Button("Send Ripple alert", role: .destructive) { store.requestHelpFromPhone() }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("All your contacts will be texted now, including both tiers and active one-hour contacts. Each person can respond with Ripple accept followed by the four-digit code in their alert.")
+            Text("All your contacts get a text now.")
         }
     }
 }
@@ -370,6 +370,56 @@ private struct HomeCard<Footer: View>: View {
         .padding(16)
         .rippleCard()
         .accessibilityElement(children: .contain)
+    }
+}
+
+/// The bottom of the Medication card: "I took them" while a dose is due,
+/// otherwise the next dose time, or a link to add dose times.
+private struct MedicationFooter: View {
+    @Environment(WearerStore.self) private var store
+
+    var body: some View {
+        let _ = store.revision
+        let coordinator = store.coordinator
+        if coordinator.pendingDoseAt != nil {
+            Button {
+                store.tookMedsFromPhone()
+            } label: {
+                Label("I took them", systemImage: "checkmark")
+                    .font(Theme.labelBold)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .foregroundStyle(.white)
+                .frame(maxWidth: .infinity, minHeight: Theme.minTarget)
+                .background(Theme.accent, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("Tells Ripple you've taken this dose, so no check-in starts.")
+        } else if let next = coordinator.nextDoseAt {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Next dose")
+                    .font(Theme.label)
+                    .foregroundStyle(Theme.secondaryText)
+                Text(next.shortTime)
+                    .font(Theme.body.weight(.bold))
+                    .foregroundStyle(Theme.text)
+            }
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .padding(.horizontal, 12)
+            .background(Theme.iconTint.opacity(0.6), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .accessibilityElement(children: .combine)
+        } else {
+            NavigationLink {
+                SettingsView(isTabRoot: false)
+            } label: {
+                Label("Add dose times", systemImage: "plus")
+                    .font(Theme.labelBold)
+                    .foregroundStyle(Theme.accent)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .background(Theme.iconTint.opacity(0.6), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+            .accessibilityHint("Opens Settings to add your usual medication times.")
+        }
     }
 }
 

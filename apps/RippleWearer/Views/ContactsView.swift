@@ -304,7 +304,7 @@ private struct ContactEditView: View {
                 Section {
                     Toggle("Share my location in alerts", isOn: $contact.shareLocation)
                 } footer: {
-                    FormNote("Off unless you turn it on. Alert texts to this person then include a map link to where you were when the alarm started.")
+                    FormNote("Adds a map link to their alert texts.")
                 }
                 if !isNew {
                     Section {
@@ -362,7 +362,7 @@ private struct InviteTemporaryView: View {
                         Section {
                             Toggle("Share my location in alerts", isOn: $shareLocation)
                         } footer: {
-                            FormNote("They join Tier 1 for one hour from when they agree.")
+                            FormNote("They join Tier 1 for one hour.")
                         }
                         Section {
                             Button {

@@ -18,6 +18,13 @@ public final class AlarmCoordinator {
     public private(set) var history: [Alarm] = []
     public private(set) var nextCheckInAt: Date?
     public private(set) var runId: String
+    /// The dose time the wearer is being asked about, until "Took my meds" or
+    /// the grace period runs out.
+    public private(set) var pendingDoseAt: Date?
+    /// The last time the wearer tapped "Took my meds".
+    public private(set) var lastMedsTakenAt: Date?
+    /// The latest dose time already asked about, so each dose is asked once.
+    private var lastPromptedDoseAt: Date?
 
     public var config: RippleConfig {
         didSet { configChanged(from: oldValue) }
@@ -37,6 +44,10 @@ public final class AlarmCoordinator {
         public var history: [Alarm]
         public var nextCheckInAt: Date?
         public var runId: String
+        // Optional, so snapshots saved before medication timing still load.
+        public var pendingDoseAt: Date?
+        public var lastMedsTakenAt: Date?
+        public var lastPromptedDoseAt: Date?
     }
 
     public init(config: RippleConfig, snapshot: Snapshot? = nil, clock: @escaping () -> Date = { Date() }) {
@@ -48,11 +59,15 @@ public final class AlarmCoordinator {
             alarm = snapshot.alarm
             history = snapshot.history
             nextCheckInAt = snapshot.nextCheckInAt
+            pendingDoseAt = snapshot.pendingDoseAt
+            lastMedsTakenAt = snapshot.lastMedsTakenAt
+            lastPromptedDoseAt = snapshot.lastPromptedDoseAt
         }
     }
 
     public var snapshot: Snapshot {
-        Snapshot(monitoring: monitoring, alarm: alarm, history: history, nextCheckInAt: nextCheckInAt, runId: runId)
+        Snapshot(monitoring: monitoring, alarm: alarm, history: history, nextCheckInAt: nextCheckInAt, runId: runId,
+                 pendingDoseAt: pendingDoseAt, lastMedsTakenAt: lastMedsTakenAt, lastPromptedDoseAt: lastPromptedDoseAt)
     }
 
     func now() -> Date { clock() }
@@ -85,6 +100,7 @@ public final class AlarmCoordinator {
         case .dismiss: result = dismiss(alarmId: action.alarmId)
         case .hold: result = hold(alarmId: action.alarmId)
         case .help: result = requestHelp()
+        case .tookMeds: result = recordMedsTaken()
         }
         remember(action.id, result)
         return result
@@ -124,6 +140,7 @@ public final class AlarmCoordinator {
         if monitoring {
             monitoring = false
             nextCheckInAt = nil
+            pendingDoseAt = nil
             changed()
         }
         return ActionResult(ok: true, feedback: "Monitoring off")
@@ -271,6 +288,7 @@ public final class AlarmCoordinator {
         alarm = nil
         history = []
         runId = newRunId
+        pendingDoseAt = nil
         if monitoring {
             scheduleNextCheckIn(from: now())
         }
@@ -440,6 +458,7 @@ public final class AlarmCoordinator {
     /// Call about once a second while the app runs.
     public func tick() {
         let t = now()
+        tickMedication(at: t)
         if let current = alarm, current.isOpen {
             if current.phase == .countdown && t >= current.deadline {
                 sendAlert()
@@ -448,6 +467,56 @@ public final class AlarmCoordinator {
             }
         } else if monitoring, config.checkInIntervalMinutes > 0, let next = nextCheckInAt, t >= next {
             startAlarm(source: .timer)
+        }
+    }
+
+    // MARK: Medication
+
+    /// "Took my meds", from the Watch or the iPhone. Clears the dose being
+    /// asked about. Never starts or ends an alarm.
+    @discardableResult
+    public func recordMedsTaken() -> ActionResult {
+        lastMedsTakenAt = now()
+        pendingDoseAt = nil
+        changed()
+        return ActionResult(ok: true, feedback: "Meds recorded")
+    }
+
+    /// The next usual dose time after now, for "Next dose" on the iPhone.
+    public var nextDoseAt: Date? {
+        doseTimes(around: now()).filter { $0 > now() }.min()
+    }
+
+    /// While monitoring: ask about each dose once, at its time. If "Took my
+    /// meds" doesn't come within the grace period, start a normal check-in.
+    /// A dose that passed more than a grace period ago (the app was closed)
+    /// is skipped quietly rather than asked about late.
+    private func tickMedication(at t: Date) {
+        guard monitoring, !config.medicationTimes.isEmpty else { return }
+        let grace = TimeInterval(max(1, config.medicationGraceMinutes) * 60)
+        if let latest = doseTimes(around: t).filter({ $0 <= t }).max(), latest != lastPromptedDoseAt {
+            lastPromptedDoseAt = latest
+            if t.timeIntervalSince(latest) < grace {
+                pendingDoseAt = latest
+            }
+            changed()
+        }
+        if let dose = pendingDoseAt, t >= dose.addingTimeInterval(grace), visibleAlarm == nil, alarm?.isOpen != true {
+            pendingDoseAt = nil
+            startAlarm(source: .timer)
+        }
+    }
+
+    /// Every dose time yesterday, today and tomorrow, in the wearer's time zone.
+    private func doseTimes(around t: Date) -> [Date] {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        let today = calendar.startOfDay(for: t)
+        return [-1, 0, 1].flatMap { offset -> [Date] in
+            guard let day = calendar.date(byAdding: .day, value: offset, to: today) else { return [] }
+            return config.medicationTimes.compactMap {
+                calendar.date(bySettingHour: $0.hour, minute: $0.minute, second: 0, of: day)
+            }
         }
     }
 
@@ -470,6 +539,10 @@ public final class AlarmCoordinator {
                                 deadline: nil, phoneAvailable: phoneAvailable, updatedAt: t)
         }
         if monitoring {
+            if let dose = pendingDoseAt {
+                return WatchDisplay(mode: .monitoring, circleLabel: "Took my meds", status: "Time for your meds", alarmId: nil,
+                                    deadline: nil, phoneAvailable: phoneAvailable, updatedAt: t, medsDueAt: dose)
+            }
             return WatchDisplay(mode: .monitoring, circleLabel: "Stop", status: "Monitoring", alarmId: nil,
                                 deadline: nil, phoneAvailable: phoneAvailable, updatedAt: t)
         }

@@ -27,6 +27,7 @@ struct CircleScreen: View {
                 label: display.circleLabel,
                 sending: store.sending,
                 mode: display.mode,
+                medsDue: display.medsDueAt != nil,
                 deadline: display.mode == .checkIn ? display.deadline : nil,
                 doubleTapEnabled: store.config.doubleTapEnabled && display.mode.isAlarm,
                 swipesEnabled: store.config.combosEnabled,
@@ -56,7 +57,7 @@ struct CircleScreen: View {
             } else if !store.phoneReachable || !display.phoneAvailable {
                 WatchNote(text: "iPhone not available", systemImage: "iphone.slash", color: Theme.checkIn)
             } else {
-                StatusLine(text: display.status, mode: display.mode)
+                StatusLine(text: display.status, mode: display.mode, medsDue: display.medsDueAt != nil)
             }
 
             if store.config.voiceEnabled && display.mode.isAlarm {
@@ -137,8 +138,10 @@ private struct WatchBackground: View {
 private struct StatusLine: View {
     let text: String
     let mode: CircleMode
+    var medsDue = false
 
     private var subtitle: String {
+        if medsDue { return "Tap when you've taken them" }
         switch mode {
         case .off: return "Tap to start"
         case .monitoring: return "Hold to stop"
@@ -191,6 +194,8 @@ private struct RippleCircle: View {
     let label: String
     var sending = false
     let mode: CircleMode
+    /// A dose is due: the circle becomes a teal pill button for "Took my meds".
+    var medsDue = false
     let deadline: Date?
     let doubleTapEnabled: Bool
     let swipesEnabled: Bool
@@ -215,7 +220,7 @@ private struct RippleCircle: View {
             onTap(.touch)
         } label: {
             ZStack {
-                RippleRings(color: mode.ringColor)
+                RippleRings(color: circleColor)
                 if let deadline {
                     // Check-in: a light disc with an amber ring that empties as time runs out.
                     Circle()
@@ -225,14 +230,14 @@ private struct RippleCircle: View {
                         .padding(18)
                 } else {
                     Circle()
-                        .fill(mode.ringColor.gradient)
+                        .fill(circleColor.gradient)
                         .overlay(Circle().strokeBorder(.white.opacity(0.6), lineWidth: 2))
-                        .shadow(color: mode.ringColor.opacity(0.45), radius: 6, y: 2)
+                        .shadow(color: circleColor.opacity(0.45), radius: 6, y: 2)
                         .padding(24)
                     if sending {
                         ProgressView().tint(.white)
                     } else {
-                        Image(systemName: mode.watchSymbol)
+                        Image(systemName: medsDue ? "pills.fill" : mode.watchSymbol)
                             .font(.system(size: 30, weight: .bold))
                             .foregroundStyle(.white)
                     }
@@ -265,7 +270,10 @@ private struct RippleCircle: View {
         .accessibilityHint(hint)
     }
 
+    private var circleColor: Color { medsDue ? Theme.primary : mode.ringColor }
+
     private var hint: String {
+        if medsDue { return "Tap when you've taken your medication." }
         switch mode {
         case .off: return "Tap to start monitoring."
         case .monitoring: return "Hold for two seconds to stop monitoring."
@@ -325,27 +333,61 @@ private struct CountdownRing: View {
     }
 }
 
-/// Soft rings spreading out from the circle like a water ripple. They hold
-/// still when Reduce Motion is on. Decorative only.
+/// A soft halo, plus thin rings that keep spreading out from the edge of the
+/// button and fading, staggered like ripples from a pebble dropped in water.
+/// With Reduce Motion on, only the still halo shows. Decorative only.
 private struct RippleRings: View {
     let color: Color
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var spread = false
+    @State private var breathe = false
+
+    /// How many ripples are travelling outward at once.
+    private let rippleCount = 3
+    /// Seconds for one ripple to travel from the button to the edge.
+    private let period: Double = 2.6
 
     var body: some View {
-        ZStack {
-            ForEach(0..<3) { ring in
-                Circle()
-                    .fill(color.opacity(0.10 + Double(2 - ring) * 0.05))
-                    .padding(CGFloat(ring) * 8)
-                    .scaleEffect(spread && !reduceMotion ? 1.04 : 0.98)
+        GeometryReader { geo in
+            let side = min(geo.size.width, geo.size.height)
+            ZStack {
+                // The still halo: soft filled rings, gently breathing.
+                ForEach(0..<3) { ring in
+                    Circle()
+                        .fill(color.opacity(0.08 + Double(2 - ring) * 0.04))
+                        .padding(CGFloat(ring) * 8)
+                        .scaleEffect(breathe && !reduceMotion ? 1.03 : 0.98)
+                }
+                if !reduceMotion {
+                    TimelineView(.animation) { context in
+                        let t = context.date.timeIntervalSinceReferenceDate / period
+                        // A ZStack keeps the ripples centered on each other.
+                        ZStack {
+                            ForEach(0..<rippleCount, id: \.self) { index in
+                                let progress = (t + Double(index) / Double(rippleCount)).truncatingRemainder(dividingBy: 1)
+                                ripple(progress: progress, side: side)
+                            }
+                        }
+                    }
+                }
             }
+            .frame(width: geo.size.width, height: geo.size.height)
         }
         .onAppear {
             guard !reduceMotion else { return }
-            withAnimation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true)) { spread = true }
+            withAnimation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true)) { breathe = true }
         }
         .accessibilityHidden(true)
+    }
+
+    /// One ripple partway out. It starts at the button's edge, strong and
+    /// thick, and eases outward, thinning and fading like a wave losing energy.
+    private func ripple(progress: Double, side: CGFloat) -> some View {
+        let eased = 1 - pow(1 - progress, 2)
+        let start = 0.62
+        let size = side * (start + (1.02 - start) * eased)
+        return Circle()
+            .stroke(color.opacity(0.6 * (1 - progress)), lineWidth: 3.5 - 2.5 * progress)
+            .frame(width: size, height: size)
     }
 }
 

@@ -13,7 +13,7 @@ struct SettingsView: View {
     var body: some View {
         RippleForm {
             Section {
-                ScreenHeader(title: "Settings", subtitle: "Who gets texted, timing, and how you answer.")
+                ScreenHeader(title: "Settings", subtitle: nil)
                     .listRowInsets(EdgeInsets(top: 0, leading: 10, bottom: 0, trailing: 0))
                     .listRowBackground(Color.clear)
             }
@@ -69,6 +69,54 @@ struct SettingsView: View {
             }
 
             Section {
+                ForEach($draft.medicationTimes) { $time in
+                    IconRow(icon: "pills") {
+                        DatePicker("Dose", selection: Binding(
+                            get: { time.asTodayDate },
+                            set: { time.setTime(from: $0) }
+                        ), displayedComponents: .hourAndMinute)
+                    }
+                }
+                .onDelete { draft.medicationTimes.remove(atOffsets: $0) }
+                Button {
+                    draft.medicationTimes.append(MedicationTime(hour: 8, minute: 0))
+                } label: {
+                    Label("Add a dose time", systemImage: "plus.circle")
+                }
+                .buttonStyle(.rippleLink)
+                if !draft.medicationTimes.isEmpty {
+                    IconRow(icon: "hourglass") {
+                        Picker("Wait for \"Took my meds\"", selection: $draft.medicationGraceMinutes) {
+                            ForEach([1, 5, 15, 30, 45, 60, 90, 120], id: \.self) { minutes in
+                                Text("\(minutes) min").tag(minutes)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                    }
+                }
+                if medicationChanged {
+                    Label("Unsaved changes", systemImage: "exclamationmark.circle")
+                        .font(Theme.label)
+                        .foregroundStyle(Theme.checkIn)
+                }
+                Button {
+                    saveMedication()
+                } label: {
+                    Label("Save medication times", systemImage: "checkmark.circle.fill")
+                        .font(Theme.labelBold)
+                        .frame(maxWidth: .infinity, minHeight: Theme.minTarget)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(Theme.accent)
+                .disabled(!medicationChanged)
+                    .accessibilityHint("Saves your dose times and sends them to your Watch.")
+            } header: {
+                SectionHeader("Medication")
+            } footer: {
+                FormNote("No tap in time starts a check-in.")
+            }
+
+            Section {
                 NavigationLink {
                     AnswerSetupScreen()
                 } label: {
@@ -106,7 +154,7 @@ struct SettingsView: View {
             } header: {
                 SectionHeader("Hand gestures")
             } footer: {
-                FormNote("A full sequence says I'm okay. Up to 5 seconds between gestures. Uses AssistiveTouch, which turns off Apple's double tap.")
+                FormNote("Turns off Apple's double tap.")
             }
 
             Section {
@@ -185,6 +233,7 @@ struct SettingsView: View {
                 loaded = true
             }
         }
+
     }
 
     /// "Gesture", "Voice: “I'm okay”" or "Tap", plus swipes if on.
@@ -193,6 +242,21 @@ struct SettingsView: View {
         var text = method == .voice ? "Voice: \u{201C}\(store.config.voicePhrase)\u{201D}" : method.title
         if store.config.combosEnabled { text += " + swipes" }
         return text
+    }
+
+    /// The dose times or wait shown differ from what's saved.
+    private var medicationChanged: Bool {
+        draft.medicationTimes != store.config.medicationTimes || draft.medicationGraceMinutes != store.config.medicationGraceMinutes
+    }
+
+    /// Saves only the medication settings, leaving everything else as saved.
+    private func saveMedication() {
+        guard loaded, medicationChanged else { return }
+        var updated = store.config
+        updated.medicationTimes = draft.medicationTimes
+        updated.medicationGraceMinutes = draft.medicationGraceMinutes
+        store.save(updated)
+        store.banner = Banner(text: "Medication times saved.", ok: true)
     }
 
     private var watchSyncText: String {
@@ -290,7 +354,7 @@ struct ShortcutSetupView: View {
     var body: some View {
         RippleForm {
             Section {
-                Text("Ripple sends texts from your iPhone and your own Messages account by running a shortcut. Each person gets their own text, so nobody gets a group text.")
+                Text("Ripple texts from your iPhone using this shortcut.")
             }
 
             Section {
@@ -328,7 +392,7 @@ struct ShortcutSetupView: View {
             } header: {
                 SectionHeader("Try a reply")
             } footer: {
-                FormNote("Does what the automation does, for testing during an alert. The code must belong to someone who was already texted.")
+                FormNote("For testing during an alert.")
             }
 
             Section {
@@ -385,7 +449,7 @@ struct ShortcutSetupView: View {
             } header: {
                 SectionHeader("Test")
             } footer: {
-                FormNote("Opening the shortcut doesn't prove a text arrived. Check the other phone. Sending works with this app open; sending while the phone is locked is untested.")
+                FormNote("Check the other phone to confirm it arrived.")
             }
         }
         .navigationTitle("Messaging shortcuts")

@@ -339,7 +339,7 @@ private struct SplashScreen: View {
                     .foregroundStyle(Theme.text)
                     .multilineTextAlignment(.center)
                     .accessibilityAddTraits(.isHeader)
-                Text("Your Watch checks in. If you can't answer, Ripple texts the people you choose.")
+                Text("If you can't answer your Watch, Ripple texts your people.")
                     .font(Theme.body)
                     .foregroundStyle(Theme.text)
                     .multilineTextAlignment(.center)
@@ -435,7 +435,7 @@ private struct ContactStep: View {
     var body: some View {
         let existing = store.config.contacts
         StepLayout(icon: "person.2", title: "Add someone to text",
-                   subtitle: "Someone who can check on you. Add more later.") {
+                   subtitle: "Someone who can check on you.") {
             if !existing.isEmpty {
                 Card {
                     Label(existing.count == 1 ? "\(existing[0].name) is in your contacts." : "You have \(existing.count) contacts.",
@@ -514,7 +514,7 @@ private struct PermissionsStep: View {
 
     var body: some View {
         StepLayout(icon: "location", title: "Allow location",
-                   subtitle: "Sent only with an alert, only to contacts you pick.") {
+                   subtitle: "Only sent with an alert.") {
             Card {
                 PermissionStepRow(number: 1, text: "Tap \"Allow location\" below.")
                 PermissionStepRow(number: 2, text: "Choose \"Allow While Using App\".")
@@ -573,7 +573,7 @@ private struct ServerStep: View {
                 LabeledField(label: "Server address", placeholder: "192.168.1.20:8080", text: $address,
                              contentType: .URL, keyboard: .URL, autocapitalize: .never)
             }
-            FormNote("Same Wi-Fi as the server. In the Simulator, use localhost:8080.")
+            FormNote("Simulator: localhost:8080")
             if let banner = store.banner, !banner.ok {
                 ErrorNote(text: banner.text)
             }

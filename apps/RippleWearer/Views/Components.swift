@@ -373,6 +373,19 @@ extension View {
     }
 }
 
+extension MedicationTime {
+    /// Today at this dose time, for a time picker.
+    var asTodayDate: Date {
+        Calendar.current.date(bySettingHour: hour, minute: minute, second: 0, of: Date()) ?? Date()
+    }
+
+    mutating func setTime(from date: Date) {
+        let parts = Calendar.current.dateComponents([.hour, .minute], from: date)
+        hour = parts.hour ?? hour
+        minute = parts.minute ?? minute
+    }
+}
+
 extension Date {
     /// "12:46 AM". Times are always shown without seconds.
     var shortTime: String { formatted(date: .omitted, time: .shortened) }

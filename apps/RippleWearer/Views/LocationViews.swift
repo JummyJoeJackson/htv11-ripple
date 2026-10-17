@@ -67,14 +67,14 @@ struct SentLocationCard: View {
                         .accessibilityHint("Opens the same map link your contacts got.")
                     }
                 } else if alarm.recipients.contains(where: \.shareLocation) {
-                    FormNote("No location was sent with this alarm. Location may be off for Ripple, or the iPhone couldn't find it in time.")
+                    FormNote("No location was sent.")
                 } else {
-                    FormNote("No location was sent. None of your contacts have location sharing on.")
+                    FormNote("No contacts have location sharing on.")
                 }
             }
         } else {
             Card("Location sent") {
-                FormNote("No alerts yet. The location sent with your next alert will show here. To see where your iPhone thinks you are now, use Settings → Check my location.")
+                FormNote("No alerts yet.")
             }
         }
     }
@@ -105,11 +105,11 @@ struct LocationCheckView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.spacing) {
                 Card {
-                    Text("See where your iPhone thinks you are. This is the kind of location your contacts get in an alert.")
+                    Text("What your contacts would see in an alert.")
                         .font(Theme.body)
                         .foregroundStyle(Theme.text)
                         .fixedSize(horizontal: false, vertical: true)
-                    FormNote("Nothing is sent to anyone, and Ripple never tracks your location.")
+                    FormNote("Nothing is sent.")
                 }
 
                 if let fix {
@@ -122,7 +122,7 @@ struct LocationCheckView: View {
                         Label("Couldn't find your location.", systemImage: "location.slash")
                             .font(Theme.body.weight(.semibold))
                             .foregroundStyle(Theme.text)
-                        FormNote("Location for Ripple: \(store.location.statusText). Allow it in the iPhone's Settings, then try again.")
+                        FormNote("Allow location in iPhone Settings.")
                     }
                 }
 

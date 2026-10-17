@@ -75,6 +75,19 @@ public struct TemporaryContactView: Codable, Hashable, Identifiable, Sendable {
 }
 
 /// Everything the wearer configures on their iPhone.
+/// One usual dose time, like 1:00 PM, in the wearer's own time zone.
+public struct MedicationTime: Codable, Hashable, Identifiable, Sendable {
+    public var id: String
+    public var hour: Int
+    public var minute: Int
+
+    public init(id: String = RippleID.make(bytes: 6), hour: Int, minute: Int) {
+        self.id = id
+        self.hour = hour
+        self.minute = minute
+    }
+}
+
 public struct RippleConfig: Codable, Equatable, Sendable {
     /// Bumped on every save, so the Watch can confirm which version it has.
     public var version: Int
@@ -98,8 +111,12 @@ public struct RippleConfig: Codable, Equatable, Sendable {
     public var handGesturePreset: HandGesturePreset
     /// Name of the user-installed shortcut that sends the texts.
     public var shortcutName: String
+    /// Usual dose times. At each one the Watch asks for "Took my meds".
+    public var medicationTimes: [MedicationTime]
+    /// Minutes to wait for "Took my meds" before a gentle check-in starts.
+    public var medicationGraceMinutes: Int
 
-    public init(version: Int, wearerName: String, contacts: [PermanentContact], helpCardEnabled: Bool, helpCard: String, checkInIntervalMinutes: Int, countdownSeconds: Int, ackWindowSeconds: Int, doubleTapEnabled: Bool, voiceEnabled: Bool, voicePhrase: String, shortcutName: String, combosEnabled: Bool = true, handGesturesEnabled: Bool = false, handGesturePreset: HandGesturePreset = .pinchClench) {
+    public init(version: Int, wearerName: String, contacts: [PermanentContact], helpCardEnabled: Bool, helpCard: String, checkInIntervalMinutes: Int, countdownSeconds: Int, ackWindowSeconds: Int, doubleTapEnabled: Bool, voiceEnabled: Bool, voicePhrase: String, shortcutName: String, combosEnabled: Bool = true, handGesturesEnabled: Bool = false, handGesturePreset: HandGesturePreset = .pinchClench, medicationTimes: [MedicationTime] = [], medicationGraceMinutes: Int = 30) {
         self.version = version
         self.wearerName = wearerName
         self.contacts = contacts
@@ -115,12 +132,14 @@ public struct RippleConfig: Codable, Equatable, Sendable {
         self.handGesturesEnabled = handGesturesEnabled
         self.handGesturePreset = handGesturePreset
         self.shortcutName = shortcutName
+        self.medicationTimes = medicationTimes
+        self.medicationGraceMinutes = medicationGraceMinutes
     }
 
     private enum CodingKeys: String, CodingKey {
         case version, wearerName, contacts, helpCardEnabled, helpCard, checkInIntervalMinutes, countdownSeconds,
              ackWindowSeconds, doubleTapEnabled, voiceEnabled, voicePhrase, combosEnabled, shortcutName,
-             handGesturesEnabled, handGesturePreset
+             handGesturesEnabled, handGesturePreset, medicationTimes, medicationGraceMinutes
     }
 
     /// Older settings still load without losing contacts. Hand gestures need
@@ -143,7 +162,9 @@ public struct RippleConfig: Codable, Equatable, Sendable {
             shortcutName: try container.decode(String.self, forKey: .shortcutName),
             combosEnabled: try container.decodeIfPresent(Bool.self, forKey: .combosEnabled) ?? true,
             handGesturesEnabled: (try container.decodeIfPresent(Bool.self, forKey: .handGesturesEnabled) ?? false) && preset != nil,
-            handGesturePreset: preset ?? .pinchClench
+            handGesturePreset: preset ?? .pinchClench,
+            medicationTimes: try container.decodeIfPresent([MedicationTime].self, forKey: .medicationTimes) ?? [],
+            medicationGraceMinutes: try container.decodeIfPresent(Int.self, forKey: .medicationGraceMinutes) ?? 30
         )
     }
 

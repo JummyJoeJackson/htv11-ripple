@@ -133,15 +133,27 @@ private struct TabBar: View {
     private var glass: some View {
         if reduceTransparency {
             Capsule().fill(Theme.card).shadow(color: .black.opacity(0.12), radius: 12, y: 4)
-        } else if #available(iOS 26.0, *) {
-            Capsule().fill(.clear).glassEffect(.regular, in: Capsule())
         } else {
-            Capsule()
-                .fill(.ultraThinMaterial)
-                .overlay(Capsule().fill(.white.opacity(0.25)))
-                .overlay(Capsule().strokeBorder(.white.opacity(0.7), lineWidth: 1))
-                .shadow(color: .black.opacity(0.12), radius: 16, y: 6)
+            // glassEffect only exists in the iOS 26 SDK (Xcode 26, Swift 6.2), so
+            // older Xcode, including CI, builds the frosted version instead.
+            #if compiler(>=6.2)
+            if #available(iOS 26.0, *) {
+                Capsule().fill(.clear).glassEffect(.regular, in: Capsule())
+            } else {
+                frosted
+            }
+            #else
+            frosted
+            #endif
         }
+    }
+
+    private var frosted: some View {
+        Capsule()
+            .fill(.ultraThinMaterial)
+            .overlay(Capsule().fill(.white.opacity(0.25)))
+            .overlay(Capsule().strokeBorder(.white.opacity(0.7), lineWidth: 1))
+            .shadow(color: .black.opacity(0.12), radius: 16, y: 6)
     }
 }
 

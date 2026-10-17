@@ -93,10 +93,13 @@ public struct RippleConfig: Codable, Equatable, Sendable {
     public var voicePhrase: String
     /// Swipe up twice for help, down twice for I'm okay.
     public var combosEnabled: Bool
+    /// Accept the selected AssistiveTouch shortcut sequence to dismiss an alarm.
+    public var handGesturesEnabled: Bool
+    public var handGesturePreset: HandGesturePreset
     /// Name of the user-installed shortcut that sends the texts.
     public var shortcutName: String
 
-    public init(version: Int, wearerName: String, contacts: [PermanentContact], helpCardEnabled: Bool, helpCard: String, checkInIntervalMinutes: Int, countdownSeconds: Int, ackWindowSeconds: Int, doubleTapEnabled: Bool, voiceEnabled: Bool, voicePhrase: String, shortcutName: String, combosEnabled: Bool = true) {
+    public init(version: Int, wearerName: String, contacts: [PermanentContact], helpCardEnabled: Bool, helpCard: String, checkInIntervalMinutes: Int, countdownSeconds: Int, ackWindowSeconds: Int, doubleTapEnabled: Bool, voiceEnabled: Bool, voicePhrase: String, shortcutName: String, combosEnabled: Bool = true, handGesturesEnabled: Bool = false, handGesturePreset: HandGesturePreset = .pinchClench) {
         self.version = version
         self.wearerName = wearerName
         self.contacts = contacts
@@ -109,18 +112,22 @@ public struct RippleConfig: Codable, Equatable, Sendable {
         self.voiceEnabled = voiceEnabled
         self.voicePhrase = voicePhrase
         self.combosEnabled = combosEnabled
+        self.handGesturesEnabled = handGesturesEnabled
+        self.handGesturePreset = handGesturePreset
         self.shortcutName = shortcutName
     }
 
     private enum CodingKeys: String, CodingKey {
         case version, wearerName, contacts, helpCardEnabled, helpCard, checkInIntervalMinutes, countdownSeconds,
-             ackWindowSeconds, doubleTapEnabled, voiceEnabled, voicePhrase, combosEnabled, shortcutName
+             ackWindowSeconds, doubleTapEnabled, voiceEnabled, voicePhrase, combosEnabled, shortcutName,
+             handGesturesEnabled, handGesturePreset
     }
 
-    /// Settings saved before swipe combos existed still load, with combos on,
-    /// so updating the app never loses the wearer's contacts.
+    /// Older settings still load without losing contacts. Hand gestures need
+    /// explicit opt-in, and unknown future presets stay disabled.
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        let preset = try? container.decode(HandGesturePreset.self, forKey: .handGesturePreset)
         self.init(
             version: try container.decode(Int.self, forKey: .version),
             wearerName: try container.decode(String.self, forKey: .wearerName),
@@ -134,7 +141,9 @@ public struct RippleConfig: Codable, Equatable, Sendable {
             voiceEnabled: try container.decode(Bool.self, forKey: .voiceEnabled),
             voicePhrase: try container.decode(String.self, forKey: .voicePhrase),
             shortcutName: try container.decode(String.self, forKey: .shortcutName),
-            combosEnabled: try container.decodeIfPresent(Bool.self, forKey: .combosEnabled) ?? true
+            combosEnabled: try container.decodeIfPresent(Bool.self, forKey: .combosEnabled) ?? true,
+            handGesturesEnabled: (try container.decodeIfPresent(Bool.self, forKey: .handGesturesEnabled) ?? false) && preset != nil,
+            handGesturePreset: preset ?? .pinchClench
         )
     }
 
@@ -158,7 +167,7 @@ public struct RippleConfig: Codable, Equatable, Sendable {
 
     /// The part of the configuration the Watch needs.
     public var watchConfig: WatchConfig {
-        WatchConfig(version: version, doubleTapEnabled: doubleTapEnabled, voiceEnabled: voiceEnabled, voicePhrase: voicePhrase, combosEnabled: combosEnabled)
+        WatchConfig(version: version, doubleTapEnabled: doubleTapEnabled, voiceEnabled: voiceEnabled, voicePhrase: voicePhrase, combosEnabled: combosEnabled, handGesturesEnabled: handGesturesEnabled, handGesturePreset: handGesturePreset)
     }
 }
 

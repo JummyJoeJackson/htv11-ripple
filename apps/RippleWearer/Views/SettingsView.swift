@@ -62,6 +62,22 @@ struct SettingsView: View {
             }
 
             Section {
+                Toggle("Hand gestures to dismiss", isOn: $draft.handGesturesEnabled)
+                Picker("Gesture sequence", selection: $draft.handGesturePreset) {
+                    ForEach(HandGesturePreset.allCases) { preset in
+                        Text(preset.label).tag(preset)
+                    }
+                }
+                .pickerStyle(.menu)
+                .disabled(!draft.handGesturesEnabled)
+                NavigationLink("Set up Watch gesture shortcuts") { HandGestureSetupView() }
+            } header: {
+                Text("Hand gestures")
+            } footer: {
+                Text("A complete sequence says I'm okay during an alarm. Allow up to 5 seconds between gestures. Save below to send this selection to your Watch. AssistiveTouch needs a one-time shortcut setup and turns off Apple's native double tap.")
+            }
+
+            Section {
                 Toggle("Swipe up twice for help, down twice for I'm okay", isOn: $draft.combosEnabled)
             } header: {
                 Text("Swipe combos")
@@ -130,6 +146,52 @@ struct SettingsView: View {
                 loaded = true
             }
         }
+    }
+}
+
+/// AssistiveTouch runs one background input shortcut per recognised gesture.
+/// Ripple decides whether those inputs complete the saved dismissal sequence.
+struct HandGestureSetupView: View {
+    var body: some View {
+        Form {
+            Section {
+                Text("Apple Watch recognises the gestures. Each shortcut sends one gesture to Ripple, which checks the sequence you chose in Settings.")
+                Text("These four shortcuts are gesture inputs. Keep your existing Ripple Alert messaging shortcut separate.")
+            }
+
+            Section {
+                SetupStep(number: 1, text: "Send the four Ripple gesture shortcut files supplied with this build to your iPhone using AirDrop or iCloud Drive, and import them into Shortcuts. In each shortcut's details, turn on Show on Apple Watch.")
+                ForEach(HandGestureStep.allCases) { step in
+                    LabeledContent(step.label, value: step.shortcutName)
+                }
+                SetupStep(number: 2, text: "Each imported shortcut contains its matching Ripple Watch action. Install the updated Ripple apps on both iPhone and Watch before importing. Wait for the shortcuts to sync to your Watch.")
+            } header: {
+                Text("Add the four shortcuts")
+            } footer: {
+                Text("The gesture actions run in the background. Keep the shortcuts to one action, without Open App or Show Alert, so they don't request a screen change.")
+            }
+
+            Section {
+                SetupStep(number: 3, text: "On your iPhone, open Watch → Accessibility → AssistiveTouch. Turn on AssistiveTouch and Hand Gestures.")
+                SetupStep(number: 4, text: "Open each hand gesture's assignment, choose Shortcuts, and select the matching Ripple shortcut above. Pinch may be called Tap; double pinch may be called Double Tap.")
+                SetupStep(number: 5, text: "Set Activation Gesture to None so double clench reaches its shortcut instead of activating AssistiveTouch. These assignments apply across the Watch.")
+            } header: {
+                Text("Assign AssistiveTouch gestures")
+            } footer: {
+                Text("AssistiveTouch turns off Apple's native double tap. Ripple's touchscreen controls remain available.")
+            }
+
+            Section {
+                SetupStep(number: 6, text: "In Ripple Settings, turn on Hand gestures to dismiss, choose your sequence, and tap Save. Under Watch sync, wait for the iPhone and Watch versions to match.")
+                SetupStep(number: 7, text: "With no alarm open, leave Ripple visible on your Watch and perform each gesture. Check Ripple's Gesture # counter and gesture name to confirm the input arrived while Ripple stayed visible.")
+                SetupStep(number: 8, text: "Try your selected sequence in order, with no more than 5 seconds between steps. A double pinch or double clench is one input from Apple's recogniser, not two separate shortcut runs.")
+            } header: {
+                Text("Choose and check a sequence")
+            } footer: {
+                Text("Without an active alarm, inputs only update the receipt display. A matching sequence during an alarm dismisses it through Ripple's usual I'm okay action. Changing the dropdown later needs Save and Watch sync, with the same four shortcuts.")
+            }
+        }
+        .navigationTitle("Gesture shortcuts")
     }
 }
 

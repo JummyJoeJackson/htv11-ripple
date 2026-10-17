@@ -18,7 +18,7 @@ final class HealthAlertTests: XCTestCase {
         var config = RippleConfig.makeDefault(wearerName: "Alex")
         config.contacts = [sam, pat]
         let clock = self.clock!
-        coordinator = AlarmCoordinator(config: config, serverBaseURL: "http://ripple.test", clock: { clock.now })
+        coordinator = AlarmCoordinator(config: config, clock: { clock.now })
         coordinator.timeZone = TimeZone(identifier: "America/Toronto")!
         coordinator.delegate = recorder
         coordinator.setRunId("run-1")

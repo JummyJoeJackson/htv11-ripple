@@ -196,11 +196,15 @@ public actor Engine {
         return result
     }
 
-    /// When Tier 1 was first texted, by either path.
+    /// When Tier 1 was first actually texted, by either path. A phone alert
+    /// that was queued but never handed to Shortcuts doesn't count, so the
+    /// acknowledge window starts when someone could really have read a text.
     func alertTime(_ record: AlarmRecord) -> Date? {
         let backupAlerts = db.backups.values
-            .filter { $0.message.alarmId == record.id && $0.message.kind == .alert }
+            .filter { $0.message.alarmId == record.id && $0.message.kind == .alert && $0.message.status != .failed }
             .map { $0.message.createdAt }
-        return ([record.snapshot.alertedAt].compactMap { $0 } + backupAlerts).min()
+        let phoneSent = record.snapshot.messages.contains { $0.kind == .alert && $0.path == .phone && $0.mayHaveBeenSent }
+        let phoneAlert = phoneSent ? record.snapshot.alertedAt : nil
+        return ([phoneAlert].compactMap { $0 } + backupAlerts).min()
     }
 }

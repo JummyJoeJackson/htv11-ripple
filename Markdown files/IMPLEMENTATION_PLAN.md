@@ -1,6 +1,6 @@
 # Ripple — Implementation Plan
 
-October 17, 2026 · Based on [PROJECT_KAZE_PRD.md](PROJECT_KAZE_PRD.md) (the Ripple PRD) · How to run it: [docs/RUNNING.md](docs/RUNNING.md)
+October 17, 2026 · Based on [PROJECT_KAZE_PRD.md](PROJECT_KAZE_PRD.md) (the Ripple PRD) · How to run it: [docs/RUNNING.md](../docs/RUNNING.md)
 
 The MVP is all Swift: three SwiftUI apps for iPhone and Apple Watch (Series 9 target), a shared Swift package, and a Swift backend. This plan describes what is built, how the pieces divide the work, how each demo scenario is covered, and what is left to validate.
 

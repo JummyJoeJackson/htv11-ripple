@@ -1,0 +1,18 @@
+# macOS
+.DS_Store
+
+# Xcode
+xcuserdata/
+DerivedData/
+*.xcuserstate
+build/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved.bak
+
+# KAZE server data (demo records, tokens) and local secrets
+server/.data/
+.env
+*.env.local

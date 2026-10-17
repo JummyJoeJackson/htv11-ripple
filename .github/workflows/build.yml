@@ -1,0 +1,70 @@
+name: Build
+
+# Compiles the server, runs the engine tests, and builds the iPhone and Apple
+# Watch apps for the simulator, so nobody pulls code that doesn't build.
+on:
+  push:
+    branches: [main, mvp]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  server:
+    name: Server build and tests
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+      - name: Build server
+        working-directory: server
+        run: |
+          set -o pipefail
+          swift build 2>&1 | tee "$RUNNER_TEMP/server-build.log"
+      - name: Run engine tests
+        working-directory: server
+        run: |
+          set -o pipefail
+          swift test 2>&1 | tee "$RUNNER_TEMP/server-test.log"
+      - name: Report errors
+        if: failure()
+        run: |
+          bash .github/scripts/annotate.sh "$RUNNER_TEMP/server-build.log" "Server build"
+          bash .github/scripts/annotate.sh "$RUNNER_TEMP/server-test.log" "Server tests"
+
+  apps:
+    name: iPhone and Apple Watch apps
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: |
+          xcodebuild -version
+          xcodebuild -list -project apps/Kaze.xcodeproj
+      - name: Build wearer app (embeds the watch app)
+        run: |
+          set -o pipefail
+          xcodebuild -project apps/Kaze.xcodeproj -scheme KazeWearer -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build 2>&1 | tee "$RUNNER_TEMP/wearer.log"
+      - name: Build watch app
+        if: always()
+        run: |
+          set -o pipefail
+          xcodebuild -project apps/Kaze.xcodeproj -scheme KazeWatch -configuration Debug \
+            -destination 'generic/platform=watchOS Simulator' CODE_SIGNING_ALLOWED=NO build 2>&1 | tee "$RUNNER_TEMP/watch.log"
+      - name: Build admin app
+        if: always()
+        run: |
+          set -o pipefail
+          xcodebuild -project apps/Kaze.xcodeproj -scheme KazeAdmin -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build 2>&1 | tee "$RUNNER_TEMP/admin.log"
+      - name: Report errors
+        if: failure()
+        run: |
+          bash .github/scripts/annotate.sh "$RUNNER_TEMP/wearer.log" "Wearer app"
+          bash .github/scripts/annotate.sh "$RUNNER_TEMP/watch.log" "Watch app"
+          bash .github/scripts/annotate.sh "$RUNNER_TEMP/admin.log" "Admin app"

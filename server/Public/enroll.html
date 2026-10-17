@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<title>KAZE</title>
+<style>
+  :root { --bg: #f6f7f9; --card: #ffffff; --text: #111418; --muted: #4a5360; --line: #d9dee5;
+    --safe: #1b7f3b; --alert: #b3261e; --btn: #111418; --btn-text: #ffffff; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f1216; --card: #1a1f26; --text: #f2f4f7; --muted: #aab3bf; --line: #2c333d;
+      --safe: #4cc471; --alert: #ff6b5f; --btn: #f2f4f7; --btn-text: #0f1216; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 18px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 560px; margin: 0 auto; padding: 16px 16px 48px; }
+  h1 { font-size: 26px; line-height: 1.2; margin: 8px 0; }
+  h2 { font-size: 17px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 20px 0 8px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; margin: 12px 0; }
+  dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; }
+  dt { color: var(--muted); } dd { margin: 0; }
+  ul { margin: 0; padding-left: 22px; }
+  button { display: block; width: 100%; min-height: 60px; margin: 12px 0; border-radius: 14px; border: 2px solid var(--btn);
+    background: var(--btn); color: var(--btn-text); font: 700 20px/1.2 inherit; font-family: inherit; cursor: pointer; padding: 16px; }
+  button:disabled { opacity: .5; }
+  input[type=text] { width: 100%; font: 700 28px/1.2 inherit; letter-spacing: .3em; text-align: center; padding: 14px; border-radius: 12px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--text); }
+  label.check { display: flex; gap: 12px; align-items: flex-start; font-size: 18px; margin: 12px 0; }
+  label.check input { width: 28px; height: 28px; flex: none; margin-top: 2px; }
+  .ok { color: var(--safe); font-weight: 700; } .error { color: var(--alert); font-weight: 600; }
+  .note { font-size: 15px; color: var(--muted); }
+</style>
+</head>
+<body>
+<main id="app" aria-live="polite"><p>Loading invitation…</p></main>
+<script>
+(function () {
+  "use strict";
+  var token = location.pathname.split("/").filter(Boolean).pop() || "";
+  var api = "/v1/enroll/" + encodeURIComponent(token);
+  var app = document.getElementById("app");
+  var view = null, busy = false, message = "", error = "", ended = false;
+
+  function el(tag, attrs) {
+    var node = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      if (k === "text") node.textContent = attrs[k];
+      else if (k === "onclick") node.addEventListener("click", attrs[k]);
+      else node.setAttribute(k, attrs[k]);
+    });
+    for (var i = 2; i < arguments.length; i++) { if (arguments[i]) node.appendChild(arguments[i]); }
+    return node;
+  }
+  function when(iso) { return new Date(iso).toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" }); }
+
+  function render() {
+    if (ended || !view) return;
+    var v = view;
+    var nodes = [el("h1", { text: "Temporary helper invitation" })];
+    var terms = el("dl");
+    function row(a, b) { terms.appendChild(el("dt", { text: a })); terms.appendChild(el("dd", { text: b })); }
+    row("Helper", v.helperName);
+    row("Venue", v.venue);
+    row("Coverage", when(v.startsAt) + " to " + when(v.endsAt));
+    row("Phone", v.phoneHint);
+    nodes.push(el("div", { class: "card" }, terms));
+
+    var shared = el("ul");
+    v.shared.forEach(function (s) { shared.appendChild(el("li", { text: s })); });
+    nodes.push(el("div", { class: "card" },
+      el("p", { text: "If the person you're covering can't respond to a check-in or asks for help during this period, KAZE may text you a link. During an alert you'd see:" }),
+      shared,
+      el("p", { class: "note", text: "Nothing about them is shown until an alert happens. Your access ends automatically when coverage ends or if they revoke it." })));
+
+    if (v.state === "invited") {
+      nodes.push(el("h2", { text: "Step 1: verify your phone" }));
+      nodes.push(el("button", { type: "button", onclick: sendCode, text: v.codeSent ? "Text me a new code" : "Text me a code" }));
+      if (v.codeSent) {
+        var input = el("input", { type: "text", id: "code", inputmode: "numeric", autocomplete: "one-time-code", maxlength: "6", "aria-label": "6-digit code", placeholder: "123456" });
+        nodes.push(el("div", { class: "card" }, el("label", { for: "code", text: "Enter the 6-digit code we texted to " + v.phoneHint }), input,
+          el("button", { type: "button", onclick: function () { verify(input.value); }, text: "Verify" })));
+      }
+    } else if (v.state === "verified") {
+      nodes.push(el("h2", { text: "Step 2: accept coverage" }));
+      var box = el("input", { type: "checkbox", id: "agree" });
+      nodes.push(el("div", { class: "card" },
+        el("label", { class: "check", for: "agree" }, box, el("span", { text: "I'm authorized venue staff and I agree to receive KAZE alerts for this person until coverage ends." })),
+        el("button", { type: "button", onclick: function () { accept(box.checked); }, text: "Accept coverage" })));
+    } else if (v.state === "accepted") {
+      nodes.push(el("div", { class: "card" }, el("p", { class: "ok", text: "You're covering until " + when(v.endsAt) + "." }),
+        el("p", { text: "If there's an alert, you'll get a text with a link. Keep your phone nearby." })));
+    }
+    if (busy) nodes.push(el("p", { class: "note", text: "Sending…" }));
+    if (message) nodes.push(el("p", { class: "ok", text: message }));
+    if (error) nodes.push(el("p", { class: "error", role: "alert", text: error }));
+    nodes.push(el("p", { class: "note", text: "Phone verification shows you have this number. It doesn't prove employment or training. KAZE is a hackathon prototype, not an emergency service." }));
+    app.replaceChildren.apply(app, nodes);
+  }
+
+  function showEnded(text) {
+    ended = true;
+    app.replaceChildren(el("h1", { text: "Invitation ended" }), el("div", { class: "card" }, el("p", { text: text })));
+  }
+
+  function call(path, body) {
+    busy = true; error = ""; message = ""; render();
+    return fetch(api + path, {
+      method: body === undefined ? "GET" : "POST", cache: "no-store",
+      headers: body === undefined ? {} : { "Content-Type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body)
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (b) {
+        busy = false;
+        if (r.status === 410 || r.status === 404) { showEnded(b.message || "This invitation isn't valid any more."); return null; }
+        if (!r.ok) { error = b.message || ("Error " + r.status); render(); return null; }
+        view = b; render(); return b;
+      });
+    }).catch(function (e) { busy = false; error = "Can't reach KAZE: " + e.message; render(); return null; });
+  }
+
+  function sendCode() { call("/code", {}).then(function (v) { if (v) { message = "Code sent."; render(); } }); }
+  function verify(code) { call("/verify", { code: code }).then(function (v) { if (v) { message = "Phone verified."; render(); } }); }
+  function accept(agree) { call("/accept", { agree: agree }); }
+
+  call("");
+  setInterval(function () {
+    if (ended || busy || (document.activeElement && document.activeElement.tagName === "INPUT")) return;
+    fetch(api, { cache: "no-store" }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (b) {
+        if (r.status === 410 || r.status === 404) showEnded(b.message || "This invitation has ended.");
+        else if (r.ok) { view = b; render(); }
+      });
+    }).catch(function () {});
+  }, 5000);
+})();
+</script>
+</body>
+</html>

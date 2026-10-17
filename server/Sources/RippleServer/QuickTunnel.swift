@@ -3,7 +3,7 @@ import Vapor
 
 /// A Cloudflare quick tunnel: a public https address for this server, with no
 /// account, so contacts on any network (including cellular) can open the
-/// acknowledge and invite links in texts. It runs `cloudflared` alongside the
+/// temporary-contact invitation links. It runs `cloudflared` alongside the
 /// server. The address changes every time the server starts.
 final class QuickTunnel: @unchecked Sendable {
     let url: String

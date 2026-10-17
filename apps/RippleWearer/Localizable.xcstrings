@@ -113,34 +113,6 @@
         }
       }
     },
-    "Add a contact first, so you have someone to call.": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Primero añade un contacto para tener a quién llamar."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ajoutez d'abord un contact pour avoir quelqu'un à appeler."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "请先添加联系人，这样才有人可以打。"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "請先新增聯絡人，這樣才有人可以打。"
-          }
-        }
-      }
-    },
     "Add a note to alert texts": {
       "localizations": {
         "es": {
@@ -281,6 +253,34 @@
         }
       }
     },
+    "All your contacts will be texted now, including both tiers and active one-hour contacts. Each person can respond with Ripple accept followed by the four-digit code in their alert.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se enviará un mensaje ahora a todos tus contactos, incluidos ambos niveles y los contactos de una hora activos. Cada persona puede responder con Ripple accept seguido del código de cuatro dígitos de su alerta."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tous vos contacts vont recevoir un texto maintenant, y compris les deux niveaux et les contacts d'une heure actifs. Chacun peut répondre Ripple accept suivi du code à quatre chiffres de son alerte."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "现在会给你的所有联系人发短信，包括两层联系人和有效的一小时联系人。每个人都可以回复 Ripple accept，再加上警报里的四位数代码。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "現在會傳簡訊給你的所有聯絡人，包括兩層聯絡人和有效的一小時聯絡人。每個人都可以回覆 Ripple accept，再加上警報裡的四位數代碼。"
+          }
+        }
+      }
+    },
     "Allow location": {
       "localizations": {
         "es": {
@@ -393,6 +393,34 @@
         }
       }
     },
+    "Asks for confirmation before texting a Ripple alert to all your contacts.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pide confirmación antes de enviar una alerta de Ripple a todos tus contactos."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demande une confirmation avant d'envoyer une alerte Ripple à tous vos contacts."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "先请你确认，再向所有联系人发送 Ripple 警报短信。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "先請你確認，再向所有聯絡人傳送 Ripple 警報簡訊。"
+          }
+        }
+      }
+    },
     "Automatic check-ins are off. If an alarm starts, your Watch buzzes.": {
       "localizations": {
         "es": {
@@ -477,198 +505,30 @@
         }
       }
     },
-    "Call %@": {
+    "Cancel": {
       "localizations": {
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Llamar a %@"
+            "value": "Cancelar"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Appeler %@"
+            "value": "Annuler"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "打给 %@"
+            "value": "取消"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "打給 %@"
-          }
-        }
-      }
-    },
-    "Call %@?": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "¿Llamar a %@?"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Appeler %@ ?"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "要打给 %@ 吗？"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "要打給 %@ 嗎？"
-          }
-        }
-      }
-    },
-    "Call 911": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Llamar al 911"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Appeler le 911"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "拨打 911"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "撥打 911"
-          }
-        }
-      }
-    },
-    "Call 911?": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "¿Llamar al 911?"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Appeler le 911 ?"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "要拨打 911 吗？"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "要撥打 911 嗎？"
-          }
-        }
-      }
-    },
-    "Call a contact": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Llamar a un contacto"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Appeler un contact"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "打给联系人"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "打給聯絡人"
-          }
-        }
-      }
-    },
-    "Call a contact, text everyone, or call 911.": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Llama a un contacto, escribe a todos o llama al 911."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Appelez un contact, textez tout le monde ou appelez le 911."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "打给联系人、发短信给所有人，或拨打 911。"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "打給聯絡人、傳簡訊給所有人，或撥打 911。"
-          }
-        }
-      }
-    },
-    "Call for Help": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pedir ayuda"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Appeler à l'aide"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "呼叫求助"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "呼叫求助"
+            "value": "取消"
           }
         }
       }
@@ -1121,6 +981,34 @@
         }
       }
     },
+    "Do you want to send a Ripple alert to all your contacts?": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Quieres enviar una alerta de Ripple a todos tus contactos?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voulez-vous envoyer une alerte Ripple à tous vos contacts ?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "要向所有联系人发送 Ripple 警报吗？"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "要向所有聯絡人傳送 Ripple 警報嗎？"
+          }
+        }
+      }
+    },
     "Doctor visits and reminders.": {
       "localizations": {
         "es": {
@@ -1177,34 +1065,6 @@
         }
       }
     },
-    "Emergency services": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Servicios de emergencia"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Services d'urgence"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "紧急服务"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "緊急服務"
-          }
-        }
-      }
-    },
     "Every %lld min your Watch buzzes and asks if you're okay.": {
       "localizations": {
         "es": {
@@ -1257,34 +1117,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "名字"
-          }
-        }
-      }
-    },
-    "For a medical emergency": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Para una emergencia médica"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "En cas d'urgence médicale"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "用于医疗紧急情况"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "用於醫療緊急狀況"
           }
         }
       }
@@ -2409,34 +2241,6 @@
         }
       }
     },
-    "Ripple isn't an emergency service. Calling 911 uses your iPhone's phone app.": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ripple no es un servicio de emergencia. La llamada al 911 usa la app Teléfono de tu iPhone."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ripple n'est pas un service d'urgence. L'appel au 911 utilise l'app Téléphone de votre iPhone."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ripple 不是紧急服务。拨打 911 会使用 iPhone 的电话应用。"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ripple 不是緊急服務。撥打 911 會使用 iPhone 的電話 App。"
-          }
-        }
-      }
-    },
     "Same Wi-Fi as the server. In the Simulator, use localhost:8080.": {
       "localizations": {
         "es": {
@@ -2549,58 +2353,30 @@
         }
       }
     },
-    "Send a help alert": {
+    "Send Ripple alert": {
       "localizations": {
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enviar una alerta de ayuda"
+            "value": "Enviar alerta de Ripple"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Envoyer une alerte d'aide"
+            "value": "Envoyer l'alerte Ripple"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "发送求助警报"
+            "value": "发送 Ripple 警报"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "傳送求助警報"
-          }
-        }
-      }
-    },
-    "Send help alert": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enviar alerta"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Envoyer l'alerte"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "发送求助警报"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "傳送求助警報"
+            "value": "傳送 Ripple 警報"
           }
         }
       }
@@ -3361,58 +3137,30 @@
         }
       }
     },
-    "Text all your contacts for help?": {
+    "Text your contacts now.": {
       "localizations": {
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "¿Escribir a todos tus contactos para pedir ayuda?"
+            "value": "Escribe a tus contactos ahora."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Texter tous vos contacts pour demander de l'aide ?"
+            "value": "Envoyez un texto à vos contacts maintenant."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "要发短信向所有联系人求助吗？"
+            "value": "立即发短信给你的联系人。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "要傳簡訊向所有聯絡人求助嗎？"
-          }
-        }
-      }
-    },
-    "Text everyone": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Escribir a todos"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Texter tout le monde"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "发短信给所有人"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "傳簡訊給所有人"
+            "value": "立即傳簡訊給你的聯絡人。"
           }
         }
       }
@@ -3441,34 +3189,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "簡訊"
-          }
-        }
-      }
-    },
-    "Texts all your contacts now": {
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Escribe a todos tus contactos ahora"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Texte tous vos contacts maintenant"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "立即发短信给所有联系人"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "立即傳簡訊給所有聯絡人"
           }
         }
       }

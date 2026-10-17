@@ -27,7 +27,7 @@ final class AlarmCoordinatorTests: XCTestCase {
         var config = RippleConfig.makeDefault(wearerName: "Alex")
         config.contacts = [sam, jo, pat]
         let clock = self.clock!
-        coordinator = AlarmCoordinator(config: config, serverBaseURL: "http://ripple.test", clock: { clock.now })
+        coordinator = AlarmCoordinator(config: config, clock: { clock.now })
         coordinator.timeZone = TimeZone(identifier: "America/Toronto")!
         coordinator.delegate = recorder
         coordinator.setRunId("run-1")
@@ -78,11 +78,11 @@ final class AlarmCoordinatorTests: XCTestCase {
         XCTAssertEqual(Set(sent(.alert)), ["sam", "jo"], "Only Tier 1 gets the first alert")
         let samText = recorder.sent.first { $0.recipientId == "sam" }!.text
         let joText = recorder.sent.first { $0.recipientId == "jo" }!.text
-        XCTAssertTrue(samText.contains("maps.apple.com"))
+        XCTAssertTrue(samText.hasSuffix("\n\nLocation: \(fix.mapURL)"), "The location URL is last for Messages previews")
         XCTAssertFalse(joText.contains("maps.apple.com"), "Location only for contacts with sharing on")
-        XCTAssertTrue(samText.contains("left pocket"))
-        XCTAssertTrue(samText.contains("http://ripple.test/a/"))
-        XCTAssertTrue(samText.hasPrefix("Ripple alert: Alex did not respond"))
+        XCTAssertTrue(samText.contains("\n\nNote from Alex: My medication is in my left pocket.\n\nReply"))
+        XCTAssertFalse(samText.contains("http://ripple.test/a/"))
+        XCTAssertTrue(samText.hasPrefix("RIPPLE ALERT: Alex did not respond"))
         XCTAssertEqual(coordinator.display().mode, .alertSent)
     }
 
@@ -215,7 +215,7 @@ final class AlarmCoordinatorTests: XCTestCase {
         let result = coordinator.handle(WatchAction(kind: .help, method: .combo, alarmId: nil))
         XCTAssertEqual(result.feedback, "Help requested")
         XCTAssertEqual(Set(sent(.alert)), ["sam", "jo"], "No countdown: the wearer asked")
-        XCTAssertTrue(recorder.sent.first { $0.kind == .alert }!.text.hasPrefix("Ripple alert: Alex asked for help from their Watch at"))
+        XCTAssertTrue(recorder.sent.first { $0.kind == .alert }!.text.hasPrefix("RIPPLE ALERT: Alex asked for help from their Watch at"))
         XCTAssertEqual(coordinator.alarm?.source, .help)
         XCTAssertEqual(coordinator.display().mode, .alertSent)
         XCTAssertEqual(coordinator.display().status, "Help requested")

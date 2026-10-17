@@ -1,67 +1,9 @@
 import Foundation
 import RippleKit
 
-// The one-page websites contacts open from a text: the acknowledge page and
-// the temporary contact consent page. No app, account or login.
+// The temporary contact consent page. No app, account or login.
 
 extension Engine {
-    func ackAccess(_ raw: String) throws -> (AckTokenRecord, AlarmRecord, AlarmRecipient) {
-        guard let token = db.ackTokens[Secrets.hash(raw)],
-              let record = db.alarms[token.alarmId],
-              let recipient = record.snapshot.recipients.first(where: { $0.id == token.recipientId })
-        else { throw EngineError.notFound("This link isn't valid.") }
-        guard db.users[token.userId]?.runId == token.runId else {
-            throw EngineError.gone("This alert has closed.")
-        }
-        return (token, record, recipient)
-    }
-
-    /// Who is checking, whether they tapped a link (recorded here) or texted
-    /// "RIPPLE ACCEPT" (recorded by the phone and reported on sync).
-    func currentAcknowledgment(_ record: AlarmRecord) -> Acknowledgment? {
-        record.acknowledgment ?? record.snapshot.acknowledgment
-    }
-
-    func ackView(_ record: AlarmRecord, recipient: AlarmRecipient) -> AckView {
-        let ack = currentAcknowledgment(record)
-        return AckView(
-            wearerName: record.snapshot.wearerName,
-            alertTime: alertTime(record) ?? record.snapshot.startedAt,
-            open: isOpen(record),
-            acknowledged: ack != nil,
-            youAcknowledged: ack?.recipientId == recipient.id,
-            responderName: ack?.name
-        )
-    }
-
-    /// The page stops working once the alarm closes.
-    public func ackPage(token raw: String) throws -> AckView {
-        let (_, record, recipient) = try ackAccess(raw)
-        guard isOpen(record) else { throw EngineError.gone("This alert has closed. No action is needed.") }
-        return ackView(record, recipient: recipient)
-    }
-
-    /// "I'm checking on [Name]": records who responded and when.
-    public func acknowledge(token raw: String) throws -> AckView {
-        let (_, record, recipient) = try ackAccess(raw)
-        guard isOpen(record) else { throw EngineError.gone("This alert has closed. No action is needed.") }
-        var updated = record
-        let t = now()
-        if currentAcknowledgment(updated) == nil {
-            updated.acknowledgment = Acknowledgment(recipientId: recipient.id, name: recipient.name, at: t)
-            db.alarms[record.id] = updated
-            log(record.userId, "\(recipient.name) tapped \"I'm checking on \(record.snapshot.wearerName)\". That means they took responsibility, not that help has arrived.")
-            dirty = true
-        } else if currentAcknowledgment(updated)?.recipientId != recipient.id {
-            log(record.userId, "\(recipient.name) also tapped the acknowledge link.")
-            dirty = true
-        }
-        persistIfDirty()
-        return ackView(updated, recipient: recipient)
-    }
-
-    // MARK: Temporary contact consent
-
     func inviteAccess(_ raw: String) throws -> TemporaryContactRecord {
         guard let id = db.inviteTokens[Secrets.hash(raw)], let record = db.temporaryContacts[id] else {
             throw EngineError.notFound("This invitation link isn't valid.")

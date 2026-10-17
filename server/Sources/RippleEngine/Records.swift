@@ -32,10 +32,36 @@ struct AlarmRecord: Codable {
     var snapshot: Alarm
     var firstSeenAt: Date
     var updatedAt: Date
-    /// Recorded when a contact taps their acknowledge link.
-    var acknowledgment: Acknowledgment?
     var closedByAdmin: Bool
     var closedAt: Date?
+}
+
+extension AlarmRecord {
+    private enum CodingKeys: String, CodingKey {
+        case id, userId, runId, snapshot, firstSeenAt, updatedAt, closedByAdmin, closedAt
+    }
+
+    private enum LegacyKeys: String, CodingKey {
+        case acknowledgment
+    }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        id = try values.decode(String.self, forKey: .id)
+        userId = try values.decode(String.self, forKey: .userId)
+        runId = try values.decode(String.self, forKey: .runId)
+        snapshot = try values.decode(Alarm.self, forKey: .snapshot)
+        firstSeenAt = try values.decode(Date.self, forKey: .firstSeenAt)
+        updatedAt = try values.decode(Date.self, forKey: .updatedAt)
+        closedByAdmin = try values.decode(Bool.self, forKey: .closedByAdmin)
+        closedAt = try values.decodeIfPresent(Date.self, forKey: .closedAt)
+        // Preserve a response saved by an older server before replies were
+        // recorded in the phone's alarm snapshot. Re-encoding uses only the snapshot.
+        if snapshot.acknowledgment == nil {
+            let legacy = try decoder.container(keyedBy: LegacyKeys.self)
+            snapshot.acknowledgment = try legacy.decodeIfPresent(Acknowledgment.self, forKey: .acknowledgment)
+        }
+    }
 }
 
 /// A message the backend sent because the phone went quiet.
@@ -43,13 +69,6 @@ struct BackupRecord: Codable {
     var message: OutMessage
     var userId: String
     var providerMessageId: String?
-}
-
-struct AckTokenRecord: Codable {
-    var alarmId: String
-    var recipientId: String
-    var userId: String
-    var runId: String
 }
 
 struct CommandRecord: Codable {
@@ -101,8 +120,6 @@ struct Database: Codable {
     var alarms: [String: AlarmRecord] = [:]
     /// Message id -> backup send.
     var backups: [String: BackupRecord] = [:]
-    /// Acknowledge-link token hash -> alarm and recipient.
-    var ackTokens: [String: AckTokenRecord] = [:]
     var commands: [String: CommandRecord] = [:]
     var temporaryContacts: [String: TemporaryContactRecord] = [:]
     /// Consent-link token hash -> temporary contact id.

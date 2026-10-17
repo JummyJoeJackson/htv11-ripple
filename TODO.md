@@ -38,4 +38,6 @@ Apple supports message automations filtered by sender and phrase, including auto
 The tradeoffs are manual automation setup on your phone and physical testing with the phone locked. It also depends on your phone functioning.
 ```
 
+Add temp content is not working since the other person needs to scan a QR code that sends them to a localhost link so they can't open it. Just send them a text message and have Ripple monitor via shortcut for a response.
+
 [Demo Photos]([url](https://drive.google.com/drive/folders/1HuXoaYTzwrxl_IqGnw3iEyiH_kPRZIj7?usp=drive_link))

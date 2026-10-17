@@ -20,9 +20,12 @@ struct CircleScreen: View {
 
     var body: some View {
         let display = store.display
-        VStack(spacing: 6) {
+        ZStack {
+        WatchBackground()
+        VStack(spacing: 4) {
             RippleCircle(
-                label: store.sending ? "…" : display.circleLabel,
+                label: display.circleLabel,
+                sending: store.sending,
                 mode: display.mode,
                 deadline: display.mode == .checkIn ? display.deadline : nil,
                 doubleTapEnabled: store.config.doubleTapEnabled && display.mode.isAlarm,
@@ -39,19 +42,19 @@ struct CircleScreen: View {
             // too, so "Swipe down again" appears under the circle.
             if let feedback = store.feedback {
                 WatchNote(text: feedback.text, systemImage: feedback.ok ? "checkmark.circle.fill" : "exclamationmark.triangle.fill",
-                          color: feedback.ok ? .white : Theme.primaryTint)
+                          color: feedback.ok ? WatchColors.text : Theme.checkIn)
                     .task(id: feedback.id) {
                         try? await Task.sleep(nanoseconds: 3_000_000_000)
                         if store.feedback?.id == feedback.id { store.feedback = nil }
                     }
             } else if store.showHoldHint {
-                WatchNote(text: "Hold to stop.", systemImage: "hand.tap.fill", color: .white)
+                WatchNote(text: "Hold to stop.", systemImage: "hand.tap.fill", color: WatchColors.text)
                     .task {
                         try? await Task.sleep(nanoseconds: 2_000_000_000)
                         store.showHoldHint = false
                     }
             } else if !store.phoneReachable || !display.phoneAvailable {
-                WatchNote(text: "iPhone not available", systemImage: "iphone.slash", color: Theme.primaryTint)
+                WatchNote(text: "iPhone not available", systemImage: "iphone.slash", color: Theme.checkIn)
             } else {
                 StatusLine(text: display.status, mode: display.mode)
             }
@@ -74,7 +77,7 @@ struct CircleScreen: View {
                     }
                 }
                 .font(.caption2)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(WatchColors.secondaryText)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
                 .accessibilityElement(children: .combine)
@@ -82,7 +85,18 @@ struct CircleScreen: View {
         }
         .padding(.horizontal, 2)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black.ignoresSafeArea())
+        }
+        .overlay(alignment: .topLeading) {
+            Image("RippleMark")
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .foregroundStyle(.white)
+                .frame(width: 26)
+                .padding(.leading, 8)
+                .offset(y: -20)
+                .accessibilityHidden(true)
+        }
         // Coming back to the front restarts whatever the system stopped, straight away.
         .onChange(of: scenePhase) { _, _ in store.refreshRuntime() }
         .confirmationDialog("Stop monitoring?", isPresented: Binding(get: { store.confirmStop }, set: { store.confirmStop = $0 })) {
@@ -92,21 +106,65 @@ struct CircleScreen: View {
     }
 }
 
-/// Short status under the circle, always with an icon so color isn't the only cue.
+/// The light, calm look: a pale blue wave background with navy text.
+enum WatchColors {
+    static let text = Color(red: 0x0B / 255, green: 0x2E / 255, blue: 0x4A / 255)
+    static let secondaryText = Color(red: 0x3D / 255, green: 0x54 / 255, blue: 0x68 / 255)
+}
+
+/// Pale blue waves behind everything. Decorative only.
+private struct WatchBackground: View {
+    var body: some View {
+        ZStack {
+            Color(red: 0xEA / 255, green: 0xF5 / 255, blue: 0xFC / 255)
+            Image("WatchBackground")
+                .resizable()
+                .scaledToFill()
+                .opacity(0.9)
+            // watchOS always draws the clock in white, so a soft blue band at
+            // the top keeps it (and the logo) readable.
+            LinearGradient(stops: [.init(color: Color(red: 0x1F / 255, green: 0x6F / 255, blue: 0xB2 / 255).opacity(0.9), location: 0),
+                                   .init(color: Color(red: 0x1F / 255, green: 0x6F / 255, blue: 0xB2 / 255).opacity(0), location: 0.24)],
+                           startPoint: .top, endPoint: .bottom)
+        }
+        .ignoresSafeArea()
+        .accessibilityHidden(true)
+    }
+}
+
+/// A bold status title and a short line saying what to do, in words, so the
+/// circle's color is never the only cue.
 private struct StatusLine: View {
     let text: String
     let mode: CircleMode
 
+    private var subtitle: String {
+        switch mode {
+        case .off: return "Tap to start"
+        case .monitoring: return "Hold to stop"
+        case .checkIn: return "Are you okay? Tap"
+        case .alertSent: return "Contacts notified"
+        case .responding: return "Help is on the way"
+        }
+    }
+
     var body: some View {
-        Label(text, systemImage: mode.symbol)
-            .font(.headline)
-            .foregroundStyle(.white)
-            .lineLimit(2)
-            .minimumScaleFactor(0.8)
-            .multilineTextAlignment(.center)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Status: \(text)")
-            .accessibilityAddTraits(.isHeader)
+        VStack(spacing: 0) {
+            Text(text)
+                .font(.headline.weight(.bold))
+                .foregroundStyle(WatchColors.text)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+            Text(subtitle)
+                .font(.footnote)
+                .foregroundStyle(WatchColors.secondaryText)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        }
+        .multilineTextAlignment(.center)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Status: \(text). \(subtitle)")
+        .accessibilityAddTraits(.isHeader)
     }
 }
 
@@ -131,6 +189,7 @@ private struct WatchNote: View {
 /// tap that wanders and comes back is still a tap.
 private struct RippleCircle: View {
     let label: String
+    var sending = false
     let mode: CircleMode
     let deadline: Date?
     let doubleTapEnabled: Bool
@@ -140,8 +199,7 @@ private struct RippleCircle: View {
     let onSwipe: (GestureStep) -> Void
 
     @State private var holdFired = false
-    @ScaledMetric(relativeTo: .title3) private var labelSize: CGFloat = 26
-    @ScaledMetric(relativeTo: .largeTitle) private var countdownSize: CGFloat = 38
+    @ScaledMetric(relativeTo: .largeTitle) private var countdownSize: CGFloat = 30
     /// The current touch has travelled far enough to be a swipe.
     @State private var swiping = false
     @State private var lastSwipeAt = Date.distantPast
@@ -157,22 +215,28 @@ private struct RippleCircle: View {
             onTap(.touch)
         } label: {
             ZStack {
-                Circle()
-                    .fill(mode.circleColor)
-                Circle()
-                    .strokeBorder(.white.opacity(0.35), lineWidth: 3)
-                VStack(spacing: 0) {
-                    Text(label)
-                        .font(.system(size: labelSize, weight: .heavy))
-                        .foregroundStyle(.white)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.7)
-                    if let deadline {
-                        WatchCountdown(deadline: deadline, size: countdownSize)
+                RippleRings(color: mode.ringColor)
+                if let deadline {
+                    // Check-in: a light disc with an amber ring that empties as time runs out.
+                    Circle()
+                        .fill(.white.opacity(0.85))
+                        .padding(18)
+                    CountdownRing(deadline: deadline, size: countdownSize)
+                        .padding(18)
+                } else {
+                    Circle()
+                        .fill(mode.ringColor.gradient)
+                        .overlay(Circle().strokeBorder(.white.opacity(0.6), lineWidth: 2))
+                        .shadow(color: mode.ringColor.opacity(0.45), radius: 6, y: 2)
+                        .padding(24)
+                    if sending {
+                        ProgressView().tint(.white)
+                    } else {
+                        Image(systemName: mode.watchSymbol)
+                            .font(.system(size: 30, weight: .bold))
+                            .foregroundStyle(.white)
                     }
                 }
-                .padding(14)
             }
             .aspectRatio(1, contentMode: .fit)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -229,18 +293,81 @@ private extension View {
     }
 }
 
-private struct WatchCountdown: View {
+/// The seconds left, inside an amber ring that empties as time runs out. The
+/// Watch isn't told the alarm's full length, so the ring measures from the
+/// moment this countdown first appeared.
+private struct CountdownRing: View {
     let deadline: Date
     let size: CGFloat
+    @State private var total: TimeInterval = 0
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
-            let remaining = max(0, Int(deadline.timeIntervalSince(context.date).rounded(.up)))
-            Text("\(remaining)")
-                .font(.system(size: size, weight: .bold))
-                .monospacedDigit()
-                .foregroundStyle(.white)
-                .accessibilityLabel("\(remaining) seconds to answer")
+            let left = max(0, deadline.timeIntervalSince(context.date))
+            let fraction = total > 0 ? min(1, left / total) : 1
+            ZStack {
+                Circle()
+                    .stroke(Theme.checkIn.opacity(0.2), lineWidth: 5)
+                Circle()
+                    .trim(from: 0, to: fraction)
+                    .stroke(Theme.checkIn, style: StrokeStyle(lineWidth: 5, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                Text("\(Int(left.rounded(.up)))s")
+                    .font(.system(size: size, weight: .bold))
+                    .monospacedDigit()
+                    .foregroundStyle(WatchColors.text)
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(Int(left.rounded(.up))) seconds to answer")
+        }
+        .onAppear { total = max(1, deadline.timeIntervalSinceNow) }
+        .onChange(of: deadline) { _, new in total = max(1, new.timeIntervalSinceNow) }
+    }
+}
+
+/// Soft rings spreading out from the circle like a water ripple. They hold
+/// still when Reduce Motion is on. Decorative only.
+private struct RippleRings: View {
+    let color: Color
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var spread = false
+
+    var body: some View {
+        ZStack {
+            ForEach(0..<3) { ring in
+                Circle()
+                    .fill(color.opacity(0.10 + Double(2 - ring) * 0.05))
+                    .padding(CGFloat(ring) * 8)
+                    .scaleEffect(spread && !reduceMotion ? 1.04 : 0.98)
+            }
+        }
+        .onAppear {
+            guard !reduceMotion else { return }
+            withAnimation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true)) { spread = true }
+        }
+        .accessibilityHidden(true)
+    }
+}
+
+private extension CircleMode {
+    /// Green monitoring, amber check-in, red alert, blue responding, gray off.
+    var ringColor: Color {
+        switch self {
+        case .off: return Theme.off
+        case .monitoring: return Theme.safe
+        case .checkIn: return Theme.checkIn
+        case .alertSent: return Theme.alert
+        case .responding: return Theme.responding
+        }
+    }
+
+    var watchSymbol: String {
+        switch self {
+        case .off: return "power"
+        case .monitoring: return "checkmark"
+        case .checkIn: return "bell.fill"
+        case .alertSent: return "exclamationmark"
+        case .responding: return "person.2.fill"
         }
     }
 }
@@ -254,7 +381,7 @@ private struct ListeningLabel: View {
     var body: some View {
         Label(heard.isEmpty ? "Say \"\(phrase)\"" : "\"\(heard)\"", systemImage: "waveform")
             .font(.footnote)
-            .foregroundStyle(heard.isEmpty ? Color.primary : Color.secondary)
+            .foregroundStyle(heard.isEmpty ? WatchColors.text : WatchColors.secondaryText)
             .lineLimit(1)
             .truncationMode(.head)
             .minimumScaleFactor(0.7)
@@ -297,13 +424,14 @@ private struct CirclePreview: View {
             StatusLine(text: status, mode: mode)
         }
         .padding(.horizontal, 2)
-        .background(Color.black.ignoresSafeArea())
+        .background(WatchBackground())
     }
 }
 
 #Preview("Monitoring") { CirclePreview(label: "Stop", status: "Monitoring", mode: .monitoring) }
 #Preview("Check in") { CirclePreview(label: "I'm okay", status: "Check in", mode: .checkIn, deadline: .now.addingTimeInterval(14)) }
 #Preview("Alert sent") { CirclePreview(label: "I'm okay now", status: "Alert sent", mode: .alertSent) }
+#Preview("Responding") { CirclePreview(label: "I'm okay now", status: "Maya is responding", mode: .responding) }
 #Preview("Check in, largest text") {
     CirclePreview(label: "I'm okay", status: "Check in", mode: .checkIn, deadline: .now.addingTimeInterval(14))
         .dynamicTypeSize(.accessibility3)

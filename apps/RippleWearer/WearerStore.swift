@@ -489,6 +489,9 @@ final class WearerStore {
             }
             sender.sendInvitation(id: response.contact.id, to: response.contact.phone, text: response.invitationText)
             return response
+        } catch RippleAPIError.decoding {
+            banner = Banner(text: "The backend needs an update before it can send text invitations. Restart the Ripple server with the latest code, then try again.", ok: false)
+            return nil
         } catch {
             banner = Banner(text: "Not created. \(describe(error))", ok: false)
             return nil

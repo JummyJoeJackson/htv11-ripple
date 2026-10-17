@@ -203,6 +203,7 @@ private struct StepLayout<Content: View, Buttons: View>: View {
             .padding(.vertical, 12)
             .background(Theme.background)
         }
+        .keyboardDismissControl()
     }
 }
 

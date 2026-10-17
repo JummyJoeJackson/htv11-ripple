@@ -76,6 +76,8 @@ struct AdminSignInView: View {
             }
             .navigationTitle("Ripple Demo Admin")
             .safeAreaInset(edge: .top) { DemoAdminBanner() }
+            .scrollDismissesKeyboard(.interactively)
+            .keyboardDismissControl()
         }
         .onAppear {
             if address.isEmpty { address = store.serverAddress }
@@ -139,6 +141,8 @@ struct WearerListView: View {
             }
             .navigationTitle("Ripple Demo Admin")
             .safeAreaInset(edge: .top) { DemoAdminBanner() }
+            .scrollDismissesKeyboard(.interactively)
+            .keyboardDismissControl()
             .refreshable { await store.loadWearers() }
             .task { await store.loadWearers() }
         }

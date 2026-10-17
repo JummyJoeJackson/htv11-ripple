@@ -210,6 +210,8 @@ struct AnswerSetupScreen: View {
             .padding(Theme.spacing)
         }
         .rippleScreen(background: .three)
+        .scrollDismissesKeyboard(.interactively)
+        .keyboardDismissControl()
         .navigationTitle("How you answer")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {

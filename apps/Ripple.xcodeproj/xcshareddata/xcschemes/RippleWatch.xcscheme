@@ -46,6 +46,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "AA0000000000000000000031"
             BuildableName = "RippleWatch.app"
+            BlueprintName = "RippleWatch"
             ReferencedContainer = "container:Ripple.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -62,6 +63,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "AA0000000000000000000031"
             BuildableName = "RippleWatch.app"
+            BlueprintName = "RippleWatch"
             ReferencedContainer = "container:Ripple.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

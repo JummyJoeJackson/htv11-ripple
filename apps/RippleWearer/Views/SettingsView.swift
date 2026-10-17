@@ -53,11 +53,20 @@ struct SettingsView: View {
                 Toggle("Voice phrase to dismiss", isOn: $draft.voiceEnabled)
                 if draft.voiceEnabled {
                     TextField("Phrase", text: $draft.voicePhrase)
+                    StatusRow(label: "Speech recognition", value: store.speech.statusText)
                 }
             } header: {
                 Text("Dismissing an alarm")
             } footer: {
-                Text("Double tap needs Apple Watch Series 9, Ultra 2 or later on watchOS 11. The voice phrase uses dictation on the Watch while the app is open. Duress is always the 2-second hold, touch only, so a stray double tap or a misheard phrase can never trigger or hide it.")
+                Text("Double tap needs Apple Watch Series 9, Ultra 2 or later on watchOS 11. With the voice phrase on, the Watch listens for it during an alarm, with nothing to press. This iPhone recognizes the speech, so keep Ripple open on both. Pick a phrase you wouldn't say by accident: anyone nearby who says it also dismisses. Duress is always the 2-second hold, touch only, so a stray double tap, swipe or misheard phrase can never trigger or hide it.")
+            }
+
+            Section {
+                Toggle("Swipe up twice for help, down twice for I'm okay", isOn: $draft.combosEnabled)
+            } header: {
+                Text("Swipe combos")
+            } footer: {
+                Text("Swipe on the Watch circle. It takes two swipes the same way, so one shaky movement can't do either. Help texts your contacts straight away, even when monitoring is off.")
             }
 
             Section {

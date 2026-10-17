@@ -12,6 +12,8 @@ final class WatchLink: NSObject, WCSessionDelegate {
     var onConfig: ((WatchConfig) -> Void)?
     /// Called on the main thread.
     var onReachability: ((Bool) -> Void)?
+    /// Called on the main thread with what the iPhone heard from the microphone.
+    var onHeard: ((VoiceHeard) -> Void)?
 
     var isReachable: Bool {
         WCSession.isSupported() && WCSession.default.activationState == .activated && WCSession.default.isReachable
@@ -52,6 +54,17 @@ final class WatchLink: NSObject, WCSessionDelegate {
         WCSession.default.sendMessage(WatchEnvelope.make(WatchEnvelope.configAck, WatchConfigAck(version: version)), replyHandler: nil, errorHandler: nil)
     }
 
+    /// Microphone audio for the iPhone to recognize. Dropped while it isn't reachable.
+    func sendVoiceAudio(session: String, audio: Data) {
+        guard isReachable else { return }
+        WCSession.default.sendMessage(WatchEnvelope.makeVoiceAudio(session: session, audio: audio), replyHandler: nil, errorHandler: nil)
+    }
+
+    func stopVoice(session: String) {
+        guard isReachable else { return }
+        WCSession.default.sendMessage(WatchEnvelope.makeVoiceStop(session: session), replyHandler: nil, errorHandler: nil)
+    }
+
     /// Asks the iPhone for the current display and configuration.
     func requestState() {
         guard isReachable else { return }
@@ -80,6 +93,10 @@ final class WatchLink: NSObject, WCSessionDelegate {
         case WatchEnvelope.config:
             if let config = WatchEnvelope.decode(WatchConfig.self, from: message) {
                 DispatchQueue.main.async { self.onConfig?(config) }
+            }
+        case WatchEnvelope.voiceHeard:
+            if let heard = WatchEnvelope.decode(VoiceHeard.self, from: message) {
+                DispatchQueue.main.async { self.onHeard?(heard) }
             }
         default:
             deliverContext(message)

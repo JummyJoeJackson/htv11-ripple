@@ -91,10 +91,12 @@ public struct RippleConfig: Codable, Equatable, Sendable {
     public var doubleTapEnabled: Bool
     public var voiceEnabled: Bool
     public var voicePhrase: String
+    /// Swipe up twice for help, down twice for I'm okay.
+    public var combosEnabled: Bool
     /// Name of the user-installed shortcut that sends the texts.
     public var shortcutName: String
 
-    public init(version: Int, wearerName: String, contacts: [PermanentContact], helpCardEnabled: Bool, helpCard: String, checkInIntervalMinutes: Int, countdownSeconds: Int, ackWindowSeconds: Int, doubleTapEnabled: Bool, voiceEnabled: Bool, voicePhrase: String, shortcutName: String) {
+    public init(version: Int, wearerName: String, contacts: [PermanentContact], helpCardEnabled: Bool, helpCard: String, checkInIntervalMinutes: Int, countdownSeconds: Int, ackWindowSeconds: Int, doubleTapEnabled: Bool, voiceEnabled: Bool, voicePhrase: String, shortcutName: String, combosEnabled: Bool = true) {
         self.version = version
         self.wearerName = wearerName
         self.contacts = contacts
@@ -106,7 +108,34 @@ public struct RippleConfig: Codable, Equatable, Sendable {
         self.doubleTapEnabled = doubleTapEnabled
         self.voiceEnabled = voiceEnabled
         self.voicePhrase = voicePhrase
+        self.combosEnabled = combosEnabled
         self.shortcutName = shortcutName
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case version, wearerName, contacts, helpCardEnabled, helpCard, checkInIntervalMinutes, countdownSeconds,
+             ackWindowSeconds, doubleTapEnabled, voiceEnabled, voicePhrase, combosEnabled, shortcutName
+    }
+
+    /// Settings saved before swipe combos existed still load, with combos on,
+    /// so updating the app never loses the wearer's contacts.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            version: try container.decode(Int.self, forKey: .version),
+            wearerName: try container.decode(String.self, forKey: .wearerName),
+            contacts: try container.decode([PermanentContact].self, forKey: .contacts),
+            helpCardEnabled: try container.decode(Bool.self, forKey: .helpCardEnabled),
+            helpCard: try container.decode(String.self, forKey: .helpCard),
+            checkInIntervalMinutes: try container.decode(Int.self, forKey: .checkInIntervalMinutes),
+            countdownSeconds: try container.decode(Int.self, forKey: .countdownSeconds),
+            ackWindowSeconds: try container.decode(Int.self, forKey: .ackWindowSeconds),
+            doubleTapEnabled: try container.decode(Bool.self, forKey: .doubleTapEnabled),
+            voiceEnabled: try container.decode(Bool.self, forKey: .voiceEnabled),
+            voicePhrase: try container.decode(String.self, forKey: .voicePhrase),
+            shortcutName: try container.decode(String.self, forKey: .shortcutName),
+            combosEnabled: try container.decodeIfPresent(Bool.self, forKey: .combosEnabled) ?? true
+        )
     }
 
     /// Demo defaults: 15-second timers (PRD), automatic check-ins off.
@@ -122,14 +151,14 @@ public struct RippleConfig: Codable, Equatable, Sendable {
             ackWindowSeconds: 15,
             doubleTapEnabled: true,
             voiceEnabled: false,
-            voicePhrase: "I'm okay",
+            voicePhrase: "I am currently fine",
             shortcutName: "Ripple Alert"
         )
     }
 
     /// The part of the configuration the Watch needs.
     public var watchConfig: WatchConfig {
-        WatchConfig(version: version, doubleTapEnabled: doubleTapEnabled, voiceEnabled: voiceEnabled, voicePhrase: voicePhrase)
+        WatchConfig(version: version, doubleTapEnabled: doubleTapEnabled, voiceEnabled: voiceEnabled, voicePhrase: voicePhrase, combosEnabled: combosEnabled)
     }
 }
 

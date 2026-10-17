@@ -7,6 +7,8 @@ public enum AlarmSource: String, Codable, Sendable {
     case admin
     /// Started from the wearer's iPhone.
     case phone
+    /// The wearer asked for help with a swipe combo on the Watch.
+    case help
 }
 
 public enum AlarmPhase: String, Codable, Sendable {
@@ -186,6 +188,8 @@ public struct Alarm: Codable, Equatable, Identifiable, Sendable {
     /// One fix taken when the alarm started. Never tracked in the background.
     public var location: LocationFix?
     public var messages: [OutMessage]
+    /// When the wearer asked for help. Texts not yet sent say so instead of "did not respond".
+    public var helpRequestedAt: Date? = nil
 
     public init(id: String, runId: String, source: AlarmSource, startedAt: Date, deadline: Date, countdownSeconds: Int, ackWindowSeconds: Int, phase: AlarmPhase, closeReason: CloseReason?, closedAt: Date?, duress: Bool, alertedAt: Date?, escalatedAt: Date?, acknowledgment: Acknowledgment?, wearerName: String, recipients: [AlarmRecipient], location: LocationFix?, messages: [OutMessage]) {
         self.id = id
@@ -279,6 +283,21 @@ public enum MessageTemplates {
 
     public static func escalation(name: String, checkInTime: String, locationURL: String?, ackLink: String) -> String {
         var text = "Ripple alert: \(name) did not respond at \(checkInTime) and no one has confirmed yet. Please call or check on them."
+        if let locationURL { text += " Location: \(locationURL)" }
+        text += " \(ackLink)"
+        return text
+    }
+
+    public static func help(name: String, time: String, locationURL: String?, helpCard: String?, ackLink: String) -> String {
+        var text = "Ripple alert: \(name) asked for help from their Watch at \(time). Please call or check on them."
+        if let locationURL { text += " Location: \(locationURL)" }
+        if let helpCard, !helpCard.isEmpty { text += " Note from \(name): \(helpCard)" }
+        text += " Tap if you're checking: \(ackLink)"
+        return text
+    }
+
+    public static func helpEscalation(name: String, time: String, locationURL: String?, ackLink: String) -> String {
+        var text = "Ripple alert: \(name) asked for help at \(time) and no one has confirmed yet. Please call or check on them."
         if let locationURL { text += " Location: \(locationURL)" }
         text += " \(ackLink)"
         return text

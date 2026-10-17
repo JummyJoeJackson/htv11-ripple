@@ -13,7 +13,7 @@ struct SettingsView: View {
     var body: some View {
         RippleForm {
             Section {
-                ScreenHeader(title: "Settings", subtitle: "Make Ripple fit your needs.")
+                ScreenHeader(title: "Settings", subtitle: "Who gets texted, timing, and how you answer.")
                     .listRowInsets(EdgeInsets(top: 0, leading: 10, bottom: 0, trailing: 0))
                     .listRowBackground(Color.clear)
             }
@@ -45,17 +45,17 @@ struct SettingsView: View {
             Section {
                 IconRow(icon: "clock") {
                     Stepper(value: $draft.checkInIntervalMinutes, in: 0...240, step: 5) {
-                        LabeledContent("Check in with me", value: draft.checkInIntervalMinutes == 0 ? "Off" : "Every \(draft.checkInIntervalMinutes) min")
+                        LabeledContent("Watch asks if you're okay", value: draft.checkInIntervalMinutes == 0 ? "Off" : "Every \(draft.checkInIntervalMinutes) min")
                     }
                 }
                 IconRow(icon: "hourglass") {
                     Stepper(value: $draft.countdownSeconds, in: 5...300, step: 5) {
-                        LabeledContent("Time to answer", value: "\(draft.countdownSeconds) s")
+                        LabeledContent("Time to tap your Watch", value: "\(draft.countdownSeconds) s")
                     }
                 }
                 IconRow(icon: "bell") {
                     Stepper(value: $draft.ackWindowSeconds, in: 5...900, step: 5) {
-                        LabeledContent("Wait before Tier 2", value: "\(draft.ackWindowSeconds) s")
+                        LabeledContent("Wait, then text Tier 2", value: "\(draft.ackWindowSeconds) s")
                     }
                 }
                 Button("Use 15-second demo timers") {

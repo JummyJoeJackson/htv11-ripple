@@ -109,8 +109,8 @@ public struct RippleConfig: Codable, Equatable, Sendable {
     /// Accept the selected AssistiveTouch shortcut sequence to dismiss an alarm.
     public var handGesturesEnabled: Bool
     public var handGesturePreset: HandGesturePreset
-    /// Accept a second sequence that asks for help in any state, like swiping
-    /// up twice. Never duress, and never overlapping the dismiss sequence.
+    /// Accept a different sequence that starts an alarm when none is open.
+    /// Never duress; only the identical dismiss selection is excluded.
     public var handGestureHelpEnabled: Bool
     public var handGestureHelpPreset: HandGesturePreset
     /// Name of the user-installed shortcut that sends the texts.
@@ -124,7 +124,7 @@ public struct RippleConfig: Codable, Equatable, Sendable {
     /// Check in when Apple Watch records a high, low or irregular heart rhythm alert.
     public var healthHeartEnabled: Bool
 
-    /// Without a help preset, the default one that doesn't overlap the dismiss preset.
+    /// Without a help preset, use a default different from the dismiss preset.
     public init(version: Int, wearerName: String, contacts: [PermanentContact], helpCardEnabled: Bool, helpCard: String, checkInIntervalMinutes: Int, countdownSeconds: Int, ackWindowSeconds: Int, doubleTapEnabled: Bool, voiceEnabled: Bool, voicePhrase: String, shortcutName: String, combosEnabled: Bool = true, handGesturesEnabled: Bool = false, handGesturePreset: HandGesturePreset = .pinchClench, handGestureHelpEnabled: Bool = false, handGestureHelpPreset: HandGesturePreset? = nil, medicationTimes: [MedicationTime] = [], medicationGraceMinutes: Int = 30, healthFallsEnabled: Bool = false, healthHeartEnabled: Bool = false) {
         self.version = version
         self.wearerName = wearerName
@@ -167,7 +167,7 @@ public struct RippleConfig: Codable, Equatable, Sendable {
 
     /// Older settings still load without losing contacts. Hand gestures need
     /// explicit opt-in, and unknown future presets stay disabled. So does a
-    /// help preset that overlaps the dismiss preset.
+    /// help preset identical to the dismiss preset.
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let preset = try? container.decode(HandGesturePreset.self, forKey: .handGesturePreset)

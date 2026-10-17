@@ -27,8 +27,8 @@ public enum HandGestureStep: String, Codable, CaseIterable, Sendable, Identifiab
 }
 
 /// One selected sequence confirms the wearer is okay during an alarm, and an
-/// optional second one asks for help. The other presets stay inactive, so a
-/// single input never consumes the prefix of a selected two-input sequence.
+/// optional second one starts an alarm. Only the sequence for the current
+/// alarm state is active, so the two selections may share inputs.
 public enum HandGesturePreset: String, Codable, CaseIterable, Sendable, Identifiable {
     case pinch, clench, doublePinch, doubleClench
     case pinchClench, doublePinchClench, clenchPinch, clenchDoublePinch
@@ -53,34 +53,18 @@ public enum HandGesturePreset: String, Codable, CaseIterable, Sendable, Identifi
         }
     }
 
-    /// True when the two are the same sequence or one is a step of the other.
-    /// A gesture meant for one could then finish or cut short the other: with
-    /// dismiss on pinch and help on pinch + clench, the pinch would dismiss
-    /// before help could finish.
-    public func overlaps(_ other: HandGesturePreset) -> Bool {
-        let (short, long) = steps.count <= other.steps.count ? (steps, other.steps) : (other.steps, steps)
-        return (0...(long.count - short.count)).contains { start in
-            Array(long[start..<(start + short.count)]) == short
-        }
-    }
-
-    /// Dismiss sequences that can be saved alongside this help sequence.
+    /// Only the identical selection is unavailable in the other picker.
     public static func dismissChoices(besides help: HandGesturePreset) -> [HandGesturePreset] {
-        allCases.filter { !$0.overlaps(help) }
+        allCases.filter { $0 != help }
     }
 
-    /// Help sequences that can be saved alongside this dismiss sequence. Help
-    /// texts contacts straight away, so like swiping up twice it takes two
-    /// inputs, and one stray pinch or clench can't send it.
     public static func helpChoices(besides dismiss: HandGesturePreset) -> [HandGesturePreset] {
-        allCases.filter { $0.steps.count == 2 && !$0.overlaps(dismiss) }
+        allCases.filter { $0 != dismiss }
     }
 
-    /// Double clench + double pinch: two deliberate inputs. Clench + pinch
-    /// shares no input with the dismiss sequences that rule that out.
     public static func defaultHelp(besides dismiss: HandGesturePreset) -> HandGesturePreset {
         let preferred = HandGesturePreset.doubleClenchDoublePinch
-        return preferred.overlaps(dismiss) ? .clenchPinch : preferred
+        return preferred == dismiss ? .clenchPinch : preferred
     }
 }
 
@@ -106,8 +90,7 @@ public enum HandGestureProgress: Equatable, Sendable {
 /// change. Explicit times make shortcut latency, duplicate input and expiry
 /// testable.
 public struct HandGestureRecognizer: Sendable {
-    /// Settings keep these from overlapping, so one input sequence can only
-    /// ever complete one of them.
+    /// The caller selects the binding for the current alarm state.
     public private(set) var bindings: [HandGestureBinding]
     public let maxGap: TimeInterval
     public let bounce: TimeInterval

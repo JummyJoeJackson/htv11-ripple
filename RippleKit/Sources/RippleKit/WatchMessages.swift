@@ -61,7 +61,7 @@ public struct WatchConfig: Codable, Equatable, Sendable {
     public var combosEnabled: Bool
     public var handGesturesEnabled: Bool
     public var handGesturePreset: HandGesturePreset
-    /// The sequence that asks for help in any state, like swiping up twice.
+    /// The sequence that starts an alarm only when no alarm is open.
     public var handGestureHelpEnabled: Bool
     public var handGestureHelpPreset: HandGesturePreset
 
@@ -77,13 +77,24 @@ public struct WatchConfig: Codable, Equatable, Sendable {
         self.handGestureHelpPreset = handGestureHelpPreset ?? .defaultHelp(besides: handGesturePreset)
     }
 
+    /// Dismissal and alarm triggering never listen at the same time, even
+    /// when dismissal is disabled or an alarm display has no identifier yet.
+    public func handGestureBindings(for display: WatchDisplay) -> [HandGestureBinding] {
+        if display.mode.isAlarm {
+            guard handGesturesEnabled, display.alarmId != nil else { return [] }
+            return [HandGestureBinding(preset: handGesturePreset, action: .okay)]
+        }
+        guard handGestureHelpEnabled, handGestureHelpPreset != handGesturePreset else { return [] }
+        return [HandGestureBinding(preset: handGestureHelpPreset, action: .help)]
+    }
+
     private enum CodingKeys: String, CodingKey {
         case version, doubleTapEnabled, voiceEnabled, voicePhrase, combosEnabled, handGesturesEnabled, handGesturePreset,
              handGestureHelpEnabled, handGestureHelpPreset
     }
 
     /// Older settings still load; new hand gestures need explicit opt-in.
-    /// Unknown future presets, and a help preset that overlaps the dismiss
+    /// Unknown future presets, and a help preset identical to the dismiss
     /// preset, are disabled rather than mapped to another action.
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -115,8 +126,8 @@ public enum WatchActionKind: String, Codable, Sendable {
     case dismiss
     /// Alarm: hold the circle for 2 seconds. Duress. Touch only.
     case hold
-    /// Any state: swipe up twice, or the help hand gesture sequence. Texts
-    /// contacts now, without a countdown. Never duress.
+    /// Swipe up twice in any state, or complete the alarm hand gesture when
+    /// no alarm is open. Texts contacts now, without a countdown. Never duress.
     case help
     /// A dose is due: tap the circle. Records "Took my meds"; never starts or ends an alarm.
     case tookMeds

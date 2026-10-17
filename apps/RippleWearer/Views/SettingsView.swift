@@ -124,8 +124,8 @@ struct SettingsView: View {
                     Toggle("Hand gestures to dismiss", isOn: $draft.handGesturesEnabled)
                 }
                 IconRow(icon: "list.number") {
-                    // Each picker leaves out the other's choice and anything
-                    // overlapping it, so one gesture can't set off the other.
+                    // Only the identical selection is excluded. The Watch
+                    // listens for dismissal or alarm triggering by alarm state.
                     Picker("Dismiss gesture", selection: $draft.handGesturePreset) {
                         ForEach(HandGesturePreset.dismissChoices(besides: draft.handGestureHelpPreset)) { preset in
                             Text(preset.label).tag(preset)
@@ -149,7 +149,7 @@ struct SettingsView: View {
             } header: {
                 SectionHeader("Hand gestures")
             } footer: {
-                FormNote("The alarm gesture texts your contacts right away. Choices that could set off the other gesture are hidden. Turns off Apple's double tap.")
+                FormNote("The alarm gesture texts your contacts right away, only when no alarm is active. During an alarm, only your dismiss gesture is recognized. Choose two different gestures. Turns off Apple's double tap.")
             }
 
             Section {

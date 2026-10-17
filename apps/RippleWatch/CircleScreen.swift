@@ -70,10 +70,19 @@ struct CircleScreen: View {
                 }
             }
 
+            if let hint = store.handGestureHint {
+                Text(hint)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(WatchColors.text)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.8)
+            }
+
             if let gesture = store.lastHandGesture {
                 VStack(spacing: 1) {
                     Text("Gesture #\(store.handGestureCount): \(gesture)")
-                    if !store.handGestureStatus.isEmpty {
+                    if !store.handGestureStatus.isEmpty && store.handGestureStatus != store.handGestureHint {
                         Text(store.handGestureStatus)
                     }
                 }

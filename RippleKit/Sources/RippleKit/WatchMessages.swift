@@ -55,28 +55,36 @@ public struct WatchConfig: Codable, Equatable, Sendable {
     public var voicePhrase: String
     /// Swipe up twice for help, down twice for I'm okay.
     public var combosEnabled: Bool
+    public var handGesturesEnabled: Bool
+    public var handGesturePreset: HandGesturePreset
 
-    public init(version: Int, doubleTapEnabled: Bool, voiceEnabled: Bool, voicePhrase: String, combosEnabled: Bool = true) {
+    public init(version: Int, doubleTapEnabled: Bool, voiceEnabled: Bool, voicePhrase: String, combosEnabled: Bool = true, handGesturesEnabled: Bool = false, handGesturePreset: HandGesturePreset = .pinchClench) {
         self.version = version
         self.doubleTapEnabled = doubleTapEnabled
         self.voiceEnabled = voiceEnabled
         self.voicePhrase = voicePhrase
         self.combosEnabled = combosEnabled
+        self.handGesturesEnabled = handGesturesEnabled
+        self.handGesturePreset = handGesturePreset
     }
 
     private enum CodingKeys: String, CodingKey {
-        case version, doubleTapEnabled, voiceEnabled, voicePhrase, combosEnabled
+        case version, doubleTapEnabled, voiceEnabled, voicePhrase, combosEnabled, handGesturesEnabled, handGesturePreset
     }
 
-    /// A configuration saved before swipe combos existed still loads, with combos on.
+    /// Older settings still load; new hand gestures need explicit opt-in.
+    /// Unknown future presets are disabled rather than mapped to another action.
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        let preset = try? container.decode(HandGesturePreset.self, forKey: .handGesturePreset)
         self.init(
             version: try container.decode(Int.self, forKey: .version),
             doubleTapEnabled: try container.decode(Bool.self, forKey: .doubleTapEnabled),
             voiceEnabled: try container.decode(Bool.self, forKey: .voiceEnabled),
             voicePhrase: try container.decode(String.self, forKey: .voicePhrase),
-            combosEnabled: try container.decodeIfPresent(Bool.self, forKey: .combosEnabled) ?? true
+            combosEnabled: try container.decodeIfPresent(Bool.self, forKey: .combosEnabled) ?? true,
+            handGesturesEnabled: (try container.decodeIfPresent(Bool.self, forKey: .handGesturesEnabled) ?? false) && preset != nil,
+            handGesturePreset: preset ?? .pinchClench
         )
     }
 
@@ -97,7 +105,8 @@ public enum WatchActionKind: String, Codable, Sendable {
 }
 
 public enum DismissMethod: String, Codable, Sendable {
-    /// `combo` is a swipe combination: down twice for I'm okay, up twice for help.
+    /// `combo` covers swipe combinations and the selected AssistiveTouch
+    /// shortcut sequence. Hand gesture sequences only confirm "I'm okay".
     case touch, doubleTap, voice, combo
 }
 

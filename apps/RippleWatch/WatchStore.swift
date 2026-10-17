@@ -15,6 +15,9 @@ struct WatchFeedback: Equatable, Identifiable {
 @MainActor
 @Observable
 final class WatchStore {
+    /// App Intents and the visible app must share one connection and matcher.
+    static let shared = WatchStore()
+
     private(set) var display: WatchDisplay
     private(set) var config: WatchConfig
     private(set) var phoneReachable = false
@@ -27,6 +30,9 @@ final class WatchStore {
     private(set) var listening = false
     /// What the iPhone heard while listening.
     private(set) var heardText = ""
+    private(set) var handGestureCount = 0
+    private(set) var lastHandGesture: String?
+    private(set) var handGestureStatus = ""
 
     private let link = WatchLink()
     @ObservationIgnored private let microphone = WatchMicrophone()
@@ -35,7 +41,10 @@ final class WatchStore {
     @ObservationIgnored private var pingTask: Task<Void, Never>?
     @ObservationIgnored private var timeoutTask: Task<Void, Never>?
     @ObservationIgnored private var pendingActionId: String?
+    @ObservationIgnored private var pendingCompletion: ((WatchActionReply?) -> Void)?
     @ObservationIgnored private var combos = ComboRecognizer()
+    @ObservationIgnored private var handGestures = HandGestureRecognizer(preset: .pinchClench)
+    @ObservationIgnored private var handGestureExpiryTask: Task<Void, Never>?
     @ObservationIgnored private var voiceSessionId: String?
     @ObservationIgnored private var micHeldUntil = Date.distantPast
     /// The alarm the iPhone said it can't listen for. The dictation button takes over.
@@ -44,12 +53,17 @@ final class WatchStore {
     private enum Keys {
         static let config = "ripple.watch.config"
         static let display = "ripple.watch.display"
+        static let gestureCount = "ripple.watch.handGestureCount"
+        static let lastGesture = "ripple.watch.lastHandGesture"
     }
 
-    init() {
+    private init() {
         let defaults = UserDefaults.standard
         config = defaults.data(forKey: Keys.config).flatMap { try? RippleJSON.decoder.decode(WatchConfig.self, from: $0) } ?? .fallback
         display = defaults.data(forKey: Keys.display).flatMap { try? RippleJSON.decoder.decode(WatchDisplay.self, from: $0) } ?? .off
+        handGestures.select(config.handGesturePreset)
+        handGestureCount = defaults.integer(forKey: Keys.gestureCount)
+        lastHandGesture = defaults.string(forKey: Keys.lastGesture)
         link.onDisplay = { [weak self] display in
             self?.apply(display)
         }
@@ -84,6 +98,9 @@ final class WatchStore {
     // MARK: Incoming
 
     private func apply(_ newDisplay: WatchDisplay) {
+        if newDisplay.alarmId != display.alarmId || newDisplay.mode != display.mode {
+            resetHandGestures()
+        }
         let previousAlarm = display.mode == .checkIn ? display.alarmId : nil
         display = newDisplay
         if let data = try? RippleJSON.encoder.encode(newDisplay) {
@@ -104,6 +121,11 @@ final class WatchStore {
     /// Keeps the last configuration it received and confirms it to the iPhone.
     private func store(_ newConfig: WatchConfig) {
         guard newConfig.version >= config.version else { return }
+        if newConfig.handGesturesEnabled != config.handGesturesEnabled
+            || newConfig.handGesturePreset != config.handGesturePreset {
+            resetHandGestures()
+            handGestures.select(newConfig.handGesturePreset)
+        }
         config = newConfig
         if let data = try? RippleJSON.encoder.encode(newConfig) {
             UserDefaults.standard.set(data, forKey: Keys.config)
@@ -275,29 +297,104 @@ final class WatchStore {
         WKInterfaceDevice.current().play(haptic)
     }
 
-    private func send(_ kind: WatchActionKind, method: DismissMethod = .touch) {
-        guard !sending else { return }
+    // MARK: AssistiveTouch shortcut inputs
+
+    /// Called by each background intent. Every input leaves a local receipt,
+    /// including when there is no alarm, so setup can be tested harmlessly.
+    /// Only a complete selected sequence can enter the existing dismissal path.
+    func receiveHandGesture(_ step: HandGestureStep, at time: Date = Date()) async {
+        handGestureCount += 1
+        lastHandGesture = step.label
+        UserDefaults.standard.set(handGestureCount, forKey: Keys.gestureCount)
+        UserDefaults.standard.set(step.label, forKey: Keys.lastGesture)
+
+        guard config.handGesturesEnabled else {
+            resetHandGestures(status: "Hand gestures are off")
+            return
+        }
+        guard display.mode.isAlarm, display.alarmId != nil else {
+            resetHandGestures(status: "No alarm; input recorded")
+            return
+        }
+        guard !sending else {
+            handGestureStatus = "Action already pending"
+            return
+        }
+
+        switch handGestures.record(step, at: time) {
+        case .idle:
+            // Idle includes a suppressed duplicate after a completed sequence.
+            // Preserve the recognizer's bounce history across repeated deliveries.
+            handGestureExpiryTask?.cancel()
+            handGestureExpiryTask = nil
+            handGestureStatus = "Start: \(config.handGesturePreset.steps[0].label)"
+        case .partial:
+            handGestureStatus = "Next: \(config.handGesturePreset.steps[1].label)"
+            expireHandGestures()
+        case .matched:
+            handGestureExpiryTask?.cancel()
+            handGestureStatus = "Matched; confirming…"
+            // Await the reply (or the existing timeout) before the intent returns,
+            // so watchOS doesn't suspend the useful work after an early result.
+            await withCheckedContinuation { continuation in
+                send(.dismiss, method: .combo) { [weak self] reply in
+                    self?.handGestureStatus = reply?.result.feedback ?? "Not confirmed; check iPhone"
+                    continuation.resume()
+                }
+            }
+        }
+    }
+
+    private func expireHandGestures() {
+        handGestureExpiryTask?.cancel()
+        guard let deadline = handGestures.expiresAt else { return }
+        let delay = max(0, deadline.timeIntervalSinceNow)
+        handGestureExpiryTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            guard !Task.isCancelled else { return }
+            self?.resetHandGestures(status: "Sequence timed out")
+        }
+    }
+
+    private func resetHandGestures(status: String = "") {
+        handGestureExpiryTask?.cancel()
+        handGestureExpiryTask = nil
+        handGestures.reset()
+        handGestureStatus = status
+    }
+
+    private func send(_ kind: WatchActionKind, method: DismissMethod = .touch,
+                      completion: ((WatchActionReply?) -> Void)? = nil) {
+        guard !sending else {
+            completion?(nil)
+            return
+        }
         guard link.isReachable, display.phoneAvailable else {
             feedback = WatchFeedback(text: "Not sent. iPhone isn't available.", ok: false)
             WKInterfaceDevice.current().play(.failure)
+            completion?(nil)
             return
         }
         let action = WatchAction(kind: kind, method: method, alarmId: display.alarmId)
         pendingActionId = action.id
+        pendingCompletion = completion
         sending = true
-        link.send(action) { [weak self] reply in
-            self?.finish(action.id, reply: reply)
-        }
         timeoutTask?.cancel()
         timeoutTask = Task { [weak self] in
             try? await Task.sleep(nanoseconds: 12_000_000_000)
             guard !Task.isCancelled else { return }
             self?.finish(action.id, reply: nil)
         }
+        link.send(action) { [weak self] reply in
+            self?.finish(action.id, reply: reply)
+        }
     }
 
     private func finish(_ actionId: String, reply: WatchActionReply?) {
         guard pendingActionId == actionId else { return }
+        let completion = pendingCompletion
+        pendingCompletion = nil
+        defer { completion?(reply) }
         pendingActionId = nil
         sending = false
         timeoutTask?.cancel()

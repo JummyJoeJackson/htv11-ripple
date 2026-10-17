@@ -16,12 +16,12 @@ struct ContactsView: View {
     }
 
     var body: some View {
-        List {
+        RippleList {
             ForEach(Tier.allCases, id: \.self) { tier in
                 Section {
                     let contacts = store.config.contacts.filter { $0.tier == tier }
                     if contacts.isEmpty {
-                        Text("Nobody in \(tier.label) yet.").foregroundStyle(.secondary)
+                        FormNote("Nobody in \(tier.label) yet.")
                     }
                     ForEach(contacts) { contact in
                         Button {
@@ -32,11 +32,11 @@ struct ContactsView: View {
                     }
                     .onDelete { offsets in delete(offsets, in: tier) }
                 } header: {
-                    Text(tier.label)
+                    SectionHeader(tier.label)
                 } footer: {
-                    Text(tier == .one
-                         ? "Texted first if you don't respond. Active temporary contacts join Tier 1."
-                         : "Texted if nobody in Tier 1 taps their link within the acknowledge window.")
+                    FormNote(tier == .one
+                         ? "Texted first if you don't answer. One-hour contacts join Tier 1."
+                         : "Texted if nobody in Tier 1 responds in time.")
                 }
             }
 
@@ -46,11 +46,14 @@ struct ContactsView: View {
                 } label: {
                     Label("Add contact", systemImage: "person.badge.plus")
                 }
+                .buttonStyle(.ripplePrimary)
+                .listRowInsets(EdgeInsets())
+                .listRowBackground(Color.clear)
             }
 
             Section {
                 if store.temporaryContacts.isEmpty {
-                    Text("No temporary contacts.").foregroundStyle(.secondary)
+                    FormNote("No one-hour contacts.")
                 }
                 ForEach(store.temporaryContacts) { contact in
                     TemporaryContactRow(contact: contact)
@@ -60,10 +63,12 @@ struct ContactsView: View {
                 } label: {
                     Label("Invite for one hour", systemImage: "qrcode")
                 }
+                .frame(minHeight: Theme.minTarget)
+                .buttonStyle(.rippleLink)
             } header: {
-                Text("Temporary contacts")
+                SectionHeader("One-hour contacts")
             } footer: {
-                Text("Someone nearby, such as a friend at the venue, can agree to be a contact for one hour. They're texted with Tier 1 until the session ends or you remove them.")
+                FormNote("Someone nearby, such as a friend at the venue, can agree to be a contact for one hour. They're texted with Tier 1 until the session ends or you remove them.")
             }
         }
         .navigationTitle("Contacts")
@@ -110,16 +115,22 @@ private struct ContactRow: View {
     let shareLocation: Bool
 
     var body: some View {
-        HStack {
-            VStack(alignment: .leading) {
-                Text(name).foregroundStyle(.primary)
-                Text(phone).font(.caption).foregroundStyle(.secondary)
-            }
-            Spacer()
-            Label(shareLocation ? "Location on" : "Location off", systemImage: shareLocation ? "location.fill" : "location.slash")
-                .font(.caption)
-                .foregroundStyle(shareLocation ? Color.blue : Color.secondary)
+        VStack(alignment: .leading, spacing: 4) {
+            Text(name)
+                .font(Theme.body.weight(.semibold))
+                .foregroundStyle(Theme.text)
+            Text(phone)
+                .font(Theme.label)
+                .foregroundStyle(Theme.secondaryText)
+            Label(shareLocation ? "Shares your location" : "Location not shared", systemImage: shareLocation ? "location.fill" : "location.slash")
+                .font(Theme.label)
+                .foregroundStyle(shareLocation ? Theme.responding : Theme.secondaryText)
         }
+        .padding(.vertical, 6)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("Opens this contact to edit.")
     }
 }
 
@@ -133,15 +144,17 @@ private struct TemporaryContactRow: View {
                 ContactRow(name: contact.name, phone: contact.phone, shareLocation: contact.shareLocation)
             }
             TimelineView(.periodic(from: .now, by: 5)) { context in
-                Text(stateText(at: context.date))
-                    .font(.caption)
-                    .foregroundStyle(contact.isEligible(at: context.date) ? Color.green : Color.secondary)
+                Label(stateText(at: context.date), systemImage: contact.isEligible(at: context.date) ? "checkmark.circle.fill" : "clock")
+                    .font(Theme.label)
+                    .foregroundStyle(contact.isEligible(at: context.date) ? Theme.safe : Theme.secondaryText)
             }
             if contact.state == .invited || contact.state == .active {
                 Button("Remove now", role: .destructive) {
                     Task { await store.removeTemporary(contact) }
                 }
-                .font(.subheadline)
+                .font(Theme.labelBold)
+                .frame(minHeight: Theme.minTarget)
+                .buttonStyle(.rippleDestructiveLink)
             }
         }
     }
@@ -165,13 +178,15 @@ private struct ContactEditView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Contact") {
+            RippleForm {
+                Section {
                     TextField("Name", text: $contact.name)
                         .textContentType(.name)
                     TextField("Phone, with area code", text: $contact.phone)
                         .keyboardType(.phonePad)
                         .textContentType(.telephoneNumber)
+                } header: {
+                    SectionHeader("Contact")
                 }
                 Section {
                     Picker("Tier", selection: $contact.tier) {
@@ -184,7 +199,7 @@ private struct ContactEditView: View {
                 Section {
                     Toggle("Share my location in alerts", isOn: $contact.shareLocation)
                 } footer: {
-                    Text("Off by default. When on, alert texts to this contact include a map link from one location fix taken when the alarm starts.")
+                    FormNote("Off unless you turn it on. Alert texts to this person then include a map link to where you were when the alarm started.")
                 }
                 if !isNew {
                     Section {
@@ -192,6 +207,8 @@ private struct ContactEditView: View {
                             onDelete()
                             dismiss()
                         }
+                        .frame(minHeight: Theme.minTarget)
+                        .buttonStyle(.rippleDestructiveLink)
                     }
                 }
             }
@@ -229,16 +246,18 @@ private struct InviteTemporaryView: View {
                 if let invitation {
                     InvitationQRView(invitation: invitation)
                 } else {
-                    Form {
-                        Section("Who") {
+                    RippleForm {
+                        Section {
                             TextField("Name", text: $name)
                             TextField("Phone, with area code", text: $phone)
                                 .keyboardType(.phonePad)
+                        } header: {
+                            SectionHeader("Who")
                         }
                         Section {
                             Toggle("Share my location in alerts", isOn: $shareLocation)
                         } footer: {
-                            Text("They join Tier 1 for one hour from when they agree.")
+                            FormNote("They join Tier 1 for one hour from when they agree.")
                         }
                         Section {
                             Button {
@@ -246,17 +265,22 @@ private struct InviteTemporaryView: View {
                                     invitation = await store.inviteTemporary(name: name, phone: phone, shareLocation: shareLocation)
                                 }
                             } label: {
-                                Text("Create invitation").frame(maxWidth: .infinity)
+                                Text("Create invitation")
                             }
+                            .buttonStyle(.ripplePrimary)
+                            .listRowInsets(EdgeInsets())
+                            .listRowBackground(Color.clear)
                             .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || Phone.normalize(phone) == nil || store.pending != nil)
                             if let banner = store.banner, !banner.ok {
-                                Text(banner.text).foregroundStyle(.red)
+                                Label(banner.text, systemImage: "exclamationmark.triangle.fill")
+                                    .font(Theme.label)
+                                    .foregroundStyle(Theme.checkIn)
                             }
                         }
                     }
                 }
             }
-            .navigationTitle(invitation == nil ? "Temporary contact" : "Ask them to scan")
+            .navigationTitle(invitation == nil ? "One-hour contact" : "Ask them to scan")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -283,17 +307,27 @@ private struct InvitationQRView: View {
                         .background(Color.white, in: RoundedRectangle(cornerRadius: 16))
                         .accessibilityLabel("QR code for the temporary contact invitation")
                 }
-                Text("\(invitation.contact.name) scans this and taps \"I agree\". Their one-hour session starts then.")
+                Text("\(invitation.contact.name) scans this and taps \"I agree\". Their one hour starts then.")
+                    .font(Theme.body)
+                    .foregroundStyle(Theme.text)
                     .multilineTextAlignment(.center)
                 if let url = URL(string: invitation.inviteURL) {
                     ShareLink(item: url) {
                         Label("Send the link instead", systemImage: "square.and.arrow.up")
-                            .frame(maxWidth: .infinity, minHeight: 44)
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.rippleSecondary)
                 }
             }
             .padding(24)
         }
+        .rippleScreen()
     }
+}
+
+#Preview("Contacts") {
+    NavigationStack { ContactsView() }.environment(WearerStore())
+}
+
+#Preview("Contacts, largest text") {
+    NavigationStack { ContactsView() }.environment(WearerStore()).dynamicTypeSize(.accessibility3)
 }

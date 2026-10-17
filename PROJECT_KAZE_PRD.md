@@ -1,162 +1,123 @@
 # Project KAZE — Product Requirements Document
 
-October 16, 2026 · HTV11 hackathon prototype · Consolidated PRD
+October 16, 2026 · HTV11 prototype · Simplified scope
 
-## 1. What we are building
+## Purpose
 
-KAZE starts a call for human help when a person cannot ask for it. A wearer starts a safety session on their iPhone and answers check-ins on an Apple Watch. If they do not respond, request help directly, or enter a duress PIN, the backend alerts their trusted contacts or an accepted temporary helper at a participating venue.
+KAZE helps a person get assistance when they cannot respond to an alarm on their Apple Watch. The primary audience is people with Parkinson's. The wearer configures everything on their iPhone, uses a minimal Watch interface, and has emergency contacts notified at their phone numbers. A separate iPhone app controls alarms during demonstrations.
 
-The primary audience is people with Parkinson's, who may experience freezing, falls, medication “off” periods, confusion, or difficulty speaking or reaching a phone. The same flow can support general personal safety. The system only needs to know that no response reached it; it does not determine what happened.
+A missed response means no response was received. The prototype does not diagnose a condition or detect falls, intoxication, drugging, or unconsciousness. Demo alarm triggers are simulated.
 
-The goal is to shorten the time between a missed response and a person taking responsibility for arranging help, while preserving the wearer's independence, privacy, and control. This is a hackathon prototype, not a validated medical or emergency-response system. It does not detect drugging, intoxication, unconsciousness, or a medical condition.
+## The three apps
 
-## 2. Users and components
+### 1. Wearer's iPhone app: configuration
 
-- **Wearer:** starts and manages sessions, confirms safety, requests help, chooses contacts and sharing permissions, and sets safety and duress PINs.
-- **Trusted contact / guardian:** a permanent family member or caregiver who receives alerts and updates assistance status. Use “trusted contact” consistently in the interface.
-- **Temporary helper:** authorized, consenting venue staff who accept coverage for a defined period. They are separate from the demo admin.
-- **Demo admin:** a presenter who controls authorized demo scenarios from a separate iPhone app.
+- Add, edit, and remove permanent backup contacts by name and phone number.
+- Invite someone to be a temporary emergency contact for a one-hour session. Record their consent, show when the session expires, and allow early removal. An expired or removed contact must not receive new alerts.
+- Configure preferred supported Watch gestures and a voice phrase for dismissing alarms. Touch remains available as the fallback.
+- Configure alarm/check-in timing and the response countdown. Short timers may be used for demos.
+- Send configuration to the paired Watch and show whether synchronization succeeded. The Watch should retain the last successfully received configuration.
+- Show basic monitoring, alarm, connection, and message status. This app is primarily for setup, not a complicated live dashboard.
 
-Build these components:
+All app preferences live here. Apple-controlled accessibility settings and permissions may still require the user's action in system settings; app configuration cannot override them.
 
-1. Wearer iPhone app for setup, session control, permissions, invitations, and status.
-2. Companion Apple Watch app for prompts, responses, Help, haptics, and status.
-3. Separate admin iPhone app for triggering, stopping, and resetting demo scenarios.
-4. Backend, database, and persistent job worker for authoritative state, deadlines, access control, messaging, and escalation.
-5. Phone-friendly helper enrollment and responder webpages. No app installation or conventional account login is required; access uses verified, scoped links.
+### 2. Apple Watch app: one large circle
 
-## 3. MVP requirements
+The main screen contains one large tappable circle, a short status label, and a countdown when an alarm is pending. No contact lists or configuration forms belong on the main screen.
 
-### Wearer iPhone app
+Use these default circle actions so enabling monitoring and dismissing an alarm are unambiguous:
 
-- Configure chosen name, trusted contacts and escalation order, session duration or expected end, grace period, response window, and heartbeat-loss grace period.
-- Start, extend, and end sessions. Show the backend-confirmed deadline, connection status, temporary coverage, and incident status. Require a usable trusted fallback before claiming assistance coverage is active.
-- Set a safety PIN for explicit cancellation and a separate duress PIN. Entering the duress PIN looks like a normal cancellation locally but silently creates or preserves an alert.
-- Choose what each contact or helper may see, including name, venue, location, contact information, and an optional short help card, such as where medication is kept or how to assist.
-- Invite a temporary helper by QR code or link; show acceptance, expiry, and a revoke control.
-- Send session heartbeats to the backend and track watch reachability. A connected phone must not imply that the wearer or watch has responded.
-- Show configuration and actions as pending until the backend confirms them. Operating-system permission requests remain separate from sharing preferences.
+| Current state | Circle label | Pressing the circle does |
+| --- | --- | --- |
+| Monitoring off | Start | Enables monitoring. |
+| Monitoring on, no alarm | Stop | Disables future monitoring. |
+| Alarm awaiting response | I'm okay | Cancels this alarm and keeps monitoring enabled. |
+| Contact alert already initiated | Dismiss alarm | Ends this alarm locally; messages already sent cannot be recalled. |
 
-### Apple Watch app
+Give clear visual and haptic feedback. Use readable text and color together. Do not require a PIN or a separate responder-resolution workflow to dismiss an alarm in this simplified version.
 
-- Show one dominant **I'm okay** button, an accessible **Get help** button, readable status, and a visible countdown during a check-in. Keep configuration off the main screen.
-- Prompt with a strong haptic and large text. Support safety confirmation through both the large button and native double tap on the supported demo watch.
-- Use native double tap only for the visible safety-confirmation action in the MVP. Confirm actual device, OS, and accessibility-setting compatibility before relying on it. Custom wrist gestures are stretch work.
-- **Get help** immediately requests assistance through the normal incident pipeline; it does not wait for a check-in. **I'm okay** never requests help.
-- Display recognized input as pending until accepted by the backend. Give visual and haptic feedback, and show responder acknowledgment when available.
-- A voluntary safety tap outside a pending check-in may update the last confirmation time but must not silently move the registered deadline.
-- The watch captures input and displays state; it does not own escalation timers. The controlled demo assumes the watch app is open and connected. Background prompts and wrist-down behavior require separate validation.
+Desired ways to dismiss an alarm:
 
-### Demo admin iPhone app
+- **Touch:** press the circle; required baseline.
+- **Apple gestures:** use a supported gesture, such as native double tap, for the visible dismiss action. Preferences are selected on the iPhone and synced to the Watch. Only offer gestures actually implemented on the test device.
+- **Voice:** recognize the configured phrase through a supported voice mechanism. Validate foreground microphone/listening or Siri/Shortcuts integration on the actual Watch; do not assume an always-listening custom wake phrase works in the background.
+- **Physical button, if possible:** investigate supported hardware input. Standard side-button and Digital Crown presses have system functions and are not ordinary app buttons. Do not make them a required cancellation method unless a supported route is demonstrated.
 
-- Clearly label **Demo mode**, identify the selected session, and show connection status.
-- Trigger a real check-in or direct help incident through the shared backend, with short configurable demo timers.
-- Show deadline, last response, delivery attempts, responder progress, and resolution.
-- Stop an incident with an explicit operator-stop reason, cancel pending jobs, and update already-contacted demo responders without claiming the wearer is medically safe.
-- Reset using a new demo-run identifier so old timers, invitations, and delayed responses cannot affect the next run.
-- Authenticate and authorize commands for assigned demo sessions only. Demo administration does not grant ordinary helper access or control over unrelated sessions.
+Native double tap supports one primary action per scene, and its control must be visible. It does not provide arbitrary custom gesture recognition. Voice and gesture failures must leave the touch fallback available.
 
-### Helper enrollment and responder webpages
+Inviting a temporary contact from the Watch is optional. It may show a simple invitation shortcut or QR code if practical, but must not add a Watch setup workflow.
 
-- Enrollment shows the venue and coverage period, verifies possession of the invited phone number, and requires explicit acceptance. Use preapproved demo staff; phone verification alone does not prove employment or training.
-- An unaccepted, expired, or revoked helper is never considered active coverage. A QR code alone must not expose private incident information.
-- The SMS response link shows permitted identity, alert time and reason, last-known location or map if allowed, help card if provided, and a brief event timeline.
-- Provide large actions: **Acknowledge**, **Decline**, **Arranging help**, and **Resolved**, with a short resolution outcome.
-- Support both trusted contacts and temporary helpers on the responder page. Show each only the information the wearer has permitted.
+### 3. Second iPhone app: demo admin
 
-## 4. Session timing and alert lifecycle
+This app exists solely to simplify testing and presentations:
 
-1. **Register:** the backend stores the session and its deadlines before clients show monitoring as active.
-2. **Check-in:** for a planned outing, prompt at the expected end plus the configured grace period. The wearer then has a separate response window. Intermediate check-ins are optional stretch work.
-3. **Safe response:** a timely backend-accepted response cancels that check-in's pending escalation. An intermediate check-in continues monitoring; a successful final check-in ends the activity session.
-4. **Create incident:** an unanswered check-in, direct Help request, duress PIN, or loss of session heartbeats/watch reachability beyond its configured grace creates the assistance flow. Registered check-in deadlines remain valid regardless of connectivity.
-5. **Route:** contact the accepted temporary helper first while coverage is valid, otherwise begin with trusted contacts in their configured order. Show this routing order clearly.
-6. **Escalate:** failed submission, decline, or no acknowledgment within the configured window advances to the next eligible contact. Apply configured retries or another delivery channel when available.
-7. **Follow up:** acknowledgment records who accepted and when. It does not mean help has arrived. Keep the incident open through assistance being arranged, with a follow-up deadline if progress stops. If nobody responds, keep it unresolved and show that no responder is confirmed.
-8. **Late safety / false alarm:** a late **I'm okay** records self-reported safety, suppresses unsent stale escalation, and notifies already-contacted responders. Closing the incident requires explicit safety-PIN cancellation or responder resolution, with a recorded reason. Preserve its history; messages already sent cannot be recalled.
-9. **Coverage handoff:** expiry or revocation removes helper access immediately and routes any unresolved incident to trusted contacts. Coverage ending never resolves an incident.
+- Select the paired/authorized demo wearer.
+- Trigger an alarm and its response countdown on the wearer's Watch.
+- Disable the current alarm.
+- Reset the demo and adjust short demo countdowns.
+- Show basic current state and whether a command reached the wearer device.
 
-An extension replaces a deadline only after backend confirmation and invalidates old timer jobs. Ending monitoring stops future check-ins but does not silently close an open incident. The duress PIN must not actually cancel escalation or reveal the silent alert on the wearer's screen.
+Admin commands must exercise the same alarm behavior as the wearer app. Resetting must clear old pending countdowns so they cannot fire in the next run. Label this app Demo admin; it is not a caregiver app.
 
-All timings are configurable. Suggested filming settings are a 15-second response window, 15-second acknowledgment window, and 30-second follow-up window. These are demo settings, not medically validated defaults.
+## Phone-number messaging
 
-## 5. Backend, reliability, and messaging
+**Every emergency-contact alert goes to a configured phone number using the wearer's iPhone and messaging account.** Contacts do not need a KAZE app, account, email address, or web portal. For testing, the user's iPhone sends actual messages to teammates' phones.
 
-- The backend owns every deadline, state transition, permission check, escalation, and helper expiry. Use persistent jobs so registered deadlines survive phone/watch disconnection and worker restarts.
-- Responses normally flow watch → iPhone → backend. A tested independent watch connection may also be used. No alert deadline may depend on a local phone or watch timer continuing to run.
-- A disconnected watch cannot transmit a new SOS, confirm safety, or provide fresh location. Show offline commands as unconfirmed and fetch authoritative state after reconnection.
-- Use backend timestamps, state revisions, request deduplication keys, and demo-run identifiers. Repeated taps, retries, or job execution must not create duplicate logical incidents or escalation steps.
-- Resolve response-versus-timeout races against current backend state. Recheck incident state and permissions immediately before dispatch; cancel obsolete jobs after an accepted response, extension, cancellation, or reset.
-- Track message states separately: queued, submitting, submitted, failed, and unknown. Claim delivered or read only when there is actual evidence. Submission to a messaging service does not prove human receipt.
-- Implement one working SMS route first, behind a messaging adapter. A provider such as Twilio or a configured Mac Messages/Shortcuts relay is acceptable for the demo. Select and test the route early; additional channels and SMS-reply acknowledgment are stretch work.
-- A Mac relay depends on a connected Mac and configured messaging setup. Surface failures and uncertain results; do not promise exactly-once external delivery. Keep messaging credentials out of clients and use designated demo recipients.
+- Send an individual message to each currently eligible contact: permanent backup contacts plus accepted, unexpired one-hour contacts. No acknowledgment-based escalation chain is required for this version.
+- Use a short message such as: “KAZE alert: [Name] did not respond to their Watch check-in at [time]. Please call or check on them.” Do not claim a diagnosis or confirmed emergency.
+- Prevent duplicate sends for the same alarm and recipient. Cancelling an alarm stops pending, unsent messages; it cannot retract a message already sent.
+- Show pending, submitted, failed, or unknown status accurately. Confirm actual receipt on teammates' phones during the demo.
+- Messages may use SMS or iMessage according to the phone's configuration. The requirement is delivery to phone-number contacts from the wearer's phone.
 
-Suggested stack: SwiftUI apps in a shared Xcode workspace; a Node.js or Python API with a database such as Firebase or Supabase; React/Next.js for webpages; a map link or embedded map. Choose vendors based on team familiarity. The requirements do not depend on a particular backend or SMS vendor.
+### Chosen demo approach: Apple Shortcuts
 
-## 6. Minimum state and operations
+A native iPhone app built in Xcode can launch a saved shortcut on the same iPhone through Apple's documented Shortcuts URL scheme. Use a user-installed shortcut named **KAZE Alert** as the demo messaging path.
 
-Keep separate records for users/preferences, ordered contacts, sessions, check-ins, incidents, temporary coverage, delivery attempts, scheduled jobs, and an event history. Include actor, server time, result, revision, and demo-run identifier where relevant.
+One-time setup on the wearer's iPhone:
 
-Do not represent the whole system with one alarm Boolean:
+1. Create **KAZE Alert** in Shortcuts and add a **Send Message** action.
+2. For the first test, use one teammate's phone number and a short test message. For integration, the app supplies alert text and currently eligible recipients as text input, excluding expired or removed contacts. The shortcut must parse that payload and repeat Send Message with one recipient per iteration to avoid a group message.
+3. Turn **Show When Run** off on Send Message so it can send without presenting the message composer.
+4. Run the shortcut manually once and approve any required permissions before the demo.
 
-- Monitoring: inactive, registration pending, active, end pending, ended.
-- Check-in: scheduled, awaiting response, confirmed, expired, cancelled.
-- Incident: open or resolved, with separate responder progress and wearer safety report.
-- Responder progress: unassigned, acknowledged, assistance arranged, resolved.
-- Delivery and connectivity: independent of incident status.
+From the foreground iPhone app, launch the installed shortcut with:
 
-Backend operations must cover configuration; session start/extend/end; safety confirmation, PIN cancellation, and Help/duress; heartbeats; helper invitation/acceptance/revocation; responder actions; current-state fetch; demo commands; and message-submission results. Authorize every operation. Verification and response tokens must be random, scoped, expiring, and revocable.
+```swift
+let url = URL(string: "shortcuts://run-shortcut?name=KAZE%20Alert")!
+UIApplication.shared.open(url)
+```
 
-## 7. Privacy and accessibility
+This opens Shortcuts to run the workflow. Alert data can be passed using the URL's `input=text` and URL-encoded `text` parameters. Successfully opening the URL does not prove that a message was sent or received.
 
-- Share location and personal details with responders only during an alert and within the wearer's permissions. Enrollment may show coverage terms without exposing private wearer details.
-- Enforce expiry and revocation on the backend, including subsequent reads or actions from an already-open page. Explain that information already received cannot be remotely recalled.
-- Label location as last known, with its timestamp. Denied or unavailable location must not block a permitted alert; use allowed venue/session information instead.
-- Encrypt network traffic, restrict access by role, avoid sensitive diagnostic logs and private details in URLs, and separate demo records from ordinary data. Support clearing demo data; define production retention and automatic deletion before release.
-- Use large touch targets, readable text, high contrast, accessible labels, and feedback beyond color or sound alone. Keep a button alternative to every gesture.
-- Use consistent plain language and status colors: green safe, yellow awaiting response, red alert, blue responder acknowledged, gray resolved. Always include text labels.
-- Validate gestures with intended users, including tremor and accidental confirmations. Team demonstrations alone do not establish accessibility or reliability.
+The intended flow is **Watch countdown expires → wearer iPhone app launches KAZE Alert → shortcut messages eligible contacts**. Start with the wearer's iPhone unlocked and KAZE in the foreground. App-to-shortcut launching is documented; automatic activation while the phone is locked or the app is suspended remains unverified and must be tested separately.
 
-## 8. Stretch and excluded scope
+Apple's standard in-app message composer still requires someone to tap Send; it is not the chosen automatic messaging route. Prove the Shortcuts path early on the actual phone. If it still requires interaction, label that as a demo limitation. Do not silently replace phone-originated messages with a server SMS provider or a Mac relay.
 
-Build stretch features only after the complete MVP works:
+Phone-originated messages depend on the wearer's phone being available and able to send. A backend cannot send through a dead or disconnected phone. This version makes no guarantee that contacts will still be messaged after phone failure.
 
-- Intermediate check-ins, custom wrist gestures/calibration, gesture-based Help or session control, and a duress gesture.
-- Background notifications, richer location updates, safe zones, medication reminders with a “taken” tap, and a user-declared offline window.
-- Optional heart-rate-plus-movement or prolonged-stillness triggers that request a check-in; these require separate implementation and validation. Do not interpret vitals medically or misuse a workout session just to keep the app running.
-- Additional message channels, SMS “OK” acknowledgment, richer activity history, and optional web-based wearer setup.
-- A Gemini incident assistant for plain-language summaries and contact actions, and a permission-based read-only physician history view. AI must not diagnose or make emergency decisions.
+## Simple system flow
 
-Out of scope: real fall/unconsciousness/drugging detection, voice responses, arbitrary gesture training, continuous clinical sensor monitoring, medical interpretation of vitals, automatic emergency-service dispatch or real emergency calls in the demo, Bluetooth helper discovery, silent SMS from the phone, and a public network of unvetted helpers.
+1. Configure response methods, contacts, and alarm timing on the wearer iPhone; synchronize with the Watch.
+2. Enable monitoring using the Watch circle.
+3. An enabled check-in timer or a demo-admin command starts an alarm, haptic, and response countdown.
+4. Touch or a supported configured response cancels the current alarm before messages are initiated.
+5. If the countdown expires unanswered, the wearer's iPhone app launches KAZE Alert to message eligible contact phone numbers through Shortcuts.
+6. Dismissing an alarm or resetting the demo cancels its remaining work. Duplicate commands must not restart it or create duplicate alerts.
 
-## 9. Acceptance checks and demo
+Use SwiftUI for the three apps and WatchConnectivity for paired iPhone–Watch configuration and actions. Keep shared state minimal: monitoring on/off, current alarm/countdown, configuration version, contacts with expiry times, and per-recipient message status. A lightweight backend or relay may connect the admin phone to the wearer phone; it is not the message sender. Keep detailed implementation choices open until the device tests establish what works.
 
-The MVP is complete when the following work end to end on the actual demo devices and designated recipient numbers:
+## MVP and demo checks
 
-1. Start a session; phone, watch, admin, and backend agree on state and deadline.
-2. Enroll a temporary helper, verify their number, accept coverage, and show the trusted fallback.
-3. Trigger a labeled simulated event from the admin app. The real watch prompt appears, and both the button and native double tap can confirm safety without a stale alert being sent.
-4. Leave a check-in unanswered. The backend creates one incident and a real alert reaches the helper. Distinguish observed receipt from submission status.
-5. Ignore or decline the helper alert and verify escalation to the next trusted contact. Acknowledge, then separately show arranging help and resolution.
-6. Disconnect the phone/watch after registering a deadline and verify backend escalation still runs. Separately exercise heartbeat loss. Offline commands must not claim success.
-7. Enter the duress PIN: the wearer sees apparent cancellation while a contact receives the silent alert.
-8. Send a late safety response or cancel a false alarm with the safety PIN. Contacted responders receive an update; obsolete escalation jobs do not fire.
-9. Revoke or expire helper access while their page is open. Protected access stops and any unresolved incident passes to trusted contacts. Show different sharing permissions for helper and trusted contact.
-10. Stop and reset through the admin app. Old timers and delayed responses cannot affect the next run. Exercise duplicate requests, a response/timeout race, failed message submission, and an unauthorized admin command.
+The core scope is the three apps, configuration sync, one-circle Watch UI, working touch and supported Apple-gesture dismissal, permanent and one-hour phone contacts, and a real phone-to-phone messaging path. Voice dismissal is a desired input to validate; physical-button dismissal and Watch invitations are conditional extras.
 
-Rehearse the core response, escalation, and reset paths repeatedly before recording. Keep a screen recording as backup. Say when an event is simulated, and include a short honesty table in the presentation:
+Demonstrate: configure and sync → enable monitoring → admin triggers an alarm → dismiss by touch and a supported Apple gesture → trigger again and let it expire → receive a real message on a teammate's phone → expire/remove a temporary contact → disable/reset without an old alarm returning. Demonstrate voice only when it actually works, and clearly label any manual message confirmation or simulated behavior.
 
-| Category | What to report |
-| --- | --- |
-| Demonstrated | Only functions actually exercised: watch input, shared backend state, timers, message receipt, escalation, helper workflow, and privacy controls. |
-| Simulated | Concerning event, falls or sensor changes, venue/staff setting, and wearer incapacity. |
-| Assumed | Helpers are available and willing to respond; participating venues authorize staff. |
-| Needs validation | Gesture reliability with Parkinson's symptoms, false alarms, background execution, battery use, delivery reliability, and real responder times. |
+No helper portals, venue-staff network, physician view, AI assistant, medication reminders, sensor detection, duress PINs, or complex responder lifecycle are required for this simplified MVP. Test background behavior, locked-phone operation, voice recognition, and gesture accessibility separately before making reliability claims.
 
-## 10. Build order and initial decisions
+## Platform references
 
-Confirm Apple Developer provisioning/push requirements, actual watch and phone models and OS versions, native double-tap support, the message route, and verified demo recipients before depending on them. Keep the primary pitch focused on Parkinson's while explaining the general safety use case.
-
-Agree on state models and API operations first. Build the vertical path: admin trigger → watch prompt → accepted tap or timeout → real message. Then add native double tap, configuration/PINs, temporary helper enrollment, escalation, privacy/expiry, and reset. Finish with failure checks and rehearsal before stretch work.
-
-Assign one owner to wearer iPhone/watch work and start that first because Xcode and device provisioning share the available Mac. Parallelize backend/messaging, web/helper workflow, and admin/demo work among the remaining teammates. Freeze the working demo early enough to rehearse it at least twice.
+- [Apple: message composer and user approval](https://developer.apple.com/documentation/messageui/mfmessagecomposeviewcontroller)
+- [Apple: run a saved shortcut from another app](https://support.apple.com/guide/shortcuts/run-a-shortcut-from-a-url-apd624386f42/ios)
+- [Apple: Send Message with Show When Run off](https://support.apple.com/en-ca/101583)
+- [Apple: Watch buttons and gestures](https://support.apple.com/en-us/105063)
+- [Apple: native double-tap integration](https://developer.apple.com/documentation/watchos-apps/enabling-double-tap)

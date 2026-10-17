@@ -1,57 +1,59 @@
-# Temporary Read.md 
+# Ripple
 
-**Calls for human help when a person can't ask for it themselves.**
+**Gets a person help when they can't respond to an alarm on their Apple Watch.**
 
-KAZE is a safety check-in system built for people living with Parkinson's, who may face freezing episodes, falls, medication "off" periods, confusion, or trouble speaking or reaching a phone. The wearer starts a safety session on their iPhone and answers check-ins on their Apple Watch. If they don't respond, ask for help, or enter a duress PIN, KAZE alerts a trusted contact or a temporary helper nearby.
+Ripple is a safety check-in system built for people living with Parkinson's, who can suddenly be unable to move, speak, or reach their phone during a fall, a freeze, or a medication "off" period. The wearer sets everything up on their iPhone and answers check-ins with one large circle on their Apple Watch. If they don't respond, or hold the circle to signal duress, their iPhone texts the contacts they chose.
 
-KAZE doesn't try to work out *what* happened. It only needs to know that no response came in. The goal is to shorten the gap between **"can't act"** and **"someone knows,"** while leaving the wearer in control of their independence and privacy.
+Ripple doesn't try to work out *what* happened. A missed response means only that no response was received. The goal is to shorten the gap between **"can't act"** and **"someone knows,"** while leaving the wearer in control of their independence and privacy.
 
-> Hackathon prototype built for Hack the Valley 11. This is not a validated medical or emergency-response system, and it does not detect falls, unconsciousness, intoxication, or any medical condition.
+> Hackathon prototype built for Hack the Valley 11 (Kaze track). This is not a validated medical or emergency-response system, and it does not detect falls, unconsciousness, intoxication, or any medical condition. Demo alarms are simulated.
 
 ## How it works
 
-1. **Start a session.** The wearer heads out, for example to a community centre on their own, and starts a session on their iPhone. The backend registers the deadline before the app shows monitoring as active.
-2. **Check in.** When a check-in is due, the watch buzzes and shows one large **I'm okay** button. The wearer can tap it or use the watch's native double-tap gesture.
-3. **No response means an alert.** If the check-in goes unanswered, the backend opens an incident and sends an SMS to the first responder: an accepted temporary helper at the venue if there is one, otherwise trusted contacts in the order the wearer chose.
-4. **Escalate.** If a responder declines or doesn't acknowledge in time, the alert moves to the next person.
-5. **Resolve.** Responders mark progress (Acknowledged → Arranging help → Resolved) on a web page that needs no app install and no login. If the wearer's "I'm okay" arrives late, everyone already contacted is updated.
+1. **Turn on monitoring.** The wearer taps **Start** on the Watch circle. Check-ins can run on a timer, or a demo admin can start one.
+2. **Check in.** When an alarm starts, the Watch buzzes, turns yellow and shows **I'm okay** with a countdown. The wearer taps the circle, double taps, or uses their voice phrase to dismiss it. Nothing is sent.
+3. **No response means a text.** If the countdown runs out, the wearer's iPhone texts **Tier 1** contacts from the wearer's own number, through a shortcut called **Ripple Alert**. Each text has a link: "I'm checking on [Name]."
+4. **Escalate.** If nobody taps the link within the acknowledge window, **Tier 2** is texted. When someone does tap it, the Watch shows "[Contact] is responding" and everyone else already texted is told who's checking.
+5. **Okay now.** If the wearer taps **I'm okay now**, everyone already texted gets an "okay now" text and pending escalation stops.
 
-The wearer can also press **Get help** at any time to send an alert immediately.
+Holding the circle for 2 seconds is **duress**: the Watch shows the normal "Dismissed" screen while the alert still goes out.
 
 ## Key features
 
-- **Server-owned timers.** Deadlines and escalation run on the backend, so an alert still fires if the phone or watch dies or loses signal. Silence is the signal: if session heartbeats stop, the backend starts the assistance flow on its own.
-- **Temporary helpers.** Venue staff who have consented can cover a wearer for a set period, which helps when family is too far away to respond quickly. Their access expires automatically and the wearer can revoke it with one tap.
-- **Safety PIN and duress PIN.** The safety PIN cancels a false alarm. The duress PIN looks exactly like a cancellation on screen but silently keeps the alert going.
-- **False-alarm handling.** A late "I'm okay" or a safety-PIN cancellation notifies every responder already contacted. The incident history is kept.
-- **Privacy by permission.** Trusted contacts and helpers see only what the wearer allows. Location is shared only during an alert and is labelled "last known" with a timestamp.
-- **Accessible by design.** Every gesture has a button alternative. The app uses large touch targets, high contrast, strong haptics, and status colours that always come with text labels.
+- **The phone sends first.** Texts come from the wearer's iPhone and messaging account, so contacts need no app, account or portal.
+- **A declared backup.** If the phone goes quiet, the backend sends the alert by SMS after a 30-second grace period, marked "Sent by Ripple backup." When the phone comes back it doesn't repeat what the backup already sent.
+- **Tiers.** Each contact is in Tier 1 (texted first) or Tier 2 (texted if nobody in Tier 1 acknowledges in time).
+- **Temporary contacts.** Someone nearby can agree to be a contact for one hour by scanning a QR code. They join Tier 1 until the session ends or the wearer removes them; after that they get nothing.
+- **Duress.** A 2-second hold looks exactly like a dismissal on the Watch and the iPhone, and the alert text is the normal one, so nothing reveals it.
+- **Privacy by permission.** Location is off by default and set per contact. Ripple takes one location fix when an alarm starts and never tracks in the background. An optional help card, written by the wearer, is added to alerts only if they turn it on.
+- **Hard to trigger by accident.** Stopping monitoring needs a hold and a confirmation. Double tap and voice can only dismiss; duress is touch only.
+- **Accessible by design.** Every gesture has a touch alternative. Status colours always come with text: green Monitoring, yellow Check in, red Alert sent, blue Contact responding, gray Off.
 
 ## Components
 
 | Component | Role |
 | --- | --- |
-| **Wearer iPhone app** (SwiftUI) | Setup, contacts, PINs, sharing permissions, session control, helper invitations, heartbeats |
-| **Apple Watch app** (SwiftUI) | Check-in prompts, **I'm okay** and **Get help** buttons, double tap, haptics, status. The watch never owns a timer. |
-| **Backend + job worker** | Authoritative state, deadlines, escalation, access control, SMS through a messaging adapter |
-| **Helper web pages** | Phone-friendly enrollment and responder views that work through verified, scoped links |
-| **Demo admin iPhone app** | Labelled demo mode for triggering, stopping, and resetting scenarios |
+| **Wearer iPhone app** (SwiftUI) | Contacts and tiers, location permissions, temporary contacts, help card, timings, dismiss methods, Watch sync. Runs the alarm and sends texts through the Ripple Alert shortcut. |
+| **Apple Watch app** (SwiftUI) | One large circle with a status label and countdown. Tap, hold, native double tap and voice phrase. Keeps the last settings it received. |
+| **Ripple server** (Swift, Vapor) | Mirrors each alarm, holds the backup deadline, sends backup SMS through Twilio, hosts the acknowledge and consent pages, and relays demo admin commands. |
+| **Web pages** | A one-button acknowledge page and a consent page for temporary contacts. No app, account or login. |
+| **Demo admin iPhone app** (SwiftUI) | Labelled Demo admin. Triggers alarms, cuts the phone connection, expires temporary contacts, disables alarms, resets the demo, and shows per-recipient message status. |
+| **RippleKit** (Swift package) | Shared models, message wording, tier rules and the alarm state machine used by every app and the server |
 
 ## What's real and what's simulated
 
 | Demonstrated | Simulated | Assumed | Needs validation |
 | --- | --- | --- | --- |
-| Watch input, shared backend state, timers, real SMS delivery, escalation, helper workflow, privacy controls | The concerning event, falls or sensor changes, the venue and staff setting, the wearer's incapacity | Helpers are available and willing to respond, and participating venues authorize their staff | Gesture reliability with Parkinson's symptoms, false-alarm rates, background execution, battery use, delivery reliability, real responder times |
+| Watch input, alarms, real texts to teammates, tiers, the acknowledge link, duress, okay now texts, backup SMS, location permissions, contact expiry | Alarm triggers, the wearer being unable to respond, phone failure | Contacts read their texts and act on them, and the wearer keeps their phone charged and nearby | Sending from a locked phone, gestures and voice with Parkinson's tremor, accidental duress rate, false-alarm rate, battery use, real response times |
 
 ## Future work
 
-Intermediate check-ins, custom wrist gestures, background notifications, user-declared offline windows, medication reminders, acknowledging alerts by replying to the SMS, extra message channels, and an AI incident summary that never diagnoses or makes emergency decisions.
+Sending from a locked or backgrounded phone, background Watch prompts, physical-button dismissal, inviting temporary contacts from the Watch, acknowledging by replying to the text, and extra message channels.
 
 ## Documentation
 
-The full product requirements are in [PROJECT_KAZE_PRD.md](PROJECT_KAZE_PRD.md).
-
-- How to run the Swift MVP on a Mac, iPhone and Apple Watch: [docs/RUNNING.md](docs/RUNNING.md)
+- Product requirements: [PROJECT_KAZE_PRD.md](PROJECT_KAZE_PRD.md)
+- How to run it on a Mac, iPhone and Apple Watch: [docs/RUNNING.md](docs/RUNNING.md)
 - Implementation plan: [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)
 
 ## License

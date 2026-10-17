@@ -70,9 +70,13 @@ The first time, iOS asks you to trust the developer: **Settings → General → 
 1. Open **Ripple**, enter the server address and the wearer's name.
 2. **Contacts**: add teammates by name and phone number. Put at least one in **Tier 1** and one in **Tier 2**. Turn on **Share my location in alerts** for one of them only (for the privacy scenario).
 3. **Settings**: keep the 15-second demo timers, turn on double tap, and optionally a voice phrase. Tap **Save**. **Watch settings** should show "Up to date". With the voice phrase on, allow speech recognition on the iPhone and the microphone on the Watch when asked.
-4. Install the **Ripple Alert** and **Ripple Accept** shortcuts (below), send a test message from **Settings → Messaging shortcuts**, and add the reply automation.
+4. Install the **Ripple Alert** and **Ripple Accept** shortcuts (below), send a test message from **Settings → Set up all Ripple shortcuts → Test and troubleshoot**, and add the reply automation.
 
 ### The messaging shortcuts
+
+All six install buttons live in **Settings → Set up all Ripple shortcuts**, grouped into **iPhone** and **Apple Watch**. The reply automation and Watch assignment guides expand on that screen.
+
+For release preparation, set each public iCloud sharing URL in `apps/RippleWearer/ShortcutLinks.json`, using the six existing shortcut names as keys. Xcode bundles this JSON automatically. Empty or invalid URLs leave their install buttons unavailable; opening a link never marks a shortcut as installed. Watch shortcut links must target wrappers for the installed Watch bundle identifier. Export each shortcut with **Copy iCloud Link** in Apple Shortcuts. Rebuild Ripple after changing the links.
 
 Ripple texts from the wearer's own phone through two shortcuts, both in the [`shortcuts`](../shortcuts) folder:
 
@@ -91,8 +95,8 @@ This writes `shortcuts/Ripple Alert.shortcut` and `shortcuts/Ripple Accept.short
 
 On the wearer's iPhone:
 
-1. AirDrop both signed files to the iPhone and tap **Add Shortcut** for each. Keep the names.
-2. In Ripple, open **Settings → Messaging shortcuts** and send a test message. Approve anything Shortcuts asks for.
+1. Open **Ripple → Settings → Set up all Ripple shortcuts**. In the iPhone section, tap **Install** for **Ripple Alert** and **Ripple Accept**, then **Add Shortcut** for each. Keep the names. If this build has no sharing links yet, AirDrop the signed files instead.
+2. In Ripple, open **Settings → Set up all Ripple shortcuts → Test and troubleshoot** and send a test message. Approve anything Shortcuts asks for.
 3. In Shortcuts, open **Automation**, tap **+**, choose **Message**, set **Message Contains** to `Ripple accept`, choose **Run Immediately**, tap **Next**, and pick **Ripple Accept**.
 
 4. Add a second **Message** automation with **Message Contains** set to `Ripple join`, **Run Immediately**, and the same **Ripple Accept** shortcut. Keep the existing `Ripple accept` automation.
@@ -116,7 +120,7 @@ When a contact replies:
 3. If the code belongs to someone who was texted for the open alert, Ripple records them as the responder. The iPhone and Watch show "[Name] is responding", everyone else already texted gets "Ripple: [Name] is checking on [wearer]", and Tier 2 isn't texted.
 4. The backend learns about it on the next sync, so its backup sender won't text Tier 2 either and the admin view shows who is checking.
 
-A reply for a closed alert, someone not yet texted, or an unknown code is ignored, with a short note in Ripple. To test without the automation, paste a reply into **Settings → Messaging shortcuts → Try a reply** during an alert.
+A reply for a closed alert, someone not yet texted, or an unknown code is ignored, with a short note in Ripple. To test without the automation, paste a reply into **Settings → Set up all Ripple shortcuts → Test and troubleshoot → Try this reply** during an alert.
 
 If the reply's sender is passed as a phone number and it differs from that contact's number, Ripple refuses it, so a forwarded code can't accept for someone else. During a duress alarm the reply still counts, but Ripple shows nothing on screen. The reply itself still appears in Messages, though.
 

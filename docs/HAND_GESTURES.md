@@ -46,7 +46,7 @@ Ripple's App Intents return without a dialog or request to open an app. The usef
 
 ## One-time shortcut setup
 
-Install the updated Ripple iPhone and Watch apps before importing the input shortcuts. Send these four signed `.shortcut` files supplied with the build to the iPhone using AirDrop or iCloud Drive, import them into Shortcuts, then enable **Show on Apple Watch** in each shortcut's details:
+Install the updated Ripple iPhone and Watch apps, then open **Ripple → Settings → Set up all Ripple shortcuts**. In the Apple Watch section, tap **Install** for each of the four shortcuts, then **Add Shortcut**. Enable **Show on Apple Watch** in each shortcut's details. If sharing links are not configured for this build yet, import these signed files using AirDrop or iCloud Drive instead:
 
 - `Ripple Pinch.shortcut`
 - `Ripple Clench.shortcut`

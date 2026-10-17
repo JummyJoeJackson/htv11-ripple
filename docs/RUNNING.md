@@ -12,6 +12,7 @@ Everything is Swift. On a Mac you run the backend from Xcode or Terminal, then i
 | Second iPhone for the demo admin app | Any iPhone on iOS 17 or later. |
 | Teammates' phones | They receive the texts. No app needed. |
 | Apple ID | A free personal team is enough to install on your own devices. Builds expire after 7 days. |
+| `cloudflared` on the Mac | `brew install cloudflared`. Lets contacts open the links in texts from any phone, including on cellular. No Cloudflare account needed. |
 | Optional: Twilio account | Only for the backend's backup SMS. Without it, backup texts are printed in the server console. |
 
 All phones and the Mac should be on the same Wi-Fi network. On venue Wi-Fi that blocks device-to-device traffic, use a phone hotspot or a tunnel (see [Reaching the server](#reaching-the-server)).
@@ -31,6 +32,8 @@ The console prints the address to type into the apps, for example:
 Enter this server address in the iPhone apps: http://192.168.1.20:8080
 ```
 
+If `cloudflared` is installed, the server first starts a free Cloudflare quick tunnel and prints a public `https://….trycloudflare.com` address. Links in texts use it, so contacts' phones can open them from anywhere. The address changes each time the server starts; the wearer's iPhone picks up the new one by itself.
+
 Allow incoming connections if macOS asks. Data is saved in `server/.data/ripple.json`; delete that file for a completely fresh start.
 
 ### Server settings
@@ -40,7 +43,9 @@ Set these as environment variables (in Xcode: **Product → Scheme → Edit Sche
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `RIPPLE_PORT` | `8080` | Port to listen on |
-| `RIPPLE_PUBLIC_BASE_URL` | `http://<Mac's Wi-Fi IP>:8080` | Start of the acknowledge and consent links in texts. Set it to a tunnel URL if contacts aren't on your Wi-Fi. |
+| `RIPPLE_PUBLIC_BASE_URL` | The tunnel address, or `http://<Mac's Wi-Fi IP>:8080` without `cloudflared` | Start of the acknowledge and consent links in texts. Set it only to use your own public address; it turns the automatic tunnel off. |
+| `RIPPLE_TUNNEL` | `auto` | `off` stops the server starting a quick tunnel even when `cloudflared` is installed. Links then only open on the same Wi-Fi. |
+| `RIPPLE_CLOUDFLARED` | | Path to `cloudflared`, if it isn't in `/opt/homebrew/bin` or `/usr/local/bin` |
 | `RIPPLE_ADMIN_SECRET` | `ripple-demo` | Password for the demo admin app |
 | `RIPPLE_SMS` | `console` | Backup SMS route: `console`, `twilio`, or `messages` (the Mac's Messages app) |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` | | Needed when `RIPPLE_SMS=twilio` |
@@ -147,8 +152,10 @@ For the demo, mirror the Watch on the presenting iPhone (**Settings → Accessib
 
 ## Reaching the server
 
-- The apps and the links in texts use the address the server prints. Phones on the same Wi-Fi can open it directly.
-- Contacts on cellular need a public URL. Run a tunnel such as `cloudflared tunnel --url http://localhost:8080`, set `RIPPLE_PUBLIC_BASE_URL` to the `https://…` address it prints, and restart the server. Use the same address in the apps.
+- **Links in texts** use the tunnel address when `cloudflared` is installed, so they open on any phone, on Wi-Fi or cellular. Without it they use the Mac's Wi-Fi address, which only phones on the same Wi-Fi can open; the server prints a warning.
+- **The apps** can use the Mac's Wi-Fi address on the same network, or the tunnel address from anywhere. The tunnel address changes each time the server restarts, so the Wi-Fi address is less retyping.
+- With the tunnel, the server is reachable from the internet. Set `RIPPLE_ADMIN_SECRET` to something only your team knows, instead of the default `ripple-demo`.
+- Quick tunnels are Cloudflare's free testing service, with no uptime guarantee. If one fails to start, the server carries on with the Wi-Fi address and says so.
 - If the iPhone can't connect, check that local network access is allowed (**Settings → Privacy & Security → Local Network**) and that the Mac's firewall lets RippleServer accept connections.
 
 ## How the pieces fit

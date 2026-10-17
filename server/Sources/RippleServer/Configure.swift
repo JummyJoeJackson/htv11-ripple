@@ -14,7 +14,13 @@ func configure(_ app: Application) async throws {
     let dataFile = env["RIPPLE_DATA_FILE"] ?? serverDirectory + "/.data/ripple.json"
 
     let lanAddress = LANAddress.ipv4()
-    let baseURL = env["RIPPLE_PUBLIC_BASE_URL"] ?? "http://\(lanAddress ?? "localhost"):\(port)"
+    let localURL = "http://\(lanAddress ?? "localhost"):\(port)"
+    let tunnel = await startTunnel(env: env, port: port, logger: app.logger)
+    if let tunnel {
+        app.lifecycle.use(TunnelLifecycle(tunnel: tunnel))
+    }
+    // Links in texts use this address, so it must open on the contacts' phones.
+    let baseURL = env["RIPPLE_PUBLIC_BASE_URL"] ?? tunnel?.url ?? localURL
     let adminSecret = env["RIPPLE_ADMIN_SECRET"] ?? "ripple-demo"
     let grace = TimeInterval(env["RIPPLE_BACKUP_GRACE_SECONDS"] ?? "") ?? 30
     let recipients = env["RIPPLE_DEMO_RECIPIENTS"].map { list in
@@ -35,13 +41,39 @@ func configure(_ app: Application) async throws {
     app.lifecycle.use(WorkerLifecycle(worker: worker))
 
     app.logger.notice("Ripple server listening on port \(port)")
-    app.logger.notice("Enter this server address in the iPhone apps: \(baseURL)")
+    if let tunnel {
+        app.logger.notice("Enter this server address in the iPhone apps: \(localURL) on this Wi-Fi, or \(tunnel.url) from anywhere (it changes each time the server starts)")
+    } else {
+        app.logger.notice("Enter this server address in the iPhone apps: \(baseURL)")
+    }
     app.logger.notice("Acknowledge links will start with: \(baseURL)/a/…")
+    if !baseURL.hasPrefix("https://") {
+        app.logger.warning("Links in texts only open on phones on this Wi-Fi. For contacts on cellular, install cloudflared (brew install cloudflared) and restart, or set RIPPLE_PUBLIC_BASE_URL.")
+    }
     app.logger.notice("Backup SMS route: \(sender.name)\(recipients.map { " (demo recipients only: \($0.count))" } ?? "")")
     app.logger.notice("Backup grace period: \(Int(grace)) s")
     app.logger.notice("Data file: \(dataFile)")
     if env["RIPPLE_ADMIN_SECRET"] == nil {
         app.logger.warning("RIPPLE_ADMIN_SECRET isn't set; the demo admin secret is \"ripple-demo\".")
+        if tunnel != nil {
+            app.logger.warning("The server is reachable from the internet through the tunnel. Set RIPPLE_ADMIN_SECRET to something only your team knows.")
+        }
+    }
+}
+
+/// Starts a Cloudflare quick tunnel when cloudflared is installed, unless an
+/// address was set by hand or RIPPLE_TUNNEL=off. Nil if there's no tunnel.
+func startTunnel(env: [String: String], port: Int, logger: Logger) async -> QuickTunnel? {
+    guard env["RIPPLE_PUBLIC_BASE_URL"] == nil, env["RIPPLE_TUNNEL"]?.lowercased() != "off" else { return nil }
+    guard let cloudflared = QuickTunnel.cloudflaredPath(env: env) else { return nil }
+    logger.notice("Starting a Cloudflare quick tunnel, so links in texts open on any phone…")
+    do {
+        let tunnel = try await QuickTunnel.start(executable: cloudflared, port: port)
+        logger.notice("Tunnel ready: \(tunnel.url)")
+        return tunnel
+    } catch {
+        logger.error("The tunnel didn't start, so links will only open on this Wi-Fi. \(error)")
+        return nil
     }
 }
 

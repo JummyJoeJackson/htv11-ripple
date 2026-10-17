@@ -13,34 +13,31 @@ struct MainTabView: View {
         // Read the revision so the bar hides and shows as the alarm changes.
         let _ = store.revision
         let inAlarm = store.coordinator.display(phoneAvailable: !store.inOutage).mode.isAlarm
-        // The bar sits below the screens rather than over them, so every screen
-        // (including long lists like Settings) ends above it and nothing is hidden.
-        VStack(spacing: 0) {
-            Group {
-                switch selection {
-                case .home:
-                    HomeView()
-                case .contacts:
-                    NavigationStack { ContactsView() }
-                case .session:
-                    NavigationStack { SessionView() }
-                case .settings:
-                    NavigationStack { SettingsView() }
-                }
+        // The glass bar floats over the screens. The safe-area inset gives each
+        // screen room for it, so backgrounds run to the bottom edge and lists
+        // stop above the bar when scrolled to the end.
+        Group {
+            switch selection {
+            case .home:
+                HomeView()
+            case .contacts:
+                NavigationStack { ContactsView() }
+            case .session:
+                NavigationStack { SessionView() }
+            case .settings:
+                NavigationStack { SettingsView() }
             }
-            .frame(maxHeight: .infinity)
-            .overlay(alignment: .bottom) {
-                FeedbackBar()
-                    .padding(.bottom, 12)
-            }
-
+        }
+        .overlay(alignment: .bottom) {
+            FeedbackBar()
+                .padding(.bottom, 12)
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
             if !inAlarm {
                 TabBar(selection: $selection)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        // The waves show behind the glass bar.
-        .background(RippleBackgroundView(background: .one))
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: inAlarm)
         .onChange(of: inAlarm) { _, alarm in
             if alarm { selection = .home }

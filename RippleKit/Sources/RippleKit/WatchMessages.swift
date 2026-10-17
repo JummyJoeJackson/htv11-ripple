@@ -53,12 +53,31 @@ public struct WatchConfig: Codable, Equatable, Sendable {
     public var doubleTapEnabled: Bool
     public var voiceEnabled: Bool
     public var voicePhrase: String
+    /// Swipe up twice for help, down twice for I'm okay.
+    public var combosEnabled: Bool
 
-    public init(version: Int, doubleTapEnabled: Bool, voiceEnabled: Bool, voicePhrase: String) {
+    public init(version: Int, doubleTapEnabled: Bool, voiceEnabled: Bool, voicePhrase: String, combosEnabled: Bool = true) {
         self.version = version
         self.doubleTapEnabled = doubleTapEnabled
         self.voiceEnabled = voiceEnabled
         self.voicePhrase = voicePhrase
+        self.combosEnabled = combosEnabled
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case version, doubleTapEnabled, voiceEnabled, voicePhrase, combosEnabled
+    }
+
+    /// A configuration saved before swipe combos existed still loads, with combos on.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            version: try container.decode(Int.self, forKey: .version),
+            doubleTapEnabled: try container.decode(Bool.self, forKey: .doubleTapEnabled),
+            voiceEnabled: try container.decode(Bool.self, forKey: .voiceEnabled),
+            voicePhrase: try container.decode(String.self, forKey: .voicePhrase),
+            combosEnabled: try container.decodeIfPresent(Bool.self, forKey: .combosEnabled) ?? true
+        )
     }
 
     public static let fallback = WatchConfig(version: 0, doubleTapEnabled: true, voiceEnabled: false, voicePhrase: "I'm okay")
@@ -73,10 +92,13 @@ public enum WatchActionKind: String, Codable, Sendable {
     case dismiss
     /// Alarm: hold the circle for 2 seconds. Duress. Touch only.
     case hold
+    /// Any state: swipe up twice. Texts contacts now, without a countdown. Never duress.
+    case help
 }
 
 public enum DismissMethod: String, Codable, Sendable {
-    case touch, doubleTap, voice
+    /// `combo` is a swipe combination: down twice for I'm okay, up twice for help.
+    case touch, doubleTap, voice, combo
 }
 
 public struct WatchAction: Codable, Sendable {

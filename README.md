@@ -18,6 +18,8 @@ Ripple doesn't try to work out *what* happened. A missed response means only tha
 
 Holding the circle for 2 seconds is **duress**: the Watch shows the normal "Dismissed" screen while the alert still goes out.
 
+**Swipe combos** help when movement is shaky. Swiping up on the circle twice asks for help: contacts are texted straight away, even when monitoring is off. Swiping down twice during an alarm means "I'm okay". It takes two swipes in the same direction, so a single shaky movement can't trigger either one.
+
 ## Key features
 
 - **The phone sends first.** Texts come from the wearer's iPhone and messaging account, so contacts need no app, account or portal.
@@ -26,7 +28,7 @@ Holding the circle for 2 seconds is **duress**: the Watch shows the normal "Dism
 - **Temporary contacts.** Someone nearby can agree to be a contact for one hour by scanning a QR code. They join Tier 1 until the session ends or the wearer removes them; after that they get nothing.
 - **Duress.** A 2-second hold looks exactly like a dismissal on the Watch and the iPhone, and the alert text is the normal one, so nothing reveals it.
 - **Privacy by permission.** Location is off by default and set per contact. Ripple takes one location fix when an alarm starts and never tracks in the background. An optional help card, written by the wearer, is added to alerts only if they turn it on.
-- **Hard to trigger by accident.** Stopping monitoring needs a hold and a confirmation. Double tap and voice can only dismiss; duress is touch only.
+- **Hard to trigger by accident.** Stopping monitoring needs a hold and a confirmation. Double tap and voice can only dismiss; duress is touch only. Swipe combos need two swipes in the same direction. Tremor that moves back and forth doesn't count as a swipe, and a finger bouncing off the glass counts once.
 - **Accessible by design.** Every gesture has a touch alternative. Status colours always come with text: green Monitoring, yellow Check in, red Alert sent, blue Contact responding, gray Off.
 
 ## Components
@@ -44,7 +46,7 @@ Holding the circle for 2 seconds is **duress**: the Watch shows the normal "Dism
 
 | Demonstrated | Simulated | Assumed | Needs validation |
 | --- | --- | --- | --- |
-| Watch input, alarms, real texts to teammates, tiers, the acknowledge link, duress, okay now texts, backup SMS, location permissions, contact expiry | Alarm triggers, the wearer being unable to respond, phone failure | Contacts read their texts and act on them, and the wearer keeps their phone charged and nearby | Sending from a locked phone, gestures and voice with Parkinson's tremor, accidental duress rate, false-alarm rate, battery use, real response times |
+| Watch input, alarms, real texts to teammates, tiers, the acknowledge link, duress, okay now texts, backup SMS, location permissions, contact expiry | Alarm triggers, the wearer being unable to respond, phone failure | Contacts read their texts and act on them, and the wearer keeps their phone charged and nearby | Sending from a locked phone, gestures, swipe combos and voice with Parkinson's tremor, accidental duress rate, false-alarm rate, battery use, real response times |
 
 ## Future work
 

@@ -29,6 +29,7 @@ final class WatchStore {
     @ObservationIgnored private var pingTask: Task<Void, Never>?
     @ObservationIgnored private var timeoutTask: Task<Void, Never>?
     @ObservationIgnored private var pendingActionId: String?
+    @ObservationIgnored private var combos = ComboRecognizer()
 
     private enum Keys {
         static let config = "ripple.watch.config"
@@ -129,6 +130,41 @@ final class WatchStore {
             feedback = WatchFeedback(text: "Didn't catch that. Tap the circle instead.", ok: false)
             WKInterfaceDevice.current().play(.failure)
         }
+    }
+
+    // MARK: Swipe combos
+
+    /// A vertical swipe on the circle. Up twice asks for help; down twice is
+    /// "I'm okay". It takes two swipes, so one shaky movement can't do either.
+    func swipe(_ step: GestureStep) {
+        guard config.combosEnabled else { return }
+        switch combos.record(step) {
+        case .idle:
+            break
+        case .partial(.help):
+            hint("Swipe up again to get help", haptic: .directionUp)
+        case .partial(.okay):
+            if display.mode.isAlarm { hint("Swipe down again if you're okay", haptic: .directionDown) }
+        case .matched(.help):
+            requestHelp()
+        case .matched(.okay):
+            if display.mode.isAlarm {
+                send(.dismiss, method: .combo)
+            } else {
+                feedback = WatchFeedback(text: "No alarm to answer.", ok: true)
+            }
+        }
+    }
+
+    /// From the swipe combo or the VoiceOver action. Works in every state and
+    /// is never duress.
+    func requestHelp() {
+        send(.help, method: .combo)
+    }
+
+    private func hint(_ text: String, haptic: WKHapticType) {
+        feedback = WatchFeedback(text: text, ok: true)
+        WKInterfaceDevice.current().play(haptic)
     }
 
     static func matches(_ text: String, phrase: String) -> Bool {

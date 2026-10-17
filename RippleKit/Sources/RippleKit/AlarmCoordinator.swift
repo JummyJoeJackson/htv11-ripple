@@ -87,6 +87,7 @@ public final class AlarmCoordinator {
         case .stop: result = stopMonitoring()
         case .dismiss: result = dismiss(alarmId: action.alarmId)
         case .hold: result = hold(alarmId: action.alarmId)
+        case .help: result = requestHelp()
         }
         remember(action.id, result)
         return result
@@ -139,8 +140,49 @@ public final class AlarmCoordinator {
         if let alarm, alarm.isOpen {
             return ActionResult(ok: false, feedback: "An alarm is already open.")
         }
-        let t = now()
         let countdown = max(5, countdownSeconds ?? config.countdownSeconds)
+        var newAlarm = makeAlarm(source: source, countdownSeconds: countdown, at: now())
+        rebuildTexts(&newAlarm)
+        store(newAlarm)
+        changed()
+        return ActionResult(ok: true, feedback: "Alarm started")
+    }
+
+    /// The swipe-up combo. Works whether or not monitoring is on. With no
+    /// alarm open it texts Tier 1 straight away; during a countdown it stops
+    /// waiting; after the alert it texts Tier 2 without waiting for the
+    /// acknowledge window. A stale request is still a request, so the alarm
+    /// the Watch saw doesn't matter.
+    @discardableResult
+    public func requestHelp() -> ActionResult {
+        let requested = ActionResult(ok: true, feedback: "Help requested")
+        let t = now()
+        guard var current = alarm, current.isOpen else {
+            var newAlarm = makeAlarm(source: .help, countdownSeconds: 0, at: t)
+            newAlarm.helpRequestedAt = t
+            rebuildTexts(&newAlarm)
+            store(newAlarm)
+            sendAlert()
+            return requested
+        }
+        if let ack = current.acknowledgment {
+            // A duress alarm stays out of sight, so don't name the responder.
+            return current.duress ? requested : ActionResult(ok: true, feedback: "\(ack.name) is responding")
+        }
+        if current.helpRequestedAt == nil {
+            current.helpRequestedAt = t
+            rebuildTexts(&current)
+            store(current)
+        }
+        switch current.phase {
+        case .countdown: sendAlert()
+        case .alerted: sendEscalation()
+        case .escalated, .closed: changed()
+        }
+        return requested
+    }
+
+    private func makeAlarm(source: AlarmSource, countdownSeconds countdown: Int, at t: Date) -> Alarm {
         var recipients: [AlarmRecipient] = config.contacts.compactMap { contact in
             guard let phone = Phone.normalize(contact.phone) else { return nil }
             return AlarmRecipient(
@@ -157,17 +199,13 @@ public final class AlarmCoordinator {
                 alertText: "", escalationText: ""
             ))
         }
-        var newAlarm = Alarm(
+        return Alarm(
             id: RippleID.make(bytes: 8), runId: runId, source: source, startedAt: t,
             deadline: t.addingTimeInterval(TimeInterval(countdown)), countdownSeconds: countdown,
             ackWindowSeconds: max(5, config.ackWindowSeconds), phase: .countdown, closeReason: nil, closedAt: nil,
             duress: false, alertedAt: nil, escalatedAt: nil, acknowledgment: nil, wearerName: config.wearerName,
             recipients: recipients, location: nil, messages: []
         )
-        rebuildTexts(&newAlarm)
-        store(newAlarm)
-        changed()
-        return ActionResult(ok: true, feedback: "Alarm started")
     }
 
     /// Tap, double tap or voice. Before texts go out it cancels the alarm and
@@ -383,7 +421,8 @@ public final class AlarmCoordinator {
                 return WatchDisplay(mode: .responding, circleLabel: "I'm okay now", status: "\(ack.name) is responding",
                                     alarmId: current.id, deadline: nil, phoneAvailable: phoneAvailable, updatedAt: t)
             }
-            return WatchDisplay(mode: .alertSent, circleLabel: "I'm okay now", status: "Alert sent", alarmId: current.id,
+            let status = current.helpRequestedAt == nil ? "Alert sent" : "Help requested"
+            return WatchDisplay(mode: .alertSent, circleLabel: "I'm okay now", status: status, alarmId: current.id,
                                 deadline: nil, phoneAvailable: phoneAvailable, updatedAt: t)
         }
         if monitoring {
@@ -502,12 +541,22 @@ public final class AlarmCoordinator {
 
     func rebuildTexts(_ alarm: inout Alarm) {
         let time = MessageTemplates.clockTime(alarm.startedAt, timeZone: timeZone)
+        let helpTime = alarm.helpRequestedAt.map { MessageTemplates.clockTime($0, timeZone: timeZone) }
         let note = config.helpCard.trimmingCharacters(in: .whitespacesAndNewlines)
         let helpCard: String? = config.helpCardEnabled && !note.isEmpty ? note : nil
         for index in alarm.recipients.indices {
             let recipient = alarm.recipients[index]
             let location = recipient.shareLocation ? alarm.location?.mapURL : nil
             let link = MessageTemplates.ackLink(baseURL: serverBaseURL, token: recipient.ackToken)
+            if let helpTime {
+                alarm.recipients[index].alertText = MessageTemplates.help(
+                    name: alarm.wearerName, time: helpTime, locationURL: location, helpCard: helpCard, ackLink: link
+                )
+                alarm.recipients[index].escalationText = MessageTemplates.helpEscalation(
+                    name: alarm.wearerName, time: helpTime, locationURL: location, ackLink: link
+                )
+                continue
+            }
             alarm.recipients[index].alertText = MessageTemplates.alert(
                 name: alarm.wearerName, checkInTime: time, locationURL: location, helpCard: helpCard, ackLink: link
             )

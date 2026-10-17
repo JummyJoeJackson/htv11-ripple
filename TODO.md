@@ -9,6 +9,5 @@
 - able to be used off line
 
 
-✅ Temporary contacts join by replying Ripple join to a text invitation. The backend starts one hour after acceptance; joining and expiration send no follow-up texts. QR and web signup are removed.
 
 [Demo Photos]([url](https://drive.google.com/drive/folders/1HuXoaYTzwrxl_IqGnw3iEyiH_kPRZIj7?usp=drive_link))

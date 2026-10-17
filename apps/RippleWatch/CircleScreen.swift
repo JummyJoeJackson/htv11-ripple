@@ -329,9 +329,14 @@ private struct CountdownRing: View {
                     .trim(from: 0, to: fraction)
                     .stroke(Theme.checkIn, style: StrokeStyle(lineWidth: 5, lineCap: .round))
                     .rotationEffect(.degrees(-90))
+                // Two digits must stay on one line inside the ring, even when
+                // the circle is small or the text size is large.
                 Text("\(Int(left.rounded(.up)))s")
                     .font(.system(size: size, weight: .bold))
                     .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.4)
+                    .padding(.horizontal, 12)
                     .foregroundStyle(WatchColors.text)
             }
             .accessibilityElement(children: .ignore)

@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<title>Ripple</title>
+<style>
+  :root { --bg: #f6f7f9; --card: #ffffff; --text: #111418; --muted: #4a5360; --line: #d9dee5;
+    --safe: #1b7f3b; --alert: #b3261e; --btn: #111418; --btn-text: #ffffff; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f1216; --card: #1a1f26; --text: #f2f4f7; --muted: #aab3bf; --line: #2c333d;
+      --safe: #4cc471; --alert: #ff6b5f; --btn: #f2f4f7; --btn-text: #0f1216; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 19px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 520px; margin: 0 auto; padding: 24px 16px 48px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 22px 18px; }
+  h1 { font-size: 25px; line-height: 1.25; margin: 0 0 10px; }
+  ul { padding-left: 22px; margin: 10px 0; }
+  .muted { color: var(--muted); }
+  .ok { color: var(--safe); font-weight: 700; }
+  .error { color: var(--alert); font-weight: 600; }
+  button { display: block; width: 100%; min-height: 62px; margin: 20px 0 6px; border-radius: 16px; border: 0;
+    background: var(--btn); color: var(--btn-text); font: 700 20px/1.2 inherit; font-family: inherit; cursor: pointer; padding: 16px; }
+  .note { font-size: 15px; color: var(--muted); margin-top: 18px; }
+</style>
+</head>
+<body>
+<main id="app" aria-live="polite"><p>Loading invitation…</p></main>
+<script>
+(function () {
+  "use strict";
+  var token = location.pathname.split("/").filter(Boolean).pop() || "";
+  var api = "/v1/temporary/" + encodeURIComponent(token);
+  var app = document.getElementById("app");
+  var view = null, busy = false, error = "", ended = false;
+
+  function el(tag, attrs) {
+    var node = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      if (k === "text") node.textContent = attrs[k];
+      else if (k === "onclick") node.addEventListener("click", attrs[k]);
+      else node.setAttribute(k, attrs[k]);
+    });
+    for (var i = 2; i < arguments.length; i++) { if (arguments[i]) node.appendChild(arguments[i]); }
+    return node;
+  }
+  function time(iso) { return new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); }
+
+  function render() {
+    if (ended || !view) return;
+    var v = view;
+    var card = el("div", { class: "card" }, el("h1", { text: v.wearerName + " asked you to be a temporary Ripple contact" }));
+    if (v.state === "invited") {
+      var list = el("ul");
+      list.appendChild(el("li", { text: "For " + v.durationMinutes + " minutes from when you agree." }));
+      list.appendChild(el("li", { text: "If " + v.wearerName + " doesn't respond to a Watch check-in, you'll get a text at " + v.phoneHint + " asking you to call or check on them." }));
+      list.appendChild(el("li", { text: v.shareLocation ? "Alert texts to you include their location at the time of the alert." : "Alert texts to you won't include their location." }));
+      list.appendChild(el("li", { text: "When the session ends or they remove you, you won't get new alerts." }));
+      card.appendChild(list);
+      card.appendChild(el("button", { type: "button", onclick: accept, text: busy ? "Saving…" : "I agree" }));
+    } else if (v.state === "active") {
+      card.appendChild(el("p", { class: "ok", text: "You're a temporary contact until " + time(v.expiresAt) + "." }));
+      card.appendChild(el("p", { class: "muted", text: "Keep your phone nearby. You can close this page." }));
+    } else {
+      card.appendChild(el("p", { class: "muted", text: v.state === "expired" ? "This temporary session has ended." : "This invitation was withdrawn." }));
+    }
+    if (error) card.appendChild(el("p", { class: "error", role: "alert", text: error }));
+    card.appendChild(el("p", { class: "note", text: "Ripple is a hackathon prototype, not an emergency service." }));
+    app.replaceChildren(card);
+  }
+
+  function showEnded(message) {
+    ended = true;
+    app.replaceChildren(el("div", { class: "card" }, el("h1", { text: "Invitation unavailable" }), el("p", { class: "muted", text: message })));
+  }
+
+  function handle(r) {
+    return r.json().catch(function () { return {}; }).then(function (b) {
+      if (r.status === 410 || r.status === 404) { showEnded(b.message || "This invitation isn't valid."); return null; }
+      if (!r.ok) throw new Error(b.message || ("Error " + r.status));
+      return b;
+    });
+  }
+
+  function load() {
+    if (ended || busy) return;
+    fetch(api, { cache: "no-store" }).then(handle).then(function (v) { if (v) { view = v; render(); } })
+      .catch(function (e) { error = "Can't reach Ripple: " + e.message; render(); });
+  }
+
+  function accept() {
+    if (busy) return;
+    busy = true; error = ""; render();
+    fetch(api + "/accept", { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json" }, body: "{}" })
+      .then(handle)
+      .then(function (v) { busy = false; if (v) { view = v; render(); } })
+      .catch(function (e) { busy = false; error = "Not saved: " + e.message; render(); });
+  }
+
+  load();
+  setInterval(load, 10000);
+})();
+</script>
+</body>
+</html>

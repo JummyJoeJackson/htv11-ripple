@@ -2,38 +2,38 @@
 import PackageDescription
 
 let package = Package(
-    name: "KazeServer",
+    name: "RippleServer",
     platforms: [.macOS(.v13)],
     dependencies: [
         .package(url: "https://github.com/vapor/vapor.git", from: "4.99.0"),
         .package(url: "https://github.com/apple/swift-crypto.git", "3.0.0" ..< "5.0.0"),
-        .package(path: "../KazeKit"),
+        .package(path: "../RippleKit"),
     ],
     targets: [
-        // All state, timers, escalation and permission rules. No HTTP here, so it
-        // can be tested with a fake clock.
+        // Alarm mirror, backup sender rules, acknowledgments, temporary
+        // contacts and admin commands. No HTTP here, so it is tested with a fake clock.
         .target(
-            name: "KazeEngine",
+            name: "RippleEngine",
             dependencies: [
-                .product(name: "KazeKit", package: "KazeKit"),
+                .product(name: "RippleKit", package: "RippleKit"),
                 .product(name: "Crypto", package: "swift-crypto"),
             ]
         ),
-        // HTTP API, web pages, messaging adapters and the job worker loop.
+        // HTTP API, web pages, the Twilio backup sender and the worker loop.
         .executableTarget(
-            name: "KazeServer",
+            name: "RippleServer",
             dependencies: [
-                "KazeEngine",
-                .product(name: "KazeKit", package: "KazeKit"),
+                "RippleEngine",
+                .product(name: "RippleKit", package: "RippleKit"),
                 .product(name: "Vapor", package: "vapor"),
                 .product(name: "Crypto", package: "swift-crypto"),
             ]
         ),
         .testTarget(
-            name: "KazeEngineTests",
+            name: "RippleEngineTests",
             dependencies: [
-                "KazeEngine",
-                .product(name: "KazeKit", package: "KazeKit"),
+                "RippleEngine",
+                .product(name: "RippleKit", package: "RippleKit"),
             ]
         ),
     ]

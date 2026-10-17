@@ -19,19 +19,29 @@ jobs:
         run: |
           xcodebuild -version
           swift --version
+      - name: Test RippleKit (alarm coordinator)
+        working-directory: RippleKit
+        run: |
+          set -o pipefail
+          swift test 2>&1 | tee "$RUNNER_TEMP/kit-test.log"
+          echo "::notice title=RippleKit tests::$(grep -E 'Executed [0-9]+ tests' "$RUNNER_TEMP/kit-test.log" | tail -1)"
       - name: Build server
+        if: ${{ !cancelled() }}
         working-directory: server
         run: |
           set -o pipefail
           swift build 2>&1 | tee "$RUNNER_TEMP/server-build.log"
       - name: Run engine tests
+        if: ${{ !cancelled() }}
         working-directory: server
         run: |
           set -o pipefail
           swift test 2>&1 | tee "$RUNNER_TEMP/server-test.log"
+          echo "::notice title=Engine tests::$(grep -E 'Executed [0-9]+ tests' "$RUNNER_TEMP/server-test.log" | tail -1)"
       - name: Report errors
         if: failure()
         run: |
+          bash .github/scripts/annotate.sh "$RUNNER_TEMP/kit-test.log" "RippleKit tests"
           bash .github/scripts/annotate.sh "$RUNNER_TEMP/server-build.log" "Server build"
           bash .github/scripts/annotate.sh "$RUNNER_TEMP/server-test.log" "Server tests"
 
@@ -44,23 +54,23 @@ jobs:
       - name: Toolchain
         run: |
           xcodebuild -version
-          xcodebuild -list -project apps/Kaze.xcodeproj
+          xcodebuild -list -project apps/Ripple.xcodeproj
       - name: Build wearer app (embeds the watch app)
         run: |
           set -o pipefail
-          xcodebuild -project apps/Kaze.xcodeproj -scheme KazeWearer -configuration Debug \
+          xcodebuild -project apps/Ripple.xcodeproj -scheme RippleWearer -configuration Debug \
             -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build 2>&1 | tee "$RUNNER_TEMP/wearer.log"
       - name: Build watch app
         if: always()
         run: |
           set -o pipefail
-          xcodebuild -project apps/Kaze.xcodeproj -scheme KazeWatch -configuration Debug \
+          xcodebuild -project apps/Ripple.xcodeproj -scheme RippleWatch -configuration Debug \
             -destination 'generic/platform=watchOS Simulator' CODE_SIGNING_ALLOWED=NO build 2>&1 | tee "$RUNNER_TEMP/watch.log"
       - name: Build admin app
         if: always()
         run: |
           set -o pipefail
-          xcodebuild -project apps/Kaze.xcodeproj -scheme KazeAdmin -configuration Debug \
+          xcodebuild -project apps/Ripple.xcodeproj -scheme RippleAdmin -configuration Debug \
             -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build 2>&1 | tee "$RUNNER_TEMP/admin.log"
       - name: Report errors
         if: failure()

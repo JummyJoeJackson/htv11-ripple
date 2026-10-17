@@ -1,0 +1,165 @@
+import Foundation
+
+/// The five states of the Watch circle (PRD: green Monitoring, yellow Check
+/// in, red Alert sent, blue Contact responding, gray Off).
+public enum CircleMode: String, Codable, Sendable {
+    case off, monitoring, checkIn, alertSent, responding
+
+    /// True while an alarm the wearer can see is open.
+    public var isAlarm: Bool { self == .checkIn || self == .alertSent || self == .responding }
+}
+
+/// What the Watch shows. Built by the iPhone. A duress alarm never appears here.
+public struct WatchDisplay: Codable, Equatable, Sendable {
+    public var mode: CircleMode
+    /// Text inside the circle: Start, Stop, I'm okay, I'm okay now.
+    public var circleLabel: String
+    /// Short status line, for example "Monitoring" or "Sam is responding".
+    public var status: String
+    public var alarmId: String?
+    /// End of the response countdown while checking in.
+    public var deadline: Date?
+    /// Whether the iPhone can currently act (false during a simulated phone failure).
+    public var phoneAvailable: Bool
+    public var updatedAt: Date
+
+    public init(mode: CircleMode, circleLabel: String, status: String, alarmId: String?, deadline: Date?, phoneAvailable: Bool, updatedAt: Date) {
+        self.mode = mode
+        self.circleLabel = circleLabel
+        self.status = status
+        self.alarmId = alarmId
+        self.deadline = deadline
+        self.phoneAvailable = phoneAvailable
+        self.updatedAt = updatedAt
+    }
+
+    public static let off = WatchDisplay(mode: .off, circleLabel: "Start", status: "Off", alarmId: nil, deadline: nil, phoneAvailable: true, updatedAt: Date())
+
+    /// True when two displays would look the same.
+    public func sameContent(as other: WatchDisplay?) -> Bool {
+        guard let other else { return false }
+        var a = self
+        var b = other
+        a.updatedAt = .distantPast
+        b.updatedAt = .distantPast
+        return a == b
+    }
+}
+
+/// The part of the configuration the Watch keeps. It retains the last one it
+/// received, even when the iPhone isn't reachable.
+public struct WatchConfig: Codable, Equatable, Sendable {
+    public var version: Int
+    public var doubleTapEnabled: Bool
+    public var voiceEnabled: Bool
+    public var voicePhrase: String
+
+    public init(version: Int, doubleTapEnabled: Bool, voiceEnabled: Bool, voicePhrase: String) {
+        self.version = version
+        self.doubleTapEnabled = doubleTapEnabled
+        self.voiceEnabled = voiceEnabled
+        self.voicePhrase = voicePhrase
+    }
+
+    public static let fallback = WatchConfig(version: 0, doubleTapEnabled: true, voiceEnabled: false, voicePhrase: "I'm okay")
+}
+
+public enum WatchActionKind: String, Codable, Sendable {
+    /// Monitoring off: tap or hold the circle.
+    case start
+    /// Monitoring on: hold, then confirm "Stop monitoring?".
+    case stop
+    /// Alarm: tap the circle. Also used by double tap and the voice phrase.
+    case dismiss
+    /// Alarm: hold the circle for 2 seconds. Duress. Touch only.
+    case hold
+}
+
+public enum DismissMethod: String, Codable, Sendable {
+    case touch, doubleTap, voice
+}
+
+public struct WatchAction: Codable, Sendable {
+    /// Also the de-duplication key, so a repeated tap never repeats an action.
+    public var id: String
+    public var kind: WatchActionKind
+    public var method: DismissMethod
+    /// The alarm the wearer saw when they acted.
+    public var alarmId: String?
+    public var sentAt: Date
+
+    public init(id: String = RippleID.make(bytes: 8), kind: WatchActionKind, method: DismissMethod = .touch, alarmId: String?, sentAt: Date = Date()) {
+        self.id = id
+        self.kind = kind
+        self.method = method
+        self.alarmId = alarmId
+        self.sentAt = sentAt
+    }
+}
+
+public struct ActionResult: Codable, Equatable, Sendable {
+    public var ok: Bool
+    /// Shown briefly on the Watch, for example "Dismissed".
+    public var feedback: String
+
+    public init(ok: Bool, feedback: String) {
+        self.ok = ok
+        self.feedback = feedback
+    }
+}
+
+public struct WatchActionReply: Codable, Sendable {
+    public var actionId: String
+    public var result: ActionResult
+    public var display: WatchDisplay
+
+    public init(actionId: String, result: ActionResult, display: WatchDisplay) {
+        self.actionId = actionId
+        self.result = result
+        self.display = display
+    }
+}
+
+public struct WatchConfigAck: Codable, Sendable {
+    public var version: Int
+    public init(version: Int) { self.version = version }
+}
+
+/// WatchConnectivity carries property-list dictionaries, so each message is a
+/// type name plus a JSON payload.
+public enum WatchEnvelope {
+    public static let typeKey = "type"
+    public static let payloadKey = "payload"
+
+    public static let display = "display"
+    public static let config = "config"
+    public static let action = "action"
+    public static let reply = "reply"
+    public static let configAck = "configAck"
+    public static let ping = "ping"
+    public static let hello = "hello"
+
+    public static func make<T: Encodable>(_ type: String, _ value: T) -> [String: Any] {
+        guard let data = try? RippleJSON.encoder.encode(value) else {
+            return [typeKey: type]
+        }
+        return [typeKey: type, payloadKey: data]
+    }
+
+    /// The application context carries both the display and the configuration.
+    public static func context(display: WatchDisplay, config: WatchConfig) -> [String: Any] {
+        var result: [String: Any] = [typeKey: "context"]
+        if let data = try? RippleJSON.encoder.encode(display) { result[WatchEnvelope.display] = data }
+        if let data = try? RippleJSON.encoder.encode(config) { result[WatchEnvelope.config] = data }
+        return result
+    }
+
+    public static func type(of message: [String: Any]) -> String? {
+        message[typeKey] as? String
+    }
+
+    public static func decode<T: Decodable>(_ type: T.Type, from message: [String: Any], key: String = payloadKey) -> T? {
+        guard let data = message[key] as? Data else { return nil }
+        return try? RippleJSON.decoder.decode(T.self, from: data)
+    }
+}

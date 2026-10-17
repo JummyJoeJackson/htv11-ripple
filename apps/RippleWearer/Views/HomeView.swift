@@ -325,25 +325,11 @@ private struct MonitoringCard: View {
 /// Two columns, or one at the largest text sizes.
 private struct HomeCardGrid: View {
     @Environment(WearerStore.self) private var store
-    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var confirmHelp = false
 
     var body: some View {
-        let columns = typeSize.isAccessibilitySize
-            ? [GridItem(.flexible())]
-            : [GridItem(.flexible(), spacing: Theme.spacing), GridItem(.flexible())]
-        LazyVGrid(columns: columns, spacing: Theme.spacing) {
-            HomeCard(icon: "pills.fill", tint: Theme.accent, title: "Medication Reminders", subtitle: "Stay on track.",
-                     destination: AnyView(MedicationView())) {
-                MedicationFooter()
-            }
-            HomeCard(icon: "list.bullet.clipboard.fill", tint: Color(red: 0x4F / 255, green: 0x46 / 255, blue: 0xE5 / 255),
-                     title: "Daily Symptom Check-in", subtitle: "How you feel today.") {
-                ComingSoonTag()
-            }
-            HomeCard(icon: "calendar", tint: Theme.safe, title: "Next Visit", subtitle: "Doctor visits.") {
-                ComingSoonTag()
-            }
+        // Full-width cards, one under the other: help first, then medication.
+        VStack(spacing: Theme.spacing) {
             HomeCard(icon: "message.fill", tint: Theme.alert, title: "Emergency Help", subtitle: "Text your contacts.") {
                 Button {
                     confirmHelp = true
@@ -356,6 +342,10 @@ private struct HomeCardGrid: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityHint("Asks for confirmation before texting a Ripple alert to all your contacts.")
+            }
+            HomeCard(icon: "pills.fill", tint: Theme.accent, title: "Medication Reminders", subtitle: "Stay on track.",
+                     destination: AnyView(MedicationView())) {
+                MedicationFooter()
             }
         }
         .confirmationDialog("Text all your contacts?", isPresented: $confirmHelp, titleVisibility: .visible) {
@@ -396,6 +386,7 @@ private struct HomeCard<Footer: View>: View {
                 } label: {
                     HStack(alignment: .center, spacing: 4) {
                         header
+                        Spacer(minLength: 8)
                         Image(systemName: "chevron.right")
                             .font(.footnote.weight(.semibold))
                             .foregroundStyle(Theme.secondaryText)
@@ -407,22 +398,21 @@ private struct HomeCard<Footer: View>: View {
             } else {
                 header
             }
-            Spacer(minLength: 0)
             footer
                 .environment(\.homeCardTint, tint)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .padding(16)
         .rippleCard()
         .accessibilityElement(children: .contain)
     }
 
     private var header: some View {
-            HStack(alignment: .top, spacing: 8) {
+            HStack(alignment: .center, spacing: 12) {
                 Image(systemName: icon)
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.system(size: 22, weight: .semibold))
                     .foregroundStyle(tint)
-                    .frame(width: 36, height: 36)
+                    .frame(width: 48, height: 48)
                     .background(tint.opacity(0.12), in: Circle())
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 4) {
@@ -502,19 +492,6 @@ private struct MedicationFooter: View {
     }
 }
 
-/// Marks a feature that isn't built yet; nothing happens on tap.
-private struct ComingSoonTag: View {
-    @Environment(\.homeCardTint) private var tint
-
-    var body: some View {
-        Text("Coming soon")
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(Theme.secondaryText)
-            .frame(maxWidth: .infinity, minHeight: 44)
-            .background(tint.opacity(0.10), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .accessibilityLabel("Coming soon")
-    }
-}
 
 /// Alert sent (red) and someone responding (blue): a solid card with white text.
 private struct SolidStatusCard: View {

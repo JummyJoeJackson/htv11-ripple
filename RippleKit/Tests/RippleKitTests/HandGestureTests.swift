@@ -220,16 +220,6 @@ final class HandGestureTests: XCTestCase {
 }
 
 final class HandGesturePairTests: XCTestCase {
-    func testOverlapMeansSameOrContained() {
-        XCTAssertTrue(HandGesturePreset.pinchClench.overlaps(.pinchClench))
-        XCTAssertTrue(HandGesturePreset.pinch.overlaps(.pinchClench))
-        XCTAssertTrue(HandGesturePreset.pinchClench.overlaps(.pinch))
-        XCTAssertTrue(HandGesturePreset.clench.overlaps(.pinchClench))
-        XCTAssertFalse(HandGesturePreset.doublePinch.overlaps(.pinchClench))
-        XCTAssertFalse(HandGesturePreset.clenchPinch.overlaps(.pinchClench))
-        XCTAssertFalse(HandGesturePreset.pinch.overlaps(.clench))
-    }
-
     func testAChoiceDisappearsFromTheOtherPicker() {
         for dismiss in HandGesturePreset.allCases {
             XCTAssertFalse(HandGesturePreset.helpChoices(besides: dismiss).contains(dismiss), dismiss.label)
@@ -244,16 +234,23 @@ final class HandGesturePairTests: XCTestCase {
             let helps = HandGesturePreset.helpChoices(besides: dismiss)
             XCTAssertFalse(helps.isEmpty, dismiss.label)
             for help in helps {
-                XCTAssertEqual(help.steps.count, 2, help.label)
-                XCTAssertFalse(help.overlaps(dismiss), "\(dismiss.label) / \(help.label)")
+                XCTAssertNotEqual(help, dismiss, "\(dismiss.label) / \(help.label)")
                 XCTAssertTrue(HandGesturePreset.dismissChoices(besides: help).contains(dismiss), "\(dismiss.label) / \(help.label)")
             }
         }
     }
 
-    func testHelpChoicesLeaveOutSequencesContainingASingleDismissInput() {
-        XCTAssertEqual(HandGesturePreset.helpChoices(besides: .pinch), [.doublePinchClench, .clenchDoublePinch, .doubleClenchDoublePinch])
-        XCTAssertEqual(HandGesturePreset.dismissChoices(besides: .doubleClenchDoublePinch).count, 7)
+    func testOnlyTheIdenticalPresetIsExcludedFromEitherPicker() {
+        for preset in HandGesturePreset.allCases {
+            let expected = HandGesturePreset.allCases.filter { $0 != preset }
+            XCTAssertEqual(HandGesturePreset.helpChoices(besides: preset), expected)
+            XCTAssertEqual(HandGesturePreset.dismissChoices(besides: preset), expected)
+            XCTAssertEqual(expected.count, 9)
+        }
+        // Shared inputs, including prefixes and suffixes, remain selectable.
+        XCTAssertTrue(HandGesturePreset.helpChoices(besides: .doublePinch).contains(.doublePinchClench))
+        XCTAssertTrue(HandGesturePreset.helpChoices(besides: .clench).contains(.pinchClench))
+        XCTAssertTrue(HandGesturePreset.helpChoices(besides: .doublePinch).contains(.clench))
     }
 
     func testDefaultHelpIsAlwaysAllowed() {
@@ -387,7 +384,7 @@ final class HandGestureConfigTests: XCTestCase {
         XCTAssertTrue(restored.handGesturesEnabled)
         XCTAssertEqual(restored.handGesturePreset, .doubleClench)
         XCTAssertFalse(restored.handGestureHelpEnabled)
-        XCTAssertFalse(restored.handGestureHelpPreset.overlaps(.doubleClench))
+        XCTAssertNotEqual(restored.handGestureHelpPreset, .doubleClench)
 
         var legacyWatch = try encodedObject(original.watchConfig)
         legacyWatch.removeValue(forKey: "handGestureHelpEnabled")
@@ -395,11 +392,11 @@ final class HandGestureConfigTests: XCTestCase {
         let watch = try RippleJSON.decoder.decode(WatchConfig.self, from: JSONSerialization.data(withJSONObject: legacyWatch))
         XCTAssertTrue(watch.handGesturesEnabled)
         XCTAssertFalse(watch.handGestureHelpEnabled)
-        XCTAssertFalse(watch.handGestureHelpPreset.overlaps(.doubleClench))
+        XCTAssertNotEqual(watch.handGestureHelpPreset, .doubleClench)
     }
 
-    func testOverlappingSingleOrUnknownHelpPresetLoadsDisabled() throws {
-        for invalid in ["pinchClench", "clench", "futureGesture"] {
+    func testIdenticalOrUnknownHelpPresetLoadsDisabled() throws {
+        for invalid in ["pinch", "futureGesture"] {
             var payload = try encodedObject(wearerConfig())
             payload["handGesturePreset"] = "pinch"
             payload["handGesturesEnabled"] = true
@@ -422,5 +419,97 @@ final class HandGestureConfigTests: XCTestCase {
             XCTAssertFalse(watch.handGestureHelpEnabled, invalid)
             XCTAssertEqual(watch.handGestureHelpPreset, .defaultHelp(besides: .pinch), invalid)
         }
+    }
+}
+
+final class HandGestureStateTests: XCTestCase {
+    private let start = Date(timeIntervalSince1970: 1_800_000_000)
+    private let modes: [CircleMode] = [.off, .monitoring, .checkIn, .alertSent, .responding]
+
+    private func display(_ mode: CircleMode, alarmId: String? = "alarm") -> WatchDisplay {
+        WatchDisplay(mode: mode, circleLabel: "", status: "", alarmId: alarmId,
+                     deadline: nil, phoneAvailable: true, updatedAt: start)
+    }
+
+    private func config(dismiss: HandGesturePreset = .doublePinch,
+                        help: HandGesturePreset = .doublePinchClench) -> WatchConfig {
+        WatchConfig(version: 1, doubleTapEnabled: true, voiceEnabled: false, voicePhrase: "okay",
+                    handGesturesEnabled: true, handGesturePreset: dismiss,
+                    handGestureHelpEnabled: true, handGestureHelpPreset: help)
+    }
+
+    func testEveryDistinctPairListensOnlyForTheActionForItsAlarmState() {
+        for dismiss in HandGesturePreset.allCases {
+            for help in HandGesturePreset.allCases where help != dismiss {
+                let config = config(dismiss: dismiss, help: help)
+                for mode in modes {
+                    let binding = HandGestureBinding(preset: mode.isAlarm ? dismiss : help,
+                                                     action: mode.isAlarm ? .okay : .help)
+                    let bindings = config.handGestureBindings(for: display(mode))
+                    XCTAssertEqual(bindings, [binding], "\(mode): \(dismiss) / \(help)")
+                    var recognizer = HandGestureRecognizer(bindings: bindings)
+                    for (index, step) in binding.preset.steps.enumerated() {
+                        let expected: HandGestureProgress = index == binding.preset.steps.count - 1
+                            ? .matched(binding.action) : .partial
+                        XCTAssertEqual(recognizer.record(step, at: start.addingTimeInterval(Double(index))), expected)
+                    }
+                }
+            }
+        }
+    }
+
+    func testOpenAlarmNeverEnablesTriggerEvenWhenDismissalIsDisabled() {
+        var config = config()
+        config.handGesturesEnabled = false
+        for mode in modes where mode.isAlarm {
+            XCTAssertEqual(config.handGestureBindings(for: display(mode)), [])
+            XCTAssertEqual(config.handGestureBindings(for: display(mode, alarmId: nil)), [])
+        }
+    }
+
+    func testAlarmWithoutIdentifierNeverEnablesTriggerOrDismissal() {
+        for mode in modes where mode.isAlarm {
+            XCTAssertEqual(config().handGestureBindings(for: display(mode, alarmId: nil)), [])
+        }
+    }
+
+    func testNoAlarmNeverEnablesDismissalWhenTriggerIsDisabled() {
+        var config = config()
+        config.handGestureHelpEnabled = false
+        for mode in modes where !mode.isAlarm {
+            XCTAssertEqual(config.handGestureBindings(for: display(mode, alarmId: nil)), [])
+        }
+    }
+
+    func testIdenticalSelectionsCannotTriggerFromAnUnvalidatedConfig() {
+        let config = config(dismiss: .doublePinch, help: .doublePinch)
+        XCTAssertEqual(config.handGestureBindings(for: display(.off, alarmId: nil)), [])
+    }
+
+    func testSharedSingleInputCannotTriggerHelpDuringAnAlarm() {
+        let config = config(dismiss: .doublePinch, help: .doublePinchClench)
+        var recognizer = HandGestureRecognizer(bindings: config.handGestureBindings(for: display(.checkIn)))
+        XCTAssertEqual(recognizer.record(.doublePinch, at: start), .matched(.okay))
+        XCTAssertEqual(recognizer.record(.clench, at: start.addingTimeInterval(1)), .idle)
+    }
+
+    func testSharedSingleDismissInputDoesNotInterruptTriggerWhenNoAlarmIsOpen() {
+        let config = config(dismiss: .doublePinch, help: .doublePinchClench)
+        var recognizer = HandGestureRecognizer(bindings: config.handGestureBindings(for: display(.monitoring, alarmId: nil)))
+        XCTAssertEqual(recognizer.record(.doublePinch, at: start), .partial)
+        XCTAssertEqual(recognizer.record(.clench, at: start.addingTimeInterval(1)), .matched(.help))
+    }
+
+    func testAlarmStateChangesDiscardPartialInputBeforeRecognizingTheOtherAction() {
+        let config = config(dismiss: .clenchDoublePinch, help: .doublePinchClench)
+        var recognizer = HandGestureRecognizer(bindings: config.handGestureBindings(for: display(.off, alarmId: nil)))
+        XCTAssertEqual(recognizer.record(.doublePinch, at: start), .partial)
+        recognizer.select(config.handGestureBindings(for: display(.checkIn)))
+        XCTAssertEqual(recognizer.record(.clench, at: start.addingTimeInterval(1)), .partial)
+        XCTAssertEqual(recognizer.record(.doublePinch, at: start.addingTimeInterval(2)), .matched(.okay))
+        XCTAssertEqual(recognizer.record(.clench, at: start.addingTimeInterval(3)), .partial)
+        recognizer.select(config.handGestureBindings(for: display(.monitoring, alarmId: nil)))
+        XCTAssertEqual(recognizer.record(.doublePinch, at: start.addingTimeInterval(4)), .partial)
+        XCTAssertEqual(recognizer.record(.clench, at: start.addingTimeInterval(5)), .matched(.help))
     }
 }

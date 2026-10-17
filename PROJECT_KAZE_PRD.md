@@ -1,10 +1,10 @@
-# Halo: Product Requirements Document
+# Ripple: Product Requirements Document
 
 October 16, 2026 · HTV11 prototype · Kaze track
 
 ## Purpose
 
-Halo gets a person help when they cannot respond to an alarm on their Apple Watch. The primary audience is people with Parkinson's, who can suddenly be unable to move, speak, or reach their phone during a fall, a freeze, or a medication "off" period. The wearer configures everything on their iPhone, uses a one circle Watch interface, and has trusted contacts texted at their phone numbers. A separate iPhone app controls alarms during demonstrations.
+Ripple gets a person help when they cannot respond to an alarm on their Apple Watch. The primary audience is people with Parkinson's, who can suddenly be unable to move, speak, or reach their phone during a fall, a freeze, or a medication "off" period. The wearer configures everything on their iPhone, uses a one circle Watch interface, and has trusted contacts texted at their phone numbers. A separate iPhone app controls alarms during demonstrations.
 
 A missed response means only that no response was received. The prototype does not diagnose a condition or detect falls, intoxication, drugging, or unconsciousness. Demo alarm triggers are simulated.
 

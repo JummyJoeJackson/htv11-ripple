@@ -65,6 +65,20 @@ struct CircleScreen: View {
                     }
                 }
             }
+
+            if let gesture = store.lastHandGesture {
+                VStack(spacing: 1) {
+                    Text("Gesture #\(store.handGestureCount): \(gesture)")
+                    if !store.handGestureStatus.isEmpty {
+                        Text(store.handGestureStatus)
+                    }
+                }
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .accessibilityElement(children: .combine)
+            }
         }
         .padding(.horizontal, 2)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

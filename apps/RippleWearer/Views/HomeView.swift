@@ -20,27 +20,28 @@ struct HomeView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: Theme.spacing) {
-                    HStack(alignment: .center) {
-                        Image("RippleLogo")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(height: 60)
-                            .accessibilityLabel("Ripple")
-                        Spacer()
-                        NavigationLink {
-                            SettingsView(isTabRoot: false)
-                        } label: {
-                            ProfileAvatar(size: Theme.minTarget)
-                        }
-                        .accessibilityLabel("Your profile and settings")
-                    }
+                    Image("RippleLogo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 60)
+                        .accessibilityLabel("Ripple")
 
                     VStack(alignment: .leading, spacing: 6) {
-                        greeting
-                            .font(.system(size: greetingSize, weight: .bold))
-                            .foregroundStyle(Theme.text)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .accessibilityAddTraits(.isHeader)
+                        // The profile photo sits level with the greeting.
+                        HStack(alignment: .center, spacing: 12) {
+                            greeting
+                                .font(.system(size: greetingSize, weight: .bold))
+                                .foregroundStyle(Theme.text)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .accessibilityAddTraits(.isHeader)
+                            Spacer(minLength: 0)
+                            NavigationLink {
+                                SettingsView(isTabRoot: false)
+                            } label: {
+                                ProfileAvatar(size: Theme.minTarget)
+                            }
+                            .accessibilityLabel("Your profile and settings")
+                        }
                         if !display.mode.isAlarm {
                             Text("Your care at a glance")
                                 .font(.title3)

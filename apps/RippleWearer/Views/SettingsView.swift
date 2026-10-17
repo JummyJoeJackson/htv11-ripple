@@ -123,6 +123,22 @@ struct SettingsView: View {
             }
 
             Section {
+                IconRow(icon: "figure.fall") {
+                    Toggle("Falls", isOn: $draft.healthFallsEnabled)
+                }
+                IconRow(icon: "heart.text.square") {
+                    Toggle("Heart alerts", isOn: $draft.healthHeartEnabled)
+                }
+                if !store.config.healthAlerts.isEmpty {
+                    StatusRow(label: "Apple Health", value: store.health.statusText)
+                }
+            } header: {
+                SectionHeader("Apple Watch alerts")
+            } footer: {
+                FormNote("When your Watch records a fall or a heart alert in Health, Ripple checks in. Texts say which alert it was.")
+            }
+
+            Section {
                 NavigationLink {
                     AnswerSetupScreen()
                 } label: {

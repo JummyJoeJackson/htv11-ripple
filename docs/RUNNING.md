@@ -153,6 +153,7 @@ Start monitoring by tapping **Start** on the Watch circle. Keep the Watch app op
 | Duress | Trigger; the wearer holds the circle for 2 seconds. | The Watch shows the normal "Dismissed" screen. Tier 1 still receives the alert. |
 | Connectivity failure | Trigger, wait two seconds, then admin: **Cut phone connection**. | About 30 seconds later the backend sends the alert by SMS, marked "Sent by Ripple backup". |
 | Privacy | Invite a temporary contact and have them agree. Admin: **Expire temporary contact now**, then trigger and let it run out. | Only the location-on contact gets a map link. The expired contact gets nothing. |
+| Apple Watch alert (extra) | On the wearer's iPhone, turn on **Settings → Apple Watch alerts → Falls** and save. Admin: **Simulate Apple fall alert**, then let it run out. | The Watch shows "Fall reported" with the normal countdown. With no answer, Tier 1's text says "…'s Apple Watch reported a fall". Label it simulated: nobody falls on stage. |
 
 Then show **Reset demo** and that no old alarm comes back.
 
@@ -165,6 +166,14 @@ On the wearer's iPhone: **Contacts → Invite someone for one hour → Send invi
 The authenticated iPhone forwards the parsed join code to the backend. Only then is the contact activated and `expiresAt` set to one hour after acceptance. Repeated replies do not restart the timer. Expiration, joining, and removal send no lifecycle texts; actual safety alerts still work during the active hour. **Remove now** ends the session early. Invalid, withdrawn, reset, and expired invitations cannot activate a session.
 
 If the backend is temporarily unavailable, the iPhone saves the parsed join request and retries after a successful sync. The one-hour timer starts when the backend accepts it. There is no QR code or web signup flow. Existing active sessions keep their saved expiry when upgrading; old pending web invitations need a new text invitation.
+
+### Apple Watch alerts (falls and heart alerts)
+
+Apple Watch already detects hard falls and high, low or irregular heart rhythms, and saves them in the Health app. With **Settings → Apple Watch alerts** turned on, Ripple watches Health for new entries of those kinds, using Apple's HealthKit, and starts an ordinary check-in for each one. Ripple never measures or judges anything itself: Apple detects, Ripple makes sure a person follows up. Alert texts say which Apple alert it was. Both are off by default.
+
+Reading Health needs the HealthKit capability, which isn't in the project by default so builds keep signing with any Apple account. To get real alerts, in Xcode select the **RippleWearer** target, open **Signing & Capabilities**, click **+ Capability**, add **HealthKit**, and tick **Background Delivery**. If your account can't add it, Xcode says so; remove it again and use the simulated alerts. Then turn the alerts on in Ripple's Settings and allow access when Health asks. Without the capability, Settings shows "Not in this build".
+
+For demos, the admin app's **Simulate Apple fall alert** and **Simulate Apple heart alert** act as if Health had saved one. The wearer's settings still decide whether a check-in starts.
 
 ### Swipe combos
 
@@ -226,6 +235,7 @@ GitHub Actions runs both and builds all three apps for the simulator on every pu
 | Voice | During an alarm the Watch microphone listens for the phrase by itself, with nothing to press. watchOS has no speech recognition, so the Watch streams the audio to the wearer's iPhone, which recognizes it (on the iPhone when supported). It needs both apps open, and the iPhone reachable. The app keeps running with the wrist down, but whether the microphone keeps recording then is untested. Anyone nearby who says the phrase also dismisses, so pick one nobody says by accident (the default is "I am currently fine"). If listening can't start, the Watch shows the tap-to-dictate microphone button instead. |
 | Physical buttons | Not used; the side button and Digital Crown belong to the system. |
 | AssistiveTouch | Apple recognises the four base inputs and runs assigned shortcuts. Ripple matches the chosen dismissal sequence. Background intent delivery, consecutive gesture timing, and Ripple staying visible require physical Watch testing; see [the setup guide](HAND_GESTURES.md). |
+| Apple Watch alerts | Health only keeps falls the wearer confirmed or that Apple escalated, and entries can reach the iPhone minutes late, so this is a follow-up, not a first response; Apple's own fall alert still calls emergency services. Whether Health wakes Ripple in the background, and how quickly, needs testing on the devices. Alerts older than two hours when Ripple sees them are ignored. |
 | Help location | Help texts go out immediately, so they include a map link only if an alarm was already running and had a location fix. |
 | Backup | It covers a phone that stops syncing. If the phone sent a text but couldn't report it before going quiet, the backup may send a second copy, marked as backup. |
 | Data | Demo data is deleted on reset. Tokens and phone numbers are stored in a JSON file on the Mac; this is a prototype, not production storage. |

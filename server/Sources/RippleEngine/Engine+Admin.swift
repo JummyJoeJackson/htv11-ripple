@@ -129,6 +129,8 @@ extension Engine {
             case .setTimers:
                 command.countdownSeconds = request.countdownSeconds.map { min(max($0, 5), 600) }
                 command.ackWindowSeconds = request.ackWindowSeconds.map { min(max($0, 5), 1800) }
+            case .simulateHealthAlert:
+                command.healthAlert = request.healthAlert ?? .fall
             case .disableAlarm:
                 // Close the backend mirror right away, so the backup can't fire
                 // even if the phone never picks the command up.

@@ -2,7 +2,7 @@ import Foundation
 import XCTest
 @testable import RippleKit
 
-/// Texting back "RIPPLE ACCEPT 4821" instead of tapping the link.
+/// Text replies acknowledge alerts through the wearer's Messages automation.
 final class ReplyAcceptTests: XCTestCase {
     var clock: TestClock!
     var recorder: Recorder!
@@ -18,7 +18,7 @@ final class ReplyAcceptTests: XCTestCase {
         var config = RippleConfig.makeDefault(wearerName: "Alex")
         config.contacts = [sam, jo, pat]
         let clock = self.clock!
-        coordinator = AlarmCoordinator(config: config, serverBaseURL: "http://ripple.test", clock: { clock.now })
+        coordinator = AlarmCoordinator(config: config, clock: { clock.now })
         coordinator.delegate = recorder
         coordinator.setRunId("run-1")
         coordinator.startMonitoring()
@@ -63,9 +63,11 @@ final class ReplyAcceptTests: XCTestCase {
         XCTAssertEqual(codes.count, 3)
         XCTAssertEqual(Set(codes).count, 3, "Codes are unique within an alarm")
         for recipient in recipients {
-            XCTAssertTrue(recipient.alertText.hasSuffix("or reply RIPPLE ACCEPT \(recipient.acceptCode!)"))
-            XCTAssertTrue(recipient.escalationText.hasSuffix("or reply RIPPLE ACCEPT \(recipient.acceptCode!)"))
-            XCTAssertTrue(recipient.alertText.contains("Tap if you're checking: http://ripple.test/a/"))
+            let instruction = "Reply \"Ripple accept \(recipient.acceptCode!)\" if you are able to check in on Alex."
+            XCTAssertTrue(recipient.alertText.hasSuffix("\n\n" + instruction))
+            XCTAssertTrue(recipient.escalationText.hasSuffix("\n\n" + instruction))
+            XCTAssertFalse(recipient.alertText.contains("http://ripple.test/a/"))
+            XCTAssertFalse(recipient.escalationText.contains("http://ripple.test/a/"))
         }
     }
 
@@ -73,12 +75,14 @@ final class ReplyAcceptTests: XCTestCase {
         coordinator.requestHelp()
         let sam = coordinator.alarm!.recipients.first { $0.id == "sam" }!
         XCTAssertTrue(sam.alertText.contains("asked for help"))
-        XCTAssertTrue(sam.alertText.hasSuffix("or reply RIPPLE ACCEPT \(sam.acceptCode!)"))
+        let instruction = "Reply \"Ripple accept \(sam.acceptCode!)\" if you are able to check in on Alex."
+        XCTAssertTrue(sam.alertText.hasSuffix("\n\n" + instruction))
+        XCTAssertTrue(sam.escalationText.hasSuffix("\n\n" + instruction))
     }
 
     // MARK: Accepting
 
-    func testReplyCountsLikeTappingTheLink() {
+    func testReplyRecordsResponderAndStopsEscalation() {
         alertTierOne()
         let result = coordinator.acceptReply(text: "Ripple accept \(code(for: "sam"))", from: "+14165550101")
         XCTAssertEqual(result, ActionResult(ok: true, feedback: "Sam is responding."))
@@ -148,10 +152,13 @@ final class ReplyAcceptTests: XCTestCase {
         json["recipients"] = (json["recipients"] as! [[String: Any]]).map { recipient in
             var old = recipient
             old.removeValue(forKey: "acceptCode")
+            old["ackToken"] = "retired-link-token"
             return old
         }
         let data = try JSONSerialization.data(withJSONObject: json)
         let alarm = try RippleJSON.decoder.decode(Alarm.self, from: data)
         XCTAssertNil(alarm.recipients.first?.acceptCode)
+        let saved = try JSONSerialization.jsonObject(with: RippleJSON.encoder.encode(alarm)) as! [String: Any]
+        XCTAssertTrue((saved["recipients"] as! [[String: Any]]).allSatisfy { $0["ackToken"] == nil })
     }
 }

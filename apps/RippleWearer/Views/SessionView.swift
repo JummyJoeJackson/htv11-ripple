@@ -86,7 +86,7 @@ private struct ComingSoonRow: View {
                 .frame(width: 52, height: 52)
                 .background(Theme.iconTint, in: Circle())
                 .accessibilityHidden(true)
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(Theme.body.weight(.semibold))
                 .foregroundStyle(Theme.text)
             Spacer(minLength: 8)

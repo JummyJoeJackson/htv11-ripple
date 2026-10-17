@@ -7,8 +7,7 @@ import Vapor
 func routes(_ app: Application, engine: Engine, publicDirectory: String, twilioAuthToken: String?, baseURL: String) throws {
     app.get("health") { _ in "ok" }
 
-    // One-page websites opened from texts. No app, account or login.
-    app.get("a", ":token") { _ in page("ack.html", publicDirectory: publicDirectory) }
+    // Temporary-contact consent. No app, account or login.
     app.get("t", ":token") { _ in page("invite.html", publicDirectory: publicDirectory) }
 
     let v1 = app.grouped("v1")
@@ -37,16 +36,6 @@ func routes(_ app: Application, engine: Engine, publicDirectory: String, twilioA
     wearer.post("temporary", ":id", "remove") { req async throws -> Response in
         let userId = try await engine.authenticateWearer(token: req.bearerToken)
         return try json(try await engine.removeTemporary(userId: userId, contactId: try req.pathValue("id")))
-    }
-
-    // MARK: Acknowledge page
-
-    v1.get("ack", ":token") { req async throws -> Response in
-        try json(try await engine.ackPage(token: try req.pathValue("token")))
-    }
-
-    v1.post("ack", ":token") { req async throws -> Response in
-        try json(try await engine.acknowledge(token: try req.pathValue("token")))
     }
 
     // MARK: Temporary contact consent page

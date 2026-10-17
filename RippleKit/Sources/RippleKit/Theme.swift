@@ -123,14 +123,15 @@ public struct StatusPill: View {
     }
 
     public var body: some View {
-        Label(text, systemImage: systemImage)
+        // Looks the text up in the app's translations; untranslated text shows as is.
+        Label(LocalizedStringKey(text), systemImage: systemImage)
             .font(Theme.labelBold)
             .foregroundStyle(.white)
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
             .background(kind.color, in: Capsule())
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(text)
+            .accessibilityLabel(Text(LocalizedStringKey(text)))
     }
 }
 

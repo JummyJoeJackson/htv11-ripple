@@ -19,6 +19,12 @@ struct SettingsView: View {
             }
 
             Section {
+                LanguagePicker()
+            } header: {
+                SectionHeader("Language")
+            }
+
+            Section {
                 AvatarPicker(size: 64)
                 IconRow(icon: "person.fill") {
                     TextField("Your name", text: $draft.wearerName)
@@ -311,7 +317,7 @@ struct ShortcutSetupView: View {
             } header: {
                 SectionHeader("Let contacts reply to accept")
             } footer: {
-                FormNote("Alert texts end with \"or reply RIPPLE ACCEPT 4821\", with a different code for each person. When a reply arrives, the automation runs Ripple Accept, which opens Ripple with the reply. It counts like tapping the link: your Watch shows who is responding and Tier 2 isn't texted. The reply itself still appears in Messages.")
+                FormNote("Alert texts ask contacts to reply \"Ripple accept 4821\", with a different code for each person. When a reply arrives, the automation runs Ripple Accept, which opens Ripple with the reply. Your Watch shows who is responding and Tier 2 isn't texted. The reply itself still appears in Messages.")
             }
 
             Section {
@@ -358,7 +364,7 @@ struct ShortcutSetupView: View {
             } header: {
                 SectionHeader("Or build Ripple Alert by hand")
             } footer: {
-                FormNote("The input looks like {\"messages\":[{\"to\":\"+14165550101\",\"text\":\"Ripple alert: …\"}]}.")
+                FormNote("The input looks like {\"messages\":[{\"to\":\"+14165550101\",\"text\":\"RIPPLE ALERT: …\"}]}.")
             }
 
             Section {

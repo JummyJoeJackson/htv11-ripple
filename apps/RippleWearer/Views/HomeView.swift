@@ -8,6 +8,8 @@ import UIKit
 /// button. The Watch circle is still the everyday control.
 struct HomeView: View {
     @Environment(WearerStore.self) private var store
+    /// The greeting is a little larger than other titles, and still scales with text size.
+    @ScaledMetric(relativeTo: .largeTitle) private var greetingSize: CGFloat = 36
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -18,30 +20,31 @@ struct HomeView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: Theme.spacing) {
-                    HStack(alignment: .center) {
-                        Image("RippleLogo")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(height: 60)
-                            .accessibilityLabel("Ripple")
-                        Spacer()
-                        NavigationLink {
-                            SettingsView(isTabRoot: false)
-                        } label: {
-                            ProfileAvatar(size: Theme.minTarget)
-                        }
-                        .accessibilityLabel("Your profile and settings")
-                    }
+                    Image("RippleLogo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 60)
+                        .accessibilityLabel("Ripple")
 
-                    VStack(alignment: .leading, spacing: 4) {
-                        greeting
-                            .font(.system(.largeTitle, weight: .bold))
-                            .foregroundStyle(Theme.text)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .accessibilityAddTraits(.isHeader)
+                    VStack(alignment: .leading, spacing: 6) {
+                        // The profile photo sits level with the greeting.
+                        HStack(alignment: .center, spacing: 12) {
+                            greeting
+                                .font(.system(size: greetingSize, weight: .bold))
+                                .foregroundStyle(Theme.text)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .accessibilityAddTraits(.isHeader)
+                            Spacer(minLength: 0)
+                            NavigationLink {
+                                SettingsView(isTabRoot: false)
+                            } label: {
+                                ProfileAvatar(size: Theme.minTarget)
+                            }
+                            .accessibilityLabel("Your profile and settings")
+                        }
                         if !display.mode.isAlarm {
                             Text("Your care at a glance")
-                                .font(Theme.body)
+                                .font(.title3)
                                 .foregroundStyle(Theme.secondaryText)
                         }
                     }
@@ -237,17 +240,10 @@ private struct MonitoringCard: View {
     private var detail: Text? {
         guard status.mode == .monitoring else { return status.detail.map { Text($0) } }
         let config = store.config
-        let space = Text(verbatim: " ")
-        var text: Text
-        if config.checkInIntervalMinutes > 0 {
-            text = Text("Check-in every \(config.checkInIntervalMinutes) min.")
-            if let next = store.coordinator.nextCheckInAt { text = text + space + Text("Next: \(next.shortTime).") }
-        } else {
-            text = Text("Your Watch will buzz if an alarm starts.")
+        if config.checkInIntervalMinutes > 0, let next = store.coordinator.nextCheckInAt {
+            return Text("Next check-in at \(next.shortTime).")
         }
-        text = text + space + Text("\(config.countdownSeconds) s to answer.")
-        if !watchConnected { text = text + space + Text("Open Ripple on your Watch.") }
-        return text
+        return Text("\(config.countdownSeconds) s to answer when your Watch buzzes.")
     }
 
     var body: some View {
@@ -260,19 +256,24 @@ private struct MonitoringCard: View {
                     .frame(width: 64, height: 64)
                     .background(color, in: Circle())
                     .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 6) {
+                    // Label and status pill share one row, so nothing overlaps the headline.
+                    HStack(alignment: .center, spacing: 8) {
                         SectionLabel("Watch monitoring")
-                        Spacer(minLength: 8)
-                        HStack(spacing: 6) {
-                            Circle().fill(color).frame(width: 10, height: 10)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.6)
+                        Spacer(minLength: 0)
+                        HStack(spacing: 5) {
+                            Circle().fill(color).frame(width: 8, height: 8)
                             Text(LocalizedStringKey(pillText))
-                                .font(Theme.labelBold)
+                                .font(.footnote.weight(.semibold))
                                 .foregroundStyle(Theme.text)
+                                .lineLimit(1)
                         }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
                         .background(color.opacity(0.14), in: Capsule())
+                        .fixedSize()
                         .accessibilityElement(children: .ignore)
                         .accessibilityLabel(Text(LocalizedStringKey(pillText)))
                     }
@@ -294,9 +295,15 @@ private struct MonitoringCard: View {
                     }
                     if let detail {
                         detail
-                            .font(Theme.label)
+                            .font(.subheadline)
                             .foregroundStyle(Theme.secondaryText)
                             .fixedSize(horizontal: false, vertical: true)
+                    }
+                    if status.mode == .monitoring && !watchConnected {
+                        Label("Open Ripple on your Watch", systemImage: "applewatch")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(Theme.checkIn)
+                            .padding(.top, 2)
                     }
                 }
             }
@@ -319,25 +326,12 @@ private struct MonitoringCard: View {
 /// Two columns, or one at the largest text sizes.
 private struct HomeCardGrid: View {
     @Environment(WearerStore.self) private var store
-    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var confirmHelp = false
 
     var body: some View {
-        let columns = typeSize.isAccessibilitySize
-            ? [GridItem(.flexible())]
-            : [GridItem(.flexible(), spacing: Theme.spacing), GridItem(.flexible())]
-        LazyVGrid(columns: columns, spacing: Theme.spacing) {
-            HomeCard(icon: "pills.fill", tint: Theme.accent, title: "Medication Reminders", subtitle: "Stay on track with your medications.") {
-                MedicationFooter()
-            }
-            HomeCard(icon: "list.bullet.clipboard.fill", tint: Color(red: 0x4F / 255, green: 0x46 / 255, blue: 0xE5 / 255),
-                     title: "Daily Symptom Check-in", subtitle: "Share how you're feeling today.") {
-                ComingSoonTag()
-            }
-            HomeCard(icon: "calendar", tint: Theme.safe, title: "Next Appointment", subtitle: "Doctor visits and reminders.") {
-                ComingSoonTag()
-            }
-            HomeCard(icon: "message.fill", tint: Theme.alert, title: "Emergency Help", subtitle: "Text your contacts now.") {
+        // Full-width cards, one under the other: help first, then medication.
+        VStack(spacing: Theme.spacing) {
+            HomeCard(icon: "message.fill", tint: Theme.alert, title: "Emergency Help", subtitle: "Text your contacts.") {
                 Button {
                     confirmHelp = true
                 } label: {
@@ -350,6 +344,10 @@ private struct HomeCardGrid: View {
                 .buttonStyle(.plain)
                 .accessibilityHint("Asks for confirmation before texting a Ripple alert to all your contacts.")
             }
+            HomeCard(icon: "pills.fill", tint: Theme.accent, title: "Medication Reminders", subtitle: "Stay on track.",
+                     destination: AnyView(MedicationView())) {
+                MedicationFooter()
+            }
         }
         .confirmationDialog("Text all your contacts?", isPresented: $confirmHelp, titleVisibility: .visible) {
             Button("Send Ripple alert", role: .destructive) { store.requestHelpFromPhone() }
@@ -360,36 +358,75 @@ private struct HomeCardGrid: View {
     }
 }
 
+/// The card's color, so its footer can be tinted to match.
+private struct HomeCardTintKey: EnvironmentKey {
+    static let defaultValue = Theme.accent
+}
+
+private extension EnvironmentValues {
+    var homeCardTint: Color {
+        get { self[HomeCardTintKey.self] }
+        set { self[HomeCardTintKey.self] = newValue }
+    }
+}
+
 private struct HomeCard<Footer: View>: View {
     let icon: String
     let tint: Color
     let title: String
     let subtitle: String
+    /// When set, the top of the card opens this screen and shows a chevron.
+    var destination: AnyView? = nil
     @ViewBuilder let footer: Footer
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 24, weight: .semibold))
-                .foregroundStyle(tint)
-                .frame(width: 52, height: 52)
-                .background(tint.opacity(0.12), in: Circle())
-                .accessibilityHidden(true)
-            Text(LocalizedStringKey(title))
-                .font(Theme.cardTitle)
-                .foregroundStyle(Theme.text)
-                .fixedSize(horizontal: false, vertical: true)
-            Text(LocalizedStringKey(subtitle))
-                .font(Theme.label)
-                .foregroundStyle(Theme.secondaryText)
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 0)
+            if let destination {
+                NavigationLink {
+                    destination
+                } label: {
+                    HStack(alignment: .center, spacing: 4) {
+                        header
+                        Spacer(minLength: 8)
+                        Image(systemName: "chevron.right")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(Theme.secondaryText)
+                            .accessibilityHidden(true)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            } else {
+                header
+            }
             footer
+                .environment(\.homeCardTint, tint)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
         .padding(16)
         .rippleCard()
         .accessibilityElement(children: .contain)
+    }
+
+    private var header: some View {
+            HStack(alignment: .center, spacing: 12) {
+                Image(systemName: icon)
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(tint)
+                    .frame(width: 48, height: 48)
+                    .background(tint.opacity(0.12), in: Circle())
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(LocalizedStringKey(title))
+                        .font(Theme.cardTitle)
+                        .foregroundStyle(Theme.text)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text(LocalizedStringKey(subtitle))
+                        .font(.footnote)
+                        .foregroundStyle(Theme.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
     }
 }
 
@@ -416,44 +453,46 @@ private struct MedicationFooter: View {
             .buttonStyle(.plain)
             .accessibilityHint("Tells Ripple you've taken this dose, so no check-in starts.")
         } else if let next = coordinator.nextDoseAt {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Next dose")
-                    .font(Theme.label)
-                    .foregroundStyle(Theme.secondaryText)
-                Text(next.shortTime)
-                    .font(Theme.body.weight(.bold))
-                    .foregroundStyle(Theme.text)
+            NavigationLink {
+                MedicationView()
+            } label: {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Next dose")
+                            .font(.footnote)
+                            .foregroundStyle(Theme.secondaryText)
+                        Text(next.shortTime)
+                            .font(.title3.weight(.bold))
+                            .foregroundStyle(Theme.text)
+                    }
+                    Spacer(minLength: 4)
+                    Image(systemName: "chevron.right")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(Theme.text)
+                        .accessibilityHidden(true)
+                }
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .padding(.horizontal, 12)
+                .background(Theme.accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .contentShape(Rectangle())
             }
-            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-            .padding(.horizontal, 12)
-            .background(Theme.iconTint.opacity(0.6), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .accessibilityElement(children: .combine)
+            .buttonStyle(.plain)
+            .accessibilityHint("Opens your medication times.")
         } else {
             NavigationLink {
-                SettingsView(isTabRoot: false)
+                MedicationView()
             } label: {
                 Label("Add dose times", systemImage: "plus")
                     .font(Theme.labelBold)
                     .foregroundStyle(Theme.accent)
                     .frame(maxWidth: .infinity, minHeight: 44)
-                    .background(Theme.iconTint.opacity(0.6), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .background(Theme.accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
-            .accessibilityHint("Opens Settings to add your usual medication times.")
+            .accessibilityHint("Opens your medication times.")
         }
     }
 }
 
-/// Marks a feature that isn't built yet; nothing happens on tap.
-private struct ComingSoonTag: View {
-    var body: some View {
-        Text("Coming soon")
-            .font(Theme.labelBold)
-            .foregroundStyle(Theme.secondaryText)
-            .frame(maxWidth: .infinity, minHeight: 44)
-            .background(Theme.iconTint.opacity(0.6), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .accessibilityLabel("Coming soon")
-    }
-}
 
 /// Alert sent (red) and someone responding (blue): a solid card with white text.
 private struct SolidStatusCard: View {
@@ -480,7 +519,7 @@ private struct SolidStatusCard: View {
             }
 
             Text(status.headline)
-                .font(.system(size: headlineSize, weight: .bold))
+                .font(.system(size: headlineSize, weight: .semibold))
                 .foregroundStyle(.white)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)

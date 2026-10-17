@@ -1,6 +1,18 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "": {},
+    "%@ is a contact": {},
+    "%@ is checking on you (since %@)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@ is checking on you (since %2$@)"
+          }
+        }
+      }
+    },
     "%@ is checking on you.": {
       "localizations": {
         "es": {
@@ -29,6 +41,39 @@
         }
       }
     },
+    "%@ is in your contacts.": {},
+    "%@ · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "%@. %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@. %2$@"
+          }
+        }
+      }
+    },
+    "%@: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@: %2$@"
+          }
+        }
+      }
+    },
+    "%lld": {},
+    "%lld a day": {},
     "%lld min": {
       "localizations": {
         "es": {
@@ -53,6 +98,35 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld 分鐘"
+          }
+        }
+      }
+    },
+    "%lld s": {},
+    "%lld s to answer when your Watch buzzes.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld s para responder cuando tu reloj vibre."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld s pour répondre quand votre montre vibre."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手表振动时，你有 %lld 秒回应。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手錶震動時，你有 %lld 秒回應。"
           }
         }
       }
@@ -85,6 +159,8 @@
         }
       }
     },
+    "%lld seconds left": {},
+    "1 a day": {},
     "A contact is checking on you.": {
       "localizations": {
         "es": {
@@ -141,6 +217,7 @@
         }
       }
     },
+    "Accurate to about %lld m": {},
     "Active": {
       "localizations": {
         "es": {
@@ -337,6 +414,7 @@
         }
       }
     },
+    "Add the four shortcuts": {},
     "Alarm gesture": {
       "localizations": {
         "es": {
@@ -561,6 +639,8 @@
         }
       }
     },
+    "Answers the check-in. No one is texted.": {},
+    "Apple Watch recognises the gestures. Each shortcut sends one gesture to Ripple, which checks the sequence you chose in Settings.": {},
     "Asks for confirmation before texting a Ripple alert to all your contacts.": {
       "localizations": {
         "es": {
@@ -589,6 +669,9 @@
         }
       }
     },
+    "Asks to remove this contact now.": {},
+    "Assign AssistiveTouch gestures": {},
+    "AssistiveTouch turns off Apple's native double tap. Ripple's touchscreen controls remain available.": {},
     "Automatic check-ins are off. If an alarm starts, your Watch buzzes.": {
       "localizations": {
         "es": {
@@ -729,6 +812,8 @@
         }
       }
     },
+    "Changes the language of the app.": {},
+    "Check again": {},
     "Check in": {
       "localizations": {
         "es": {
@@ -813,6 +898,7 @@
         }
       }
     },
+    "Checking…": {},
     "Choose \"Allow While Using App\".": {
       "localizations": {
         "es": {
@@ -841,6 +927,7 @@
         }
       }
     },
+    "Choose and check a sequence": {},
     "Close": {
       "localizations": {
         "es": {
@@ -1065,6 +1152,7 @@
         }
       }
     },
+    "Couldn't find your location.": {},
     "Couldn't text": {
       "localizations": {
         "es": {
@@ -1177,6 +1265,7 @@
         }
       }
     },
+    "Demo: phone failure": {},
     "Device": {
       "localizations": {
         "es": {
@@ -1233,6 +1322,7 @@
         }
       }
     },
+    "Dismiss message": {},
     "Do you want to send a Ripple alert to all your contacts?": {
       "localizations": {
         "es": {
@@ -1289,6 +1379,36 @@
         }
       }
     },
+    "Doctor visits.": {
+      "extractionState": "stale",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Citas médicas."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Visites médicales."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "就诊。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "就診。"
+          }
+        }
+      }
+    },
+    "Done": {},
     "Dose": {
       "localizations": {
         "es": {
@@ -1317,6 +1437,35 @@
         }
       }
     },
+    "Dose times": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Horas de toma"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heures de prise"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "服药时间"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "服藥時間"
+          }
+        }
+      }
+    },
+    "Edit contact": {},
     "Emergency Help": {
       "localizations": {
         "es": {
@@ -1373,6 +1522,7 @@
         }
       }
     },
+    "Finishes setup and opens Ripple.": {},
     "First name": {
       "localizations": {
         "es": {
@@ -1429,6 +1579,8 @@
         }
       }
     },
+    "Gesture sequence": {},
+    "Gesture shortcuts": {},
     "Get help": {
       "localizations": {
         "es": {
@@ -1485,6 +1637,7 @@
         }
       }
     },
+    "Goes to the previous step.": {},
     "Hackathon prototype. Not a medical or emergency service.": {
       "localizations": {
         "es": {
@@ -1793,6 +1946,36 @@
         }
       }
     },
+    "How you feel today.": {
+      "extractionState": "stale",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cómo te sientes hoy."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comment vous allez aujourd'hui."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你今天感觉如何。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你今天感覺如何。"
+          }
+        }
+      }
+    },
+    "I have Parkinson's. My medication is in my left pocket.": {},
     "I took them": {
       "localizations": {
         "es": {
@@ -1905,6 +2088,8 @@
         }
       }
     },
+    "In Tier 1 until %@. No expiration text will be sent.": {},
+    "Invite someone for one hour": {},
     "Language": {
       "localizations": {
         "es": {
@@ -1957,6 +2142,35 @@
           "stringUnit": {
             "state": "translated",
             "value": "姓氏（選填）"
+          }
+        }
+      }
+    },
+    "Last taken": {
+      "extractionState": "stale",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Última toma"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dernière prise"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上次服药"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上次服藥"
           }
         }
       }
@@ -2045,6 +2259,8 @@
         }
       }
     },
+    "Location not shared": {},
+    "Map showing your location, accurate to about %lld metres": {},
     "Match iPhone": {
       "localizations": {
         "es": {
@@ -2073,6 +2289,7 @@
         }
       }
     },
+    "Maya Chen is checking on you.": {},
     "Medication": {
       "localizations": {
         "es": {
@@ -2213,6 +2430,7 @@
         }
       }
     },
+    "Messaging shortcuts": {},
     "Monitoring": {
       "localizations": {
         "es": {
@@ -2297,6 +2515,7 @@
         }
       }
     },
+    "Name": {},
     "Needs Apple Watch Series 9 or later.": {
       "localizations": {
         "es": {
@@ -2325,6 +2544,7 @@
         }
       }
     },
+    "New contact": {},
     "Next %@": {
       "localizations": {
         "es": {
@@ -2381,6 +2601,36 @@
         }
       }
     },
+    "Next Visit": {
+      "extractionState": "stale",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Próxima visita"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prochaine visite"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下次就诊"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下次就診"
+          }
+        }
+      }
+    },
+    "Next check-in": {},
     "Next check-in at %@.": {
       "localizations": {
         "es": {
@@ -2577,6 +2827,35 @@
         }
       }
     },
+    "None": {
+      "extractionState": "stale",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ninguna"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucune"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "無"
+          }
+        }
+      }
+    },
     "Not now": {
       "localizations": {
         "es": {
@@ -2661,6 +2940,7 @@
         }
       }
     },
+    "One-hour contact": {},
     "Only sent with an alert.": {
       "localizations": {
         "es": {
@@ -2685,6 +2965,34 @@
           "stringUnit": {
             "state": "translated",
             "value": "僅在警報時傳送。"
+          }
+        }
+      }
+    },
+    "Open Ripple on your Watch": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre Ripple en tu reloj"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrez Ripple sur votre montre"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请在手表上打开 Ripple"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請在手錶上打開 Ripple"
           }
         }
       }
@@ -2717,6 +3025,22 @@
         }
       }
     },
+    "Open in Maps": {},
+    "Opens the same map link your contacts got.": {},
+    "Opens this contact to edit or remove.": {},
+    "Opens your medication times.": {},
+    "Page %lld of %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Page %1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "Pairing code %@": {},
+    "Phone, with area code": {},
     "Pick what's easiest for you.": {
       "localizations": {
         "es": {
@@ -2745,6 +3069,7 @@
         }
       }
     },
+    "Picks a profile photo from your library. It stays on this iPhone.": {},
     "Pinch your fingers twice": {
       "localizations": {
         "es": {
@@ -2829,6 +3154,9 @@
         }
       }
     },
+    "Remove %@ now?": {},
+    "Remove contact": {},
+    "Remove now": {},
     "Remove photo": {
       "localizations": {
         "es": {
@@ -2885,6 +3213,10 @@
         }
       }
     },
+    "Restore now": {},
+    "Ripple": {},
+    "Ripple accept 4821 or Ripple join 583921": {},
+    "Ripple texts from your iPhone using this shortcut.": {},
     "Same Wi-Fi as the server. In the Simulator, use localhost:8080.": {
       "localizations": {
         "es": {
@@ -2997,6 +3329,7 @@
         }
       }
     },
+    "Save name": {},
     "Say a short phrase": {
       "localizations": {
         "es": {
@@ -3053,6 +3386,11 @@
         }
       }
     },
+    "Send invitation again": {},
+    "Send invitation text": {},
+    "Send test message": {},
+    "Send to": {},
+    "Send to Watch again": {},
     "Sending": {
       "localizations": {
         "es": {
@@ -3165,6 +3503,7 @@
         }
       }
     },
+    "Server": {},
     "Server address": {
       "localizations": {
         "es": {
@@ -3305,6 +3644,7 @@
         }
       }
     },
+    "Set up this iPhone again?": {},
     "Settings": {
       "localizations": {
         "es": {
@@ -3361,6 +3701,7 @@
         }
       }
     },
+    "Share my location in alerts": {},
     "Share my location with them in alerts": {
       "localizations": {
         "es": {
@@ -3389,6 +3730,8 @@
         }
       }
     },
+    "Shares location": {},
+    "Shortcut name": {},
     "Simulator: localhost:8080": {
       "localizations": {
         "es": {
@@ -3445,6 +3788,7 @@
         }
       }
     },
+    "Since 12:47 AM": {},
     "Skip": {
       "localizations": {
         "es": {
@@ -3613,6 +3957,7 @@
         }
       }
     },
+    "Starts setup.": {},
     "Status:": {
       "localizations": {
         "es": {
@@ -3669,6 +4014,35 @@
         }
       }
     },
+    "Stay on track.": {
+      "extractionState": "stale",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mantente al día."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restez à jour."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按时服药。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按時服藥。"
+          }
+        }
+      }
+    },
     "Step %lld of %lld": {
       "localizations": {
         "es": {
@@ -3693,6 +4067,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "第 %lld 步，共 %lld 步"
+          }
+        }
+      }
+    },
+    "Step %lld. %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Step %1$lld. %2$@"
           }
         }
       }
@@ -3725,6 +4109,37 @@
         }
       }
     },
+    "Swipe left to remove one.": {
+      "extractionState": "stale",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desliza a la izquierda para quitar una."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balayez vers la gauche pour en retirer une."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "向左滑动即可删除。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "向左滑動即可刪除。"
+          }
+        }
+      }
+    },
+    "Taken at %@": {},
+    "Takes one location reading now and shows it on a map.": {},
     "Tap": {
       "localizations": {
         "es": {
@@ -3921,6 +4336,7 @@
         }
       }
     },
+    "Tells Ripple you've taken this dose, so no check-in starts.": {},
     "Text all your contacts?": {
       "localizations": {
         "es": {
@@ -3949,6 +4365,7 @@
         }
       }
     },
+    "Text invitation": {},
     "Text your contacts now.": {
       "localizations": {
         "es": {
@@ -3973,6 +4390,35 @@
           "stringUnit": {
             "state": "translated",
             "value": "立即傳簡訊給你的聯絡人。"
+          }
+        }
+      }
+    },
+    "Text your contacts.": {
+      "extractionState": "stale",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escribe a tus contactos."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Textez vos contacts."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "发短信给联系人。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "傳簡訊給聯絡人。"
           }
         }
       }
@@ -4005,6 +4451,7 @@
         }
       }
     },
+    "Texts everyone already contacted that you're okay.": {},
     "The address your Ripple server shows.": {
       "localizations": {
         "es": {
@@ -4061,6 +4508,7 @@
         }
       }
     },
+    "The gesture actions run in the background. Keep the shortcuts to one action, without Open App or Show Alert, so they don't request a screen change.": {},
     "The secret help signal is always a 2-second hold.": {
       "localizations": {
         "es": {
@@ -4141,6 +4589,42 @@
           "stringUnit": {
             "state": "translated",
             "value": "對方的電話號碼"
+          }
+        }
+      }
+    },
+    "These four shortcuts are gesture inputs. Keep your existing Ripple Alert messaging shortcut separate.": {},
+    "They reply \"Ripple join %@\" to start their one hour. Check Messages to confirm the invitation was sent.": {},
+    "This iPhone is ignoring the Watch and the server until %@.": {},
+    "This invitation or session has ended.": {},
+    "Tier": {},
+    "Tier 1: texted first": {},
+    "Tier 2: if Tier 1 doesn't respond": {},
+    "Time for your meds": {
+      "extractionState": "stale",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Es hora de tus medicinas"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "C'est l'heure de vos médicaments"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "该服药了"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "該服藥了"
           }
         }
       }
@@ -4229,6 +4713,35 @@
         }
       }
     },
+    "Turn on monitoring to get reminders.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activa la vigilancia para recibir recordatorios."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activez la surveillance pour recevoir des rappels."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开启监测以接收提醒。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開啟監測以接收提醒。"
+          }
+        }
+      }
+    },
+    "Turns off check-ins until you start again.": {},
     "Unsaved changes": {
       "localizations": {
         "es": {
@@ -4313,6 +4826,7 @@
         }
       }
     },
+    "Use this reply": {},
     "Voice": {
       "localizations": {
         "es": {
@@ -4397,6 +4911,7 @@
         }
       }
     },
+    "Waiting for %@'s reply": {},
     "Watch": {
       "localizations": {
         "es": {
@@ -4481,6 +4996,7 @@
         }
       }
     },
+    "What your contacts would see in an alert.": {},
     "When your Watch buzzes, tap the big circle.": {
       "localizations": {
         "es": {
@@ -4621,6 +5137,8 @@
         }
       }
     },
+    "Without an active alarm, inputs only update the receipt display. A matching sequence during an alarm dismisses it through Ripple's usual I'm okay action. Changing the dropdown later needs Save and Watch sync, with the same four shortcuts.": {},
+    "You": {},
     "You asked for help.": {
       "localizations": {
         "es": {
@@ -4677,6 +5195,7 @@
         }
       }
     },
+    "You have %lld contacts.": {},
     "You stay in control": {
       "localizations": {
         "es": {
@@ -4789,6 +5308,7 @@
         }
       }
     },
+    "Your Watch will buzz and ask if you're okay.": {},
     "Your Watch will buzz if an alarm starts.": {
       "localizations": {
         "es": {
@@ -4985,6 +5505,8 @@
         }
       }
     },
+    "Your contacts were texted at 12:46 AM.": {},
+    "Your name": {},
     "Your phrase": {
       "localizations": {
         "es": {
@@ -5013,6 +5535,7 @@
         }
       }
     },
+    "Your profile and settings": {},
     "left to answer": {
       "localizations": {
         "es": {

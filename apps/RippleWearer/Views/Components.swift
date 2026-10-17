@@ -65,7 +65,7 @@ struct ScreenHeader<Trailing: View>: View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(LocalizedStringKey(title))
-                    .font(.system(.largeTitle, weight: .bold))
+                    .font(Theme.largeTitle)
                     .foregroundStyle(Theme.text)
                     .accessibilityAddTraits(.isHeader)
                 if let subtitle {
@@ -280,8 +280,7 @@ struct StatusRow: View {
     }
 }
 
-/// Explanatory text under a section, at the 17 pt minimum. Italic marks it
-/// as background information; anything to act on stays upright.
+/// Short explanatory text under a section, in regular weight.
 struct FormNote: View {
     let text: String
 
@@ -292,7 +291,6 @@ struct FormNote: View {
     var body: some View {
         Text(LocalizedStringKey(text))
             .font(Theme.label)
-            .italic()
             .foregroundStyle(Theme.secondaryText)
     }
 }

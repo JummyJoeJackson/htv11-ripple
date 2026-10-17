@@ -76,8 +76,8 @@ struct CircleScreen: View {
             }
         }
         .padding(.horizontal, 4)
-        // Raising the wrist restarts the microphone straight away if the system stopped it.
-        .onChange(of: scenePhase) { _, _ in store.updateListening() }
+        // Coming back to the front restarts whatever the system stopped, straight away.
+        .onChange(of: scenePhase) { _, _ in store.refreshRuntime() }
         .confirmationDialog("Stop monitoring?", isPresented: Binding(get: { store.confirmStop }, set: { store.confirmStop = $0 })) {
             Button("Stop monitoring", role: .destructive) { store.confirmStopMonitoring() }
             Button("Keep monitoring", role: .cancel) {}

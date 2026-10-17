@@ -30,6 +30,7 @@ final class WatchStore {
 
     private let link = WatchLink()
     @ObservationIgnored private let microphone = WatchMicrophone()
+    @ObservationIgnored private let runtime = WatchRuntime()
     @ObservationIgnored private var hapticTask: Task<Void, Never>?
     @ObservationIgnored private var pingTask: Task<Void, Never>?
     @ObservationIgnored private var timeoutTask: Task<Void, Never>?
@@ -73,8 +74,7 @@ final class WatchStore {
                 if let self {
                     self.phoneReachable = self.link.isReachable
                     if self.config.version > 0 { self.link.acknowledgeConfig(self.config.version) }
-                    // Restarts the microphone if the system stopped it.
-                    self.updateListening()
+                    self.refreshRuntime()
                 }
                 try? await Task.sleep(nanoseconds: 3_000_000_000)
             }
@@ -98,7 +98,7 @@ final class WatchStore {
         if !newDisplay.mode.isAlarm {
             confirmStop = false
         }
-        updateListening()
+        refreshRuntime()
     }
 
     /// Keeps the last configuration it received and confirms it to the iPhone.
@@ -154,12 +154,27 @@ final class WatchStore {
         }
     }
 
+    // MARK: Staying awake
+
+    /// Keeps the app running with the screen off while monitoring, and the
+    /// microphone listening during an alarm. Without this the app is suspended
+    /// when the screen dims and the iPhone can't reach it. Safe to call often;
+    /// it restarts whatever the system stopped.
+    func refreshRuntime() {
+        if display.mode == .off {
+            runtime.stop()
+        } else {
+            runtime.start()
+        }
+        updateListening()
+    }
+
     // MARK: Listening
 
     /// While an alarm is open, the microphone listens for the voice phrase, so
     /// nothing has to be pressed. The iPhone does the recognition, since
-    /// watchOS has none. Call whenever the alarm, settings or app state change.
-    func updateListening() {
+    /// watchOS has none.
+    private func updateListening() {
         let wanted = config.voiceEnabled
             && display.mode.isAlarm
             && display.phoneAvailable

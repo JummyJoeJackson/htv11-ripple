@@ -52,6 +52,62 @@ enum NavigationBarStyle {
     }()
 }
 
+// MARK: - Feedback you can feel
+
+/// A buzz on key taps, so a tap that registered can be felt even when hands shake.
+enum Haptics {
+    static func tap() { UIImpactFeedbackGenerator(style: .medium).impactOccurred() }
+    static func success() { UINotificationFeedbackGenerator().notificationOccurred(.success) }
+    static func warning() { UINotificationFeedbackGenerator().notificationOccurred(.warning) }
+}
+
+/// A full-screen "✓ Done" shown for two seconds after a big action.
+struct Confirmation: Identifiable, Equatable {
+    let id = UUID()
+    var text: String
+    var systemImage = "checkmark"
+    var color = Theme.safe
+}
+
+struct ConfirmationOverlay: View {
+    @Environment(WearerStore.self) private var store
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        ZStack {
+            if let confirmation = store.confirmation {
+                VStack(spacing: 24) {
+                    Image(systemName: confirmation.systemImage)
+                        .font(.system(size: 64, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 140, height: 140)
+                        .background(confirmation.color, in: Circle())
+                        .accessibilityHidden(true)
+                    Text(LocalizedStringKey(confirmation.text))
+                        .font(Theme.largeTitle)
+                        .foregroundStyle(Theme.text)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(32)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Theme.background.ignoresSafeArea())
+                .contentShape(Rectangle())
+                .onTapGesture { store.confirmation = nil }
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isModal)
+                .transition(.opacity)
+                .task(id: confirmation.id) {
+                    UIAccessibility.post(notification: .announcement, argument: confirmation.text)
+                    try? await Task.sleep(nanoseconds: 2_000_000_000)
+                    if store.confirmation?.id == confirmation.id { store.confirmation = nil }
+                }
+            }
+        }
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: store.confirmation)
+    }
+}
+
 // MARK: - Screen header
 
 /// A big screen title with an optional one-line subtitle and a round button

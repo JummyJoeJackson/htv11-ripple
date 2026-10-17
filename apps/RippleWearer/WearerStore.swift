@@ -52,6 +52,8 @@ final class WearerStore {
     private(set) var pending: String?
     private(set) var testResult: String?
     var banner: Banner?
+    /// The full-screen "✓" after a big action. Display only.
+    var confirmation: Confirmation?
     /// Bumped whenever the coordinator changes, so views refresh.
     private(set) var revision = 0
 

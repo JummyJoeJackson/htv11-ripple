@@ -74,13 +74,12 @@ struct MedicationView: View {
                         }
                     }
                     .pickerStyle(.menu)
-                } footer: {
-                    FormNote("No tap in time starts a check-in.")
                 }
             }
 
             Section {
                 Button("Save medication times") {
+                    Haptics.success()
                     var updated = store.config
                     updated.medicationTimes = times.sorted { ($0.hour, $0.minute) < ($1.hour, $1.minute) }
                     updated.medicationGraceMinutes = grace

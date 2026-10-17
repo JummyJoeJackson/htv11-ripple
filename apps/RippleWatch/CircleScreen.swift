@@ -2,7 +2,7 @@ import RippleKit
 import SwiftUI
 
 /// One large circle, a short status line under it, and a countdown inside the
-/// circle when a check-in is waiting. No contacts or settings here.
+/// circle when a check-in is waiting (then the circle fills the screen alone). No contacts or settings here.
 ///
 /// | State            | Label        | Tap                      | Hold 2 s                     |
 /// | Monitoring off   | Start        | Start monitoring         | Same as tap                  |
@@ -56,7 +56,8 @@ struct CircleScreen: View {
                     }
             } else if !store.phoneReachable || !display.phoneAvailable {
                 WatchNote(text: "iPhone not available", systemImage: "iphone.slash", color: Theme.checkIn)
-            } else {
+            } else if display.mode != .checkIn {
+                // During a check-in the circle fills the screen with nothing under it.
                 StatusLine(text: display.status, mode: display.mode, medsDue: display.medsDueAt != nil)
             }
 
@@ -213,7 +214,7 @@ private struct RippleCircle: View {
     let onSwipe: (GestureStep) -> Void
 
     @State private var holdFired = false
-    @ScaledMetric(relativeTo: .largeTitle) private var countdownSize: CGFloat = 30
+    @ScaledMetric(relativeTo: .largeTitle) private var countdownSize: CGFloat = 40
     /// The current touch has travelled far enough to be a swipe.
     @State private var swiping = false
     @State private var lastSwipeAt = Date.distantPast
@@ -231,12 +232,13 @@ private struct RippleCircle: View {
             ZStack {
                 RippleRings(color: circleColor)
                 if let deadline {
-                    // Check-in: a light disc with an amber ring that empties as time runs out.
+                    // Check-in: a light disc with an amber ring that empties as time
+                    // runs out, as big as the screen allows.
                     Circle()
                         .fill(.white.opacity(0.85))
-                        .padding(18)
+                        .padding(6)
                     CountdownRing(deadline: deadline, size: countdownSize)
-                        .padding(18)
+                        .padding(6)
                 } else {
                     Circle()
                         .fill(circleColor.gradient)
@@ -324,10 +326,10 @@ private struct CountdownRing: View {
             let fraction = total > 0 ? min(1, left / total) : 1
             ZStack {
                 Circle()
-                    .stroke(Theme.checkIn.opacity(0.2), lineWidth: 5)
+                    .stroke(Theme.checkIn.opacity(0.2), lineWidth: 8)
                 Circle()
                     .trim(from: 0, to: fraction)
-                    .stroke(Theme.checkIn, style: StrokeStyle(lineWidth: 5, lineCap: .round))
+                    .stroke(Theme.checkIn, style: StrokeStyle(lineWidth: 8, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                 Text("\(Int(left.rounded(.up)))s")
                     .font(.system(size: size, weight: .bold))

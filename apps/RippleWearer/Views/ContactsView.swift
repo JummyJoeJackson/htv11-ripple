@@ -156,7 +156,7 @@ private struct FilterTabs: View {
                             .fill(selected ? Theme.accent : .clear)
                             .frame(height: 3)
                     }
-                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .frame(maxWidth: .infinity, minHeight: Theme.minTarget)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -303,8 +303,6 @@ private struct ContactEditView: View {
                 }
                 Section {
                     Toggle("Share my location in alerts", isOn: $contact.shareLocation)
-                } footer: {
-                    FormNote("Adds a map link to their alert texts.")
                 }
                 if !isNew {
                     Section {
@@ -325,6 +323,7 @@ private struct ContactEditView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
+                        Haptics.success()
                         onSave(contact)
                         dismiss()
                     }

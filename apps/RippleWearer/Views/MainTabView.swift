@@ -46,6 +46,8 @@ struct MainTabView: View {
                 }
             }
         }
+        .overlay { ConfirmationOverlay() }
+        .environment(\.openTab) { selection = $0 }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
             keyboardVisible = true
         }
@@ -59,6 +61,18 @@ struct MainTabView: View {
         .onAppear {
             if inAlarm { selection = .home }
         }
+    }
+}
+
+private struct OpenTabKey: EnvironmentKey {
+    static let defaultValue: (AppTab) -> Void = { _ in }
+}
+
+extension EnvironmentValues {
+    /// Switches the bottom bar to another tab, like Home's "Add someone to text".
+    var openTab: (AppTab) -> Void {
+        get { self[OpenTabKey.self] }
+        set { self[OpenTabKey.self] = newValue }
     }
 }
 
@@ -104,6 +118,7 @@ private struct TabBar: View {
             ForEach(AppTab.allCases, id: \.self) { tab in
                 let selected = tab == selection
                 Button {
+                    if selection != tab { UISelectionFeedbackGenerator().selectionChanged() }
                     selection = tab
                 } label: {
                     VStack(spacing: 2) {

@@ -111,6 +111,7 @@ private struct ConfigPage<Content: View>: View {
             content($draft)
             Section {
                 Button("Save") {
+                    Haptics.success()
                     store.save(draft)
                     store.banner = Banner(text: "Saved. Sending to your Watch.", ok: true)
                 }
@@ -209,8 +210,6 @@ private struct HealthAlertSettings: View {
                 if !store.config.healthAlerts.isEmpty {
                     StatusRow(label: "Apple Health", value: store.health.statusText)
                 }
-            } footer: {
-                FormNote("A fall or heart alert from your Watch starts a check-in.")
             }
         }
     }

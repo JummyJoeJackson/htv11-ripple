@@ -3,11 +3,13 @@ import SwiftUI
 import UIKit
 
 /// Permanent contacts by name and phone number, each in Tier 1 or Tier 2,
-/// plus one-hour temporary contacts.
+/// plus one-hour temporary contacts, as cards with a filter across the top.
 struct ContactsView: View {
     @Environment(WearerStore.self) private var store
     @State private var editing: EditingContact?
     @State private var showInvite = false
+    @State private var filter: ContactFilter = .all
+    @State private var removing: TemporaryContactView?
 
     private struct EditingContact: Identifiable {
         let id = UUID()
@@ -16,62 +18,64 @@ struct ContactsView: View {
     }
 
     var body: some View {
-        RippleList {
-            ForEach(Tier.allCases, id: \.self) { tier in
-                Section {
-                    let contacts = store.config.contacts.filter { $0.tier == tier }
-                    if contacts.isEmpty {
-                        FormNote("Nobody in \(tier.label) yet.")
-                    }
-                    ForEach(contacts) { contact in
-                        Button {
-                            editing = EditingContact(contact: contact, isNew: false)
-                        } label: {
-                            ContactRow(name: contact.name, phone: contact.phone, shareLocation: contact.shareLocation)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                ScreenHeader(title: "Contacts") {
+                    HeaderIconButton(systemImage: "plus", label: "Add contact") { addContact() }
+                }
+
+                FilterTabs(selection: $filter)
+
+                ForEach(Tier.allCases, id: \.self) { tier in
+                    if filter == .all || filter == ContactFilter(tier) {
+                        let contacts = store.config.contacts.filter { $0.tier == tier }
+                        SectionTitle(title: tier.label, note: tier == .one ? "Texted first" : "Texted if nobody in Tier 1 responds")
+                        if contacts.isEmpty {
+                            FormNote("Nobody in \(tier.label) yet.")
+                        }
+                        ForEach(contacts) { contact in
+                            Button {
+                                editing = EditingContact(contact: contact, isNew: false)
+                            } label: {
+                                ContactCard(name: contact.name, phone: contact.phone, tag: tier.label, tagTint: Theme.accent) {
+                                    LocationLine(shared: contact.shareLocation)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityHint("Opens this contact to edit or remove.")
                         }
                     }
-                    .onDelete { offsets in delete(offsets, in: tier) }
-                } header: {
-                    SectionHeader(tier.label)
-                } footer: {
-                    FormNote(tier == .one
-                         ? "Texted first if you don't answer. One-hour contacts join Tier 1."
-                         : "Texted if nobody in Tier 1 responds in time.")
                 }
-            }
 
-            Section {
+                if filter == .all || filter == .temporary {
+                    SectionTitle(title: "Temporary contacts", note: "Join Tier 1 while active")
+                    if store.temporaryContacts.isEmpty {
+                        FormNote("No one-hour contacts.")
+                    }
+                    ForEach(store.temporaryContacts) { contact in
+                        TemporaryContactCard(contact: contact) { removing = contact }
+                    }
+                    Button {
+                        showInvite = true
+                    } label: {
+                        Label("Invite someone for one hour", systemImage: "qrcode")
+                    }
+                    .buttonStyle(.rippleLink)
+                    .font(Theme.labelBold)
+                }
+
                 Button {
-                    editing = EditingContact(contact: PermanentContact(name: "", phone: ""), isNew: true)
+                    addContact()
                 } label: {
                     Label("Add contact", systemImage: "person.badge.plus")
                 }
                 .buttonStyle(.ripplePrimary)
-                .listRowInsets(EdgeInsets())
-                .listRowBackground(Color.clear)
+                .padding(.top, 8)
             }
-
-            Section {
-                if store.temporaryContacts.isEmpty {
-                    FormNote("No one-hour contacts.")
-                }
-                ForEach(store.temporaryContacts) { contact in
-                    TemporaryContactRow(contact: contact)
-                }
-                Button {
-                    showInvite = true
-                } label: {
-                    Label("Invite for one hour", systemImage: "qrcode")
-                }
-                .frame(minHeight: Theme.minTarget)
-                .buttonStyle(.rippleLink)
-            } header: {
-                SectionHeader("One-hour contacts")
-            } footer: {
-                FormNote("Someone nearby, such as a friend at the venue, can agree to be a contact for one hour. They're texted with Tier 1 until the session ends or you remove them.")
-            }
+            .padding(Theme.spacing)
         }
-        .navigationTitle("Contacts")
+        .rippleScreen(background: .two)
+        .toolbar(.hidden, for: .navigationBar)
         .sheet(item: $editing) { item in
             ContactEditView(contact: item.contact, isNew: item.isNew) { updated in
                 save(updated)
@@ -82,6 +86,21 @@ struct ContactsView: View {
         .sheet(isPresented: $showInvite) {
             InviteTemporaryView()
         }
+        .confirmationDialog("Remove \(removing?.name ?? "this contact") now?",
+                            isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
+                            titleVisibility: .visible) {
+            Button("Remove now", role: .destructive) {
+                if let contact = removing {
+                    Task { await store.removeTemporary(contact) }
+                }
+                removing = nil
+            }
+            Button("Cancel", role: .cancel) { removing = nil }
+        }
+    }
+
+    private func addContact() {
+        editing = EditingContact(contact: PermanentContact(name: "", phone: ""), isNew: true)
     }
 
     private func save(_ contact: PermanentContact) {
@@ -99,72 +118,158 @@ struct ContactsView: View {
         config.contacts.removeAll { $0.id == id }
         store.save(config)
     }
+}
 
-    private func delete(_ offsets: IndexSet, in tier: Tier) {
-        let contacts = store.config.contacts.filter { $0.tier == tier }
-        let ids = offsets.map { contacts[$0].id }
-        var config = store.config
-        config.contacts.removeAll { ids.contains($0.id) }
-        store.save(config)
+private enum ContactFilter: CaseIterable {
+    case all, tierOne, tierTwo, temporary
+
+    init(_ tier: Tier) { self = tier == .one ? .tierOne : .tierTwo }
+
+    var title: String {
+        switch self {
+        case .all: return "All"
+        case .tierOne: return "Tier 1"
+        case .tierTwo: return "Tier 2"
+        case .temporary: return "Temporary"
+        }
     }
 }
 
-private struct ContactRow: View {
+/// Underlined text tabs: All, Tier 1, Tier 2, Temporary.
+private struct FilterTabs: View {
+    @Binding var selection: ContactFilter
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(ContactFilter.allCases, id: \.self) { filter in
+                let selected = filter == selection
+                Button {
+                    selection = filter
+                } label: {
+                    VStack(spacing: 6) {
+                        Text(filter.title)
+                            .font(selected ? Theme.labelBold : Theme.label)
+                            .foregroundStyle(selected ? Theme.accent : Theme.secondaryText)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                        Capsule()
+                            .fill(selected ? Theme.accent : .clear)
+                            .frame(height: 3)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(filter.title)
+                .accessibilityAddTraits(selected ? [.isSelected, .isButton] : .isButton)
+            }
+        }
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(Theme.divider).frame(height: 1)
+        }
+    }
+}
+
+/// A contact as a white card: initials, name, phone, one detail line, a tag
+/// and a chevron.
+private struct ContactCard<Detail: View>: View {
     let name: String
     let phone: String
-    let shareLocation: Bool
+    let tag: String
+    let tagTint: Color
+    @ViewBuilder let detail: Detail
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(name)
-                .font(Theme.body.weight(.semibold))
+        HStack(spacing: 14) {
+            InitialsCircle(name: name)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(name)
+                    .font(Theme.body.weight(.semibold))
+                    .foregroundStyle(Theme.text)
+                Text(phone)
+                    .font(Theme.label)
+                    .foregroundStyle(Theme.secondaryText)
+                detail
+            }
+            Spacer(minLength: 8)
+            Text(tag)
+                .font(Theme.labelBold)
                 .foregroundStyle(Theme.text)
-            Text(phone)
-                .font(Theme.label)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(tagTint.opacity(0.14), in: Capsule())
+            Image(systemName: "chevron.right")
+                .font(.body.weight(.semibold))
                 .foregroundStyle(Theme.secondaryText)
-            Label(shareLocation ? "Shares your location" : "Location not shared", systemImage: shareLocation ? "location.fill" : "location.slash")
-                .font(Theme.label)
-                .foregroundStyle(shareLocation ? Theme.responding : Theme.secondaryText)
+                .accessibilityHidden(true)
         }
-        .padding(.vertical, 6)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .frame(maxWidth: .infinity, minHeight: Theme.listRowHeight, alignment: .leading)
+        .rippleCard()
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
-        .accessibilityHint("Opens this contact to edit.")
     }
 }
 
-private struct TemporaryContactRow: View {
-    @Environment(WearerStore.self) private var store
-    let contact: TemporaryContactView
+/// Two initials on a soft color picked from the name, so each person keeps
+/// the same color.
+private struct InitialsCircle: View {
+    let name: String
+
+    private static let tints: [Color] = [
+        Theme.accent, Theme.safe, Color(red: 0x4F / 255, green: 0x46 / 255, blue: 0xE5 / 255), Theme.checkIn, Theme.responding,
+    ]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                ContactRow(name: contact.name, phone: contact.phone, shareLocation: contact.shareLocation)
-            }
-            TimelineView(.periodic(from: .now, by: 5)) { context in
-                Label(stateText(at: context.date), systemImage: contact.isEligible(at: context.date) ? "checkmark.circle.fill" : "clock")
-                    .font(Theme.label)
-                    .foregroundStyle(contact.isEligible(at: context.date) ? Theme.safe : Theme.secondaryText)
-            }
-            if contact.state == .invited || contact.state == .active {
-                Button("Remove now", role: .destructive) {
-                    Task { await store.removeTemporary(contact) }
+        let initials = name.split(separator: " ").prefix(2).compactMap(\.first).map(String.init).joined().uppercased()
+        let tint = Self.tints[abs(name.unicodeScalars.reduce(0) { $0 &+ Int($1.value) }) % Self.tints.count]
+        Text(initials.isEmpty ? "?" : initials)
+            .font(.title3.weight(.semibold))
+            .foregroundStyle(tint)
+            .frame(width: 52, height: 52)
+            .background(tint.opacity(0.12), in: Circle())
+            .accessibilityHidden(true)
+    }
+}
+
+private struct LocationLine: View {
+    let shared: Bool
+
+    var body: some View {
+        Label(shared ? "Shares location" : "Location not shared", systemImage: shared ? "location.fill" : "location.slash")
+            .font(Theme.label)
+            .foregroundStyle(shared ? Theme.accent : Theme.secondaryText)
+    }
+}
+
+private struct TemporaryContactCard: View {
+    let contact: TemporaryContactView
+    let onRemove: () -> Void
+
+    var body: some View {
+        let removable = contact.state == .invited || contact.state == .active
+        Button {
+            if removable { onRemove() }
+        } label: {
+            ContactCard(name: contact.name, phone: contact.phone, tag: "Temporary", tagTint: Theme.safe) {
+                TimelineView(.periodic(from: .now, by: 30)) { context in
+                    Label(stateText(at: context.date), systemImage: "clock")
+                        .font(Theme.label)
+                        .foregroundStyle(Theme.secondaryText)
                 }
-                .font(Theme.labelBold)
-                .frame(minHeight: Theme.minTarget)
-                .buttonStyle(.rippleDestructiveLink)
             }
         }
+        .buttonStyle(.plain)
+        .disabled(!removable)
+        .accessibilityHint(removable ? "Asks to remove this contact now." : "")
     }
 
     private func stateText(at date: Date) -> String {
         if contact.isEligible(at: date), let expires = contact.expiresAt {
-            let consent = contact.consentAt.map { "Agreed at \($0.shortTime). " } ?? ""
-            return consent + "Active until \(expires.shortTime)."
+            let minutes = max(1, Int(expires.timeIntervalSince(date) / 60))
+            return "Expires in \(minutes) min"
         }
-        if contact.state == .active { return "Expired." }
+        if contact.state == .active { return "Expired" }
         return contact.state.label
     }
 }

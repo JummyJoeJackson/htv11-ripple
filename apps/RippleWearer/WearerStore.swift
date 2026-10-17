@@ -430,6 +430,17 @@ final class WearerStore {
         show(coordinator.dismiss(alarmId: coordinator.visibleAlarm?.id))
     }
 
+    /// "Call for Help" on the iPhone: the same request as the Watch's swipe-up
+    /// combo, so it texts contacts straight away, even with monitoring off.
+    func requestHelpFromPhone() {
+        let hasContact = !config.contacts.isEmpty || temporaryContacts.contains { $0.isEligible(at: Date()) }
+        guard hasContact else {
+            banner = Banner(text: "Add a contact first, so Ripple has someone to text.", ok: false)
+            return
+        }
+        show(coordinator.requestHelp())
+    }
+
     func sendTestMessage(to contact: PermanentContact) {
         guard let phone = Phone.normalize(contact.phone) else {
             testResult = "\(contact.name)'s number doesn't look right."

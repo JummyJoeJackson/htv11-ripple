@@ -7,37 +7,56 @@ struct SettingsView: View {
     @State private var draft = RippleConfig.makeDefault(wearerName: "")
     @State private var loaded = false
     @State private var confirmForget = false
+    /// False when opened from Home, so the navigation bar keeps its Back button.
+    var isTabRoot = true
 
     var body: some View {
         RippleForm {
             Section {
-                TextField("Your name", text: $draft.wearerName)
-                    .textContentType(.name)
-            } header: {
-                SectionHeader("Your name")
+                ScreenHeader(title: "Settings", subtitle: "Make Ripple fit your needs.")
+                    .listRowInsets(EdgeInsets(top: 0, leading: 10, bottom: 0, trailing: 0))
+                    .listRowBackground(Color.clear)
             }
 
             Section {
-                Toggle("Add a note to alert texts", isOn: $draft.helpCardEnabled)
+                AvatarPicker(size: 64)
+                IconRow(icon: "person.fill") {
+                    TextField("Your name", text: $draft.wearerName)
+                        .textContentType(.name)
+                }
+            } header: {
+                SectionHeader("Profile")
+            }
+
+            Section {
+                IconRow(icon: "doc.text") {
+                    Toggle("Add a note to alert texts", isOn: $draft.helpCardEnabled)
+                }
                 if draft.helpCardEnabled {
-                    TextField("I have Parkinson's. I may look confused. My medication is in my left pocket.", text: $draft.helpCard, axis: .vertical)
+                    TextField("I have Parkinson's. My medication is in my left pocket.", text: $draft.helpCard, axis: .vertical)
                         .lineLimit(2...5)
                 }
             } header: {
                 SectionHeader("Help card")
             } footer: {
-                FormNote("Off unless you turn it on. A short note you write, added to alert texts.")
+                FormNote("A short note added to alert texts.")
             }
 
             Section {
-                Stepper(value: $draft.checkInIntervalMinutes, in: 0...240, step: 5) {
-                    LabeledContent("Check in with me", value: draft.checkInIntervalMinutes == 0 ? "Off" : "Every \(draft.checkInIntervalMinutes) min")
+                IconRow(icon: "clock") {
+                    Stepper(value: $draft.checkInIntervalMinutes, in: 0...240, step: 5) {
+                        LabeledContent("Check in with me", value: draft.checkInIntervalMinutes == 0 ? "Off" : "Every \(draft.checkInIntervalMinutes) min")
+                    }
                 }
-                Stepper(value: $draft.countdownSeconds, in: 5...300, step: 5) {
-                    LabeledContent("Time to answer", value: "\(draft.countdownSeconds) s")
+                IconRow(icon: "hourglass") {
+                    Stepper(value: $draft.countdownSeconds, in: 5...300, step: 5) {
+                        LabeledContent("Time to answer", value: "\(draft.countdownSeconds) s")
+                    }
                 }
-                Stepper(value: $draft.ackWindowSeconds, in: 5...900, step: 5) {
-                    LabeledContent("Wait before Tier 2", value: "\(draft.ackWindowSeconds) s")
+                IconRow(icon: "bell") {
+                    Stepper(value: $draft.ackWindowSeconds, in: 5...900, step: 5) {
+                        LabeledContent("Wait before Tier 2", value: "\(draft.ackWindowSeconds) s")
+                    }
                 }
                 Button("Use 15-second demo timers") {
                     draft.countdownSeconds = 15
@@ -47,52 +66,55 @@ struct SettingsView: View {
                 .buttonStyle(.rippleLink)
             } header: {
                 SectionHeader("Timing")
-            } footer: {
-                FormNote("Short timers are for demos, not medical advice. The demo admin app can also start alarms.")
             }
 
             Section {
-                LabeledContent("Tap the circle", value: "Always on")
-                Toggle("Double tap to answer", isOn: $draft.doubleTapEnabled)
-                Toggle("Say a phrase to answer", isOn: $draft.voiceEnabled)
-                if draft.voiceEnabled {
-                    TextField("Phrase", text: $draft.voicePhrase)
+                NavigationLink {
+                    AnswerSetupScreen()
+                } label: {
+                    IconRow(icon: AnswerMethod(store.config).icon) {
+                        LabeledContent("How you answer", value: answerSummary)
+                    }
+                }
+                if store.config.voiceEnabled {
                     StatusRow(label: "Speech recognition", value: store.speech.statusText)
                 }
             } header: {
                 SectionHeader("Answering an alarm")
             } footer: {
-                FormNote("Double tap needs Apple Watch Series 9, Ultra 2 or later on watchOS 11. With a phrase on, the Watch listens for it during an alarm, with nothing to press. This iPhone recognizes the speech, so keep Ripple open on both. Pick a phrase you wouldn't say by accident: anyone nearby who says it also answers. The secret help signal is always a 2-second hold on the circle, so a stray double tap, swipe or misheard phrase can't set it off or hide it.")
+                FormNote("The secret help signal is always a 2-second hold.")
             }
 
             Section {
-                Toggle("Hand gestures to dismiss", isOn: $draft.handGesturesEnabled)
-                Picker("Gesture sequence", selection: $draft.handGesturePreset) {
-                    ForEach(HandGesturePreset.allCases) { preset in
-                        Text(preset.label).tag(preset)
-                    }
+                IconRow(icon: "hand.raised") {
+                    Toggle("Hand gestures to dismiss", isOn: $draft.handGesturesEnabled)
                 }
-                .pickerStyle(.menu)
-                .disabled(!draft.handGesturesEnabled)
-                NavigationLink("Set up Watch gesture shortcuts") { HandGestureSetupView() }
+                IconRow(icon: "list.number") {
+                    Picker("Gesture sequence", selection: $draft.handGesturePreset) {
+                        ForEach(HandGesturePreset.allCases) { preset in
+                            Text(preset.label).tag(preset)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .disabled(!draft.handGesturesEnabled)
+                }
+                NavigationLink {
+                    HandGestureSetupView()
+                } label: {
+                    IconRow(icon: "applewatch") { Text("Set up Watch gesture shortcuts") }
+                }
             } header: {
-                Text("Hand gestures")
+                SectionHeader("Hand gestures")
             } footer: {
-                Text("A complete sequence says I'm okay during an alarm. Allow up to 5 seconds between gestures. Save below to send this selection to your Watch. AssistiveTouch needs a one-time shortcut setup and turns off Apple's native double tap.")
-            }
-
-            Section {
-                Toggle("Swipe up twice for help, down twice for I'm okay", isOn: $draft.combosEnabled)
-            } header: {
-                SectionHeader("Swipe combos")
-            } footer: {
-                FormNote("Swipe on the Watch circle. It takes two swipes the same way, so one shaky movement can't do either. Help texts your contacts straight away, even when monitoring is off.")
+                FormNote("A full sequence says I'm okay. Up to 5 seconds between gestures. Uses AssistiveTouch, which turns off Apple's double tap.")
             }
 
             Section {
                 Button {
                     var updated = draft
                     updated.shortcutName = updated.shortcutName.trimmingCharacters(in: .whitespacesAndNewlines)
+                    // "How you answer" saves on its own screen, so keep what it saved.
+                    updated = AnswerChoice(store.config).applied(to: updated)
                     store.save(updated)
                     store.banner = Banner(text: "Saved. Sending to your Watch.", ok: true)
                 } label: {
@@ -101,7 +123,7 @@ struct SettingsView: View {
                 .buttonStyle(.ripplePrimary)
                 .listRowInsets(EdgeInsets())
                 .listRowBackground(Color.clear)
-                .disabled(draft.wearerName.trimmingCharacters(in: .whitespaces).isEmpty || draft == store.config)
+                .disabled(draft.wearerName.trimmingCharacters(in: .whitespaces).isEmpty || AnswerChoice(store.config).applied(to: draft) == store.config)
             }
 
             Section {
@@ -115,8 +137,6 @@ struct SettingsView: View {
                     .buttonStyle(.rippleLink)
             } header: {
                 SectionHeader("Watch")
-            } footer: {
-                FormNote("The Watch keeps the last settings it got, even when your iPhone isn't nearby.")
             }
 
             Section {
@@ -142,8 +162,6 @@ struct SettingsView: View {
                     .accessibilityLabel("Pairing code \(store.pairingCode)")
             } header: {
                 SectionHeader("Demo admin pairing code")
-            } footer: {
-                FormNote("Enter this in the Ripple Demo Admin app to control demo alarms.")
             }
 
             Section {
@@ -153,11 +171,11 @@ struct SettingsView: View {
                     .buttonStyle(.rippleDestructiveLink)
             } header: {
                 SectionHeader("Device")
-            } footer: {
-                FormNote("Use this if the server's data was reset.")
             }
         }
         .navigationTitle("Settings")
+        .toolbar(isTabRoot ? .hidden : .visible, for: .navigationBar)
+        .navigationBarTitleDisplayMode(.inline)
         .confirmationDialog("Set up this iPhone again?", isPresented: $confirmForget, titleVisibility: .visible) {
             Button("Set up again", role: .destructive) { store.forgetDevice() }
         }
@@ -169,9 +187,35 @@ struct SettingsView: View {
         }
     }
 
+    /// "Gesture", "Voice: “I'm okay”" or "Tap", plus swipes if on.
+    private var answerSummary: String {
+        let method = AnswerMethod(store.config)
+        var text = method == .voice ? "Voice: \u{201C}\(store.config.voicePhrase)\u{201D}" : method.title
+        if store.config.combosEnabled { text += " + swipes" }
+        return text
+    }
+
     private var watchSyncText: String {
         guard let version = store.watchConfigVersion else { return "Not yet" }
         return version == store.config.version ? "Yes" : "Sending…"
+    }
+}
+
+/// A form row with a blue outline icon on the left, like the mockup's
+/// settings rows.
+private struct IconRow<Content: View>: View {
+    let icon: String
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Image(systemName: icon)
+                .font(.system(size: 20, weight: .regular))
+                .foregroundStyle(Theme.accent)
+                .frame(width: 28)
+                .accessibilityHidden(true)
+            content
+        }
     }
 }
 

@@ -2,10 +2,10 @@ import RippleKit
 import SwiftUI
 import UIKit
 
-/// A greeting, one status card, then only what matters right now. During an
-/// alarm that's who was texted, one big "I'm okay now" button and a short
-/// note. Contacts, Session and Settings live in the bottom bar. The Watch
-/// circle is still the everyday control; every action here is a phone fallback.
+/// Logo, greeting, the Watch monitoring card, then four cards: medication,
+/// symptom check-in and appointments (coming soon) and Emergency Help. During
+/// an alarm the cards step aside for who was texted and one "I'm okay now"
+/// button. The Watch circle is still the everyday control.
 struct HomeView: View {
     @Environment(WearerStore.self) private var store
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -18,29 +18,40 @@ struct HomeView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: Theme.spacing) {
-                    // The logo steps aside during an alarm so the alert card stays at the top.
-                    if !display.mode.isAlarm {
+                    HStack(alignment: .center) {
                         Image("RippleLogo")
                             .resizable()
                             .scaledToFit()
-                            .frame(height: 72)
-                            .frame(maxWidth: .infinity)
-                            .padding(.top, 8)
+                            .frame(height: 60)
                             .accessibilityLabel("Ripple")
+                        Spacer()
+                        NavigationLink {
+                            SettingsView(isTabRoot: false)
+                        } label: {
+                            ProfileAvatar(size: Theme.minTarget)
+                        }
+                        .accessibilityLabel("Your profile and settings")
                     }
 
-                    Text(greeting)
-                        .font(Theme.screenTitle)
-                        .foregroundStyle(Theme.text)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.top, 8)
-                        .accessibilityAddTraits(.isHeader)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(greeting)
+                            .font(.system(.largeTitle, weight: .bold))
+                            .foregroundStyle(Theme.text)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityAddTraits(.isHeader)
+                        if !display.mode.isAlarm {
+                            Text("Your care at a glance")
+                                .font(Theme.body)
+                                .foregroundStyle(Theme.secondaryText)
+                        }
+                    }
 
                     if store.outageUntil != nil {
                         OutageCard()
                     }
 
-                    StatusCardView(status: HomeStatus(display: display, alarm: alarm, nextCheckIn: store.coordinator.nextCheckInAt))
+                    StatusCardView(status: HomeStatus(display: display, alarm: alarm, nextCheckIn: store.coordinator.nextCheckInAt),
+                                   watchConnected: store.connectivity.isReachable)
 
                     if display.mode == .alertSent || display.mode == .responding, let alarm {
                         AlertContactsCard(rows: ContactStatus.rows(for: alarm))
@@ -48,36 +59,34 @@ struct HomeView: View {
 
                     actions(for: display.mode)
 
-                    // The bottom bar hides during an alarm, so Session stays one tap away here.
                     if display.mode.isAlarm {
+                        // The bottom bar hides during an alarm, so Session stays one tap away here.
                         RowGroup {
                             NavigationLink {
-                                SessionView()
+                                SessionView(isTabRoot: false)
                             } label: {
                                 NavRow(title: "Session details", systemImage: "list.bullet.rectangle", detail: "Texts and connections")
                             }
                         }
                         .buttonStyle(.plain)
+                    } else {
+                        HomeCardGrid()
                     }
                 }
                 .padding(Theme.spacing)
                 .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: display.mode)
             }
-            .rippleScreen()
+            .rippleScreen(background: .one)
             .navigationTitle("Ripple")
             .toolbar(.hidden, for: .navigationBar)
         }
         .tint(Theme.accent)
     }
 
-    /// "Hello, *Alex*!" from the name the app already stores, with the name in
-    /// italics, or "Ripple" without one.
-    private var greeting: AttributedString {
+    /// "Hello, Alex!" from the name the app already stores, or "Ripple" without one.
+    private var greeting: String {
         let first = store.config.wearerName.split(separator: " ").first.map(String.init) ?? ""
-        guard !first.isEmpty else { return AttributedString("Ripple") }
-        var name = AttributedString(first)
-        name.inlinePresentationIntent = .emphasized
-        return AttributedString("Hello, ") + name + AttributedString("!")
+        return first.isEmpty ? "Ripple" : "Hello, \(first)!"
     }
 
     /// At most one primary and one secondary action for each state.
@@ -98,7 +107,7 @@ struct HomeView: View {
             } label: {
                 Label("Stop monitoring", systemImage: "stop.fill")
             }
-            .buttonStyle(.rippleSecondary)
+            .buttonStyle(.ripplePrimary)
             .accessibilityHint("Turns off check-ins until you start again.")
         case .checkIn:
             Button {
@@ -117,7 +126,7 @@ struct HomeView: View {
                 }
                 .buttonStyle(.ripplePrimary)
                 .accessibilityHint("Texts everyone already contacted that you're okay.")
-                FormNote("Texts already sent can't be undone. Contacts will get an \"I'm okay\" text.")
+                FormNote("Sent texts can't be undone. Contacts get an \"I'm okay\" text.")
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity)
             }
@@ -146,14 +155,14 @@ struct HomeStatus {
         deadline = display.mode == .checkIn ? display.deadline : nil
         switch display.mode {
         case .off:
-            headline = "Monitoring is off."
-            detail = "Start monitoring here or on your Watch."
+            headline = "Monitoring is off"
+            detail = "Start it here or on your Watch."
         case .monitoring:
-            headline = "Your Watch will check in with you."
-            detail = nextCheckIn.map { "Next check-in at \($0.shortTime)" }
+            headline = "Monitoring is active"
+            detail = nextCheckIn.map { "Next check-in at \($0.shortTime)." }
         case .checkIn:
-            headline = "Answer on your Watch."
-            detail = "Tap the circle, or tap \"I'm okay\" below."
+            headline = "Answer on your Watch"
+            detail = nil
         case .alertSent:
             let texted = (alarm?.alertedAt ?? alarm?.startedAt).map { "Your contacts were texted at \($0.shortTime)." }
             if alarm?.helpRequestedAt != nil {
@@ -174,13 +183,14 @@ struct HomeStatus {
 
 struct StatusCardView: View {
     let status: HomeStatus
+    var watchConnected = false
 
     var body: some View {
         Group {
             if status.mode == .alertSent || status.mode == .responding {
                 SolidStatusCard(status: status)
             } else {
-                HeroStatusCard(status: status)
+                MonitoringCard(status: status, watchConnected: watchConnected)
             }
         }
         .accessibilityElement(children: .combine)
@@ -188,51 +198,181 @@ struct StatusCardView: View {
     }
 }
 
-/// Off, monitoring and check-in: a white hero card.
-private struct HeroStatusCard: View {
+/// Off, monitoring and check-in: the Watch monitoring card, tinted with the
+/// status color, with the status in words next to a dot (never color alone).
+private struct MonitoringCard: View {
+    @Environment(WearerStore.self) private var store
     let status: HomeStatus
+    let watchConnected: Bool
+
+    private var pillText: String {
+        switch status.mode {
+        case .monitoring: return "Active"
+        case .checkIn: return "Check in"
+        default: return "Off"
+        }
+    }
+
+    private var detail: String? {
+        if status.mode == .monitoring {
+            let watch = watchConnected ? "Your Watch is connected and checking in with you." : "Your Watch will check in with you."
+            return [watch, status.detail].compactMap { $0 }.joined(separator: " ")
+        }
+        return status.detail
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Theme.spacing) {
-            HStack(spacing: Theme.spacing) {
-                Image(systemName: status.mode.symbol)
-                    .font(.title.weight(.bold))
+        let color = status.mode.color
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: Theme.spacing) {
+                Image(systemName: status.mode == .checkIn ? "bell.fill" : "applewatch")
+                    .font(.system(size: 30, weight: .semibold))
                     .foregroundStyle(.white)
                     .frame(width: 64, height: 64)
-                    .background(status.mode.color, in: Circle())
+                    .background(color, in: Circle())
                     .accessibilityHidden(true)
-                StatusPill(status.mode.pillLabel, systemImage: status.mode.symbol, kind: status.mode.statusKind)
-                Spacer(minLength: 0)
-            }
-
-            Text(status.headline)
-                .font(Theme.headline)
-                .foregroundStyle(Theme.text)
-                .fixedSize(horizontal: false, vertical: true)
-                .accessibilityAddTraits(.isHeader)
-
-            if let deadline = status.deadline {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    CountdownText(deadline: deadline)
-                        .font(.title.weight(.bold))
-                        .foregroundStyle(Theme.checkIn)
-                    Text("left to answer")
-                        .font(Theme.body)
-                        .foregroundStyle(Theme.secondaryText)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(alignment: .firstTextBaseline) {
+                        SectionLabel("Watch monitoring")
+                        Spacer(minLength: 8)
+                        HStack(spacing: 6) {
+                            Circle().fill(color).frame(width: 10, height: 10)
+                            Text(pillText)
+                                .font(Theme.labelBold)
+                                .foregroundStyle(Theme.text)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(color.opacity(0.14), in: Capsule())
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(pillText)
+                    }
+                    Text(status.headline)
+                        .font(Theme.headline)
+                        .foregroundStyle(Theme.text)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityAddTraits(.isHeader)
+                    if let deadline = status.deadline {
+                        HStack(alignment: .firstTextBaseline, spacing: 6) {
+                            CountdownText(deadline: deadline)
+                                .font(.title.weight(.bold))
+                                .foregroundStyle(Theme.checkIn)
+                            Text("left")
+                                .font(Theme.body)
+                                .foregroundStyle(Theme.secondaryText)
+                        }
+                        .accessibilityElement(children: .combine)
+                    }
+                    if let detail {
+                        Text(detail)
+                            .font(Theme.label)
+                            .foregroundStyle(Theme.secondaryText)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
-                .accessibilityElement(children: .combine)
-            }
-
-            if let detail = status.detail {
-                Text(detail)
-                    .font(Theme.body)
-                    .foregroundStyle(Theme.secondaryText)
-                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(24)
+        .padding(20)
+        .background {
+            RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous)
+                .fill(Theme.card)
+                .overlay(RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous).fill(color.opacity(0.07)))
+                .overlay(RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous).strokeBorder(color.opacity(0.18), lineWidth: 1))
+                .shadow(color: Theme.shadowColor, radius: Theme.shadowRadius, y: Theme.shadowY)
+        }
+    }
+}
+
+// MARK: - Home cards
+
+/// Medication, symptom check-in, appointments (coming soon) and Emergency Help.
+/// Two columns, or one at the largest text sizes.
+private struct HomeCardGrid: View {
+    @Environment(WearerStore.self) private var store
+    @Environment(\.dynamicTypeSize) private var typeSize
+    @State private var confirmHelp = false
+
+    var body: some View {
+        let columns = typeSize.isAccessibilitySize
+            ? [GridItem(.flexible())]
+            : [GridItem(.flexible(), spacing: Theme.spacing), GridItem(.flexible())]
+        LazyVGrid(columns: columns, spacing: Theme.spacing) {
+            HomeCard(icon: "pills.fill", tint: Theme.accent, title: "Medication Reminders", subtitle: "Stay on track with your medications.") {
+                ComingSoonTag()
+            }
+            HomeCard(icon: "list.bullet.clipboard.fill", tint: Color(red: 0x4F / 255, green: 0x46 / 255, blue: 0xE5 / 255),
+                     title: "Daily Symptom Check-in", subtitle: "Share how you're feeling today.") {
+                ComingSoonTag()
+            }
+            HomeCard(icon: "calendar", tint: Theme.safe, title: "Next Appointment", subtitle: "Your upcoming visits.") {
+                ComingSoonTag()
+            }
+            HomeCard(icon: "phone.fill", tint: Theme.alert, title: "Emergency Help", subtitle: "Text your contacts now.") {
+                Button {
+                    confirmHelp = true
+                } label: {
+                    Label("Call for Help", systemImage: "phone.fill")
+                        .font(Theme.labelBold)
+                        .foregroundStyle(Theme.alert)
+                        .frame(maxWidth: .infinity, minHeight: Theme.minTarget)
+                        .background(Theme.alert.opacity(0.10), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint("Asks first, then texts your contacts that you need help.")
+            }
+        }
+        .confirmationDialog("Text your contacts for help now?", isPresented: $confirmHelp, titleVisibility: .visible) {
+            Button("Send help alert", role: .destructive) { store.requestHelpFromPhone() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Your contacts get an alert right away, even if monitoring is off.")
+        }
+    }
+}
+
+private struct HomeCard<Footer: View>: View {
+    let icon: String
+    let tint: Color
+    let title: String
+    let subtitle: String
+    @ViewBuilder let footer: Footer
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 24, weight: .semibold))
+                .foregroundStyle(tint)
+                .frame(width: 52, height: 52)
+                .background(tint.opacity(0.12), in: Circle())
+                .accessibilityHidden(true)
+            Text(title)
+                .font(Theme.cardTitle)
+                .foregroundStyle(Theme.text)
+                .fixedSize(horizontal: false, vertical: true)
+            Text(subtitle)
+                .font(Theme.label)
+                .foregroundStyle(Theme.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+            footer
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(16)
         .rippleCard()
+        .accessibilityElement(children: .contain)
+    }
+}
+
+/// Marks a feature that isn't built yet; nothing happens on tap.
+private struct ComingSoonTag: View {
+    var body: some View {
+        Text("Coming soon")
+            .font(Theme.labelBold)
+            .foregroundStyle(Theme.secondaryText)
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .background(Theme.iconTint.opacity(0.6), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .accessibilityLabel("Coming soon")
     }
 }
 

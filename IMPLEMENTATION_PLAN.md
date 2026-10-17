@@ -12,7 +12,7 @@ The MVP is all Swift: three SwiftUI apps for iPhone and Apple Watch (Series 9 ta
 | Apple Watch app | SwiftUI, watchOS 10+ (double tap on watchOS 11) | The one-circle interface; embedded in the wearer app |
 | Demo admin app | SwiftUI, iOS 17+ | Triggers and inspects demo alarms through the backend |
 | Shared code | `RippleKit` Swift package | Models, message templates, tier rules, `AlarmCoordinator`, API client. Used by all three apps and the server, so phone and backend apply the same rules. |
-| Backend | Swift + Vapor, one process | Alarm mirror, backup sender, acknowledge and consent pages, admin relay. State is a single actor saved to a JSON file, so it survives restarts with nothing to install. |
+| Backend | Swift + Vapor, one process | Alarm mirror, backup sender, temporary-contact consent page, admin relay. State is a single actor saved to a JSON file, so it survives restarts with nothing to install. |
 | Phone texting | Apple Shortcuts ("Ripple Alert") | PRD's chosen demo path: real texts from the wearer's own messaging account |
 | Backup texting | Twilio, or the Mac's Messages app, behind one adapter | PRD's declared backup sender |
 | Watch link | WatchConnectivity | Display, configuration and circle actions |
@@ -27,7 +27,8 @@ flowchart LR
     phone <-->|"POST /v1/wearer/sync every second"| server["Ripple server"]
     admin["Demo admin iPhone"] -->|"commands"| server
     server -->|"backup SMS"| twilio["Twilio or Messages"]
-    contacts["Contacts' phones"] -->|"/a/token acknowledge, /t/token consent"| server
+    contacts["Contacts' phones"] -->|"Ripple accept + code via Messages automation"| phone
+    contacts -->|"/t/token temporary-contact consent"| server
 ```
 
 **The phone owns the alarm.** `AlarmCoordinator` (in RippleKit) holds monitoring on/off, the current alarm, its countdown, the duress flag, tiers, and every message with its status and sending path. The Watch only shows what the iPhone tells it and sends taps.
@@ -38,12 +39,12 @@ flowchart LR
 
 | Event | Phone (`AlarmCoordinator`) | Backend |
 | --- | --- | --- |
-| Alarm starts (check-in timer or admin) | Snapshot recipients (permanent contacts + active temporary contacts), generate an acknowledge token for each, build the texts, take one location fix if any contact shares location | Registers the alarm and the tokens on the next sync |
+| Alarm starts (check-in timer or admin) | Snapshot recipients (permanent contacts + active temporary contacts), generate a distinct reply code for each, build the texts, take one location fix if any contact shares location | Registers the alarm and reply codes on the next sync |
 | Tap, double tap or voice in countdown | Close as dismissed; no texts | Sees it closed; no backup |
 | 2-second hold (duress) in countdown | Mark duress, send the Tier 1 alert now; the Watch shows "Dismissed" | Alert due immediately; backup only if the phone goes quiet |
 | Countdown ends | Text Tier 1 (Tier 2 if Tier 1 is empty) through the shortcut | Backup alert if overdue |
-| Contact taps the link | Shows "[Contact] is responding"; texts "Someone responding" to the others already texted | Records who and when; backs up the "responding" texts if the phone is quiet |
-| Acknowledge window passes with no tap | Texts Tier 2 | Backup escalation if overdue |
+| Contact replies with their code | Shows "[Contact] is responding"; texts "Someone responding" to the others already texted | Learns who and when on sync; backs up the "responding" texts if the phone is quiet |
+| Acknowledge window passes with no reply | Texts Tier 2 | Backup escalation if overdue |
 | "I'm okay now" | Texts "okay now" to everyone already texted, cancels unsent texts, closes | Sees it closed; no further backup |
 | Hold after texts went out | Duress: looks like a dismissal, escalation continues hidden | Keeps backing up as needed |
 | Admin "Disable alarm" | Closes when the command arrives | Closes the mirror at once, so no backup fires even without the phone |
@@ -57,9 +58,9 @@ A duress alarm is never shown on the Watch or the wearer's iPhone, and its texts
 | --- | --- |
 | `RippleKit/Sources/RippleKit` | `Config.swift` (contacts, tiers, settings), `Alarm.swift` (alarm, messages, `RecipientRules`, `MessageTemplates`), `AlarmCoordinator.swift`, `WatchMessages.swift`, `API.swift`, `RippleAPI.swift` |
 | `RippleKit/Tests` | Coordinator scenarios: safe, timeout, privacy, tiers, acknowledgment, okay now, duress, backup hand-off, guards, reset, check-in timer |
-| `server/Sources/RippleEngine` | `Engine+Wearer` (setup, sync, temporary contacts), `Engine+Backup` (backup sender rules), `Engine+Web` (acknowledge and consent pages), `Engine+Admin` (pairing, commands, expire, reset) |
+| `server/Sources/RippleEngine` | `Engine+Wearer` (setup, sync, temporary contacts), `Engine+Backup` (backup sender rules), `Engine+Web` (temporary-contact consent page), `Engine+Admin` (pairing, commands, expire, reset) |
 | `server/Sources/RippleServer` | Vapor routes, Twilio and Messages senders, worker loop, configuration |
-| `server/Public` | `ack.html` (name, alert time, one button), `invite.html` (consent for a one-hour session) |
+| `server/Public` | `invite.html` (consent for a one-hour session) |
 | `server/Tests` | Backup scenarios driven by a real `AlarmCoordinator` as the phone |
 | `apps/RippleWearer` | `WearerStore` (coordinator, sync loop, outage simulation), `ShortcutSender`, `PhoneConnectivity`, `LocationProvider`, screens for home, contacts, settings, shortcut setup |
 | `apps/RippleWatch` | `CircleScreen` (circle, hold, double tap, voice), `WatchStore` (stored config, haptics), `WatchLink` |
@@ -98,7 +99,7 @@ A duress alarm is never shown on the Watch or the wearer's iPhone, and its texts
 
 | Category | What to report |
 | --- | --- |
-| Demonstrated | Watch input, alarms, real texts to teammates, tiers, acknowledge link, duress, okay now texts, backup SMS, location permissions, contact expiry |
+| Demonstrated | Watch input, alarms, real texts to teammates, tiers, reply acknowledgements, duress, okay now texts, backup SMS, location permissions, contact expiry |
 | Simulated | Alarm triggers, the wearer being unable to respond, phone failure ("Cut phone connection") |
 | Assumed | Contacts read texts and act on them. The wearer keeps the phone charged and nearby. |
 | Needs validation | Locked-phone sending, gestures and voice with tremor, accidental duress rate, false alarm rate, battery use, real response times |

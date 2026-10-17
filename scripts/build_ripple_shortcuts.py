@@ -8,7 +8,7 @@ Ripple Alert   Ripple opens shortcuts://x-callback-url/run-shortcut with JSON
 
 Ripple Accept  A Messages automation ("Message contains Ripple accept") runs it
                with the incoming message. It opens ripple://accept?text=<reply>,
-               and Ripple counts "RIPPLE ACCEPT 4821" like a tap on the link.
+               and Ripple records who is responding from "RIPPLE ACCEPT 4821".
 
 Both only use built-in Shortcuts actions and Ripple's URL scheme, so unlike
 the hand-gesture wrappers they work with any Ripple bundle identifier.
@@ -174,7 +174,7 @@ def validate_source(source: dict) -> None:
             raise ValueError(f"{name}: Send Message must not show the composer")
         if item["WFWorkflowActionIdentifier"] == "is.workflow.actions.gettext":
             if not parameters["WFTextActionText"]["Value"]["string"].startswith("ripple://accept?text="):
-                raise ValueError(f"{name}: may only open Ripple's accept link")
+                raise ValueError(f"{name}: may only open Ripple's reply URL")
 
 
 def native_checks(parser, source: dict) -> list[dict]:
@@ -228,7 +228,7 @@ python3 scripts/build_ripple_shortcuts.py --sign
 2. In Ripple, open **Settings → Messaging shortcuts** and send a test message. Approve anything Shortcuts asks for.
 3. In Shortcuts, open **Automation**, tap **+**, choose **Message**, set **Message Contains** to `Ripple accept`, choose **Run Immediately**, tap **Next**, and pick **Ripple Accept**.
 
-Alert texts end with "or reply RIPPLE ACCEPT 4821", with a different code
+Alert texts ask contacts to reply "Ripple accept 4821", with a different code
 for each person. Their reply runs the automation, Ripple shows "[Name] is
 responding" on the iPhone and Watch, texts the others, and stops Tier 2.
 

@@ -123,8 +123,8 @@ Message templates:
 
 | Event | Message |
 | --- | --- |
-| Alert | "Halo alert: [Name] did not respond to their Watch check-in at [time]. Please call or check on them. [Location link, if allowed] [Context line or help card, if on] Tap if you're checking: [link]" |
-| Escalation to Tier 2 | "Halo alert: [Name] did not respond at [time] and no one has confirmed yet. Please call or check on them. [link]" |
+| Alert | "RIPPLE ALERT: [Name] did not respond to their Watch check-in at [time]. Please call or check on them. [Note, if on] Reply "Ripple accept [code]" if you are able to check in on [Name]. [Location link, if allowed]" |
+| Escalation to Tier 2 | "RIPPLE ALERT: [Name] did not respond at [time] and no one has confirmed yet. Please call or check on them. Reply "Ripple accept [code]" if you are able to check in on [Name]. [Location link, if allowed]" |
 | Someone responding | "Halo: [Contact] is checking on [Name]." |
 | Okay now | "Halo: [Name] says they're okay now ([time]). No action needed." |
 
@@ -132,14 +132,14 @@ A duress alert uses the normal Alert text so the message never reveals duress if
 
 ### Escalation and acknowledgment
 
-Each alert text holds a short **acknowledge link** to a one page website. It shows only the wearer's chosen name, the alert time, and one button: "I'm checking on [Name]."
+Each alert text asks the contact to reply **Ripple accept [code]**, with a distinct four-digit code for each recipient of the active alarm. A Messages automation on the wearer's iPhone passes matching replies to Ripple. Contacts need no app or shortcut. The alert, optional note, reply instruction, and optional location are separated by blank lines, with the Maps URL last.
 
 1. Alert texts go to Tier 1.
-2. A tap on the link records who responded and when. The Watch and iPhone show "[Contact] is responding," and other alerted contacts get the "Someone responding" text.
-3. If no one taps within the acknowledge window, Tier 2 gets the escalation text.
+2. A valid reply records who responded and when. The Watch and iPhone show "[Contact] is responding," and other alerted contacts get the "Someone responding" text.
+3. If no one replies within the acknowledge window, Tier 2 gets the escalation text.
 4. If the wearer taps "I'm okay now" at any point, everyone already texted gets the "Okay now" text and pending escalation stops.
 
-Acknowledging means someone took responsibility. It does not mean help has arrived. The acknowledge page stops working once the alarm closes.
+Acknowledging means someone took responsibility. It does not mean help has arrived. Replies for a closed alarm, an unknown code, or a contact not yet texted are ignored. Reply acceptance depends on the wearer's iPhone receiving the reply and running its automation; a separate backup SMS number does not forward replies to that automation.
 
 ### Chosen demo approach: Apple Shortcuts
 
@@ -188,11 +188,11 @@ The backend stores only alarm ids, timestamps, phone numbers, and message text f
 7. If the phone goes silent at any point, the backend sends the remaining messages by SMS.
 8. "I'm okay now" ends the alarm and texts everyone already alerted. Resetting the demo cancels all remaining work. Duplicate commands must not restart an alarm or create duplicate alerts.
 
-Use SwiftUI for the three apps and WatchConnectivity for paired iPhone–Watch configuration and actions. Keep shared state minimal: monitoring on/off, current alarm/countdown, duress flag (never displayed), configuration version, contacts with tiers, location permission, and expiry times, acknowledgment status, per-recipient message status with sending path, and, if enabled, medication times, the last "Took my meds" tap, and the time of the last steps. A lightweight backend connects the admin phone to the wearer phone, hosts the acknowledge page, and holds the backup deadline.
+Use SwiftUI for the three apps and WatchConnectivity for paired iPhone–Watch configuration and actions. Keep shared state minimal: monitoring on/off, current alarm/countdown, duress flag (never displayed), configuration version, contacts with tiers, location permission, and expiry times, acknowledgment status, per-recipient message status with sending path, and, if enabled, medication times, the last "Took my meds" tap, and the time of the last steps. A lightweight backend connects the admin phone to the wearer phone, hosts the temporary-contact consent page, and holds the backup deadline.
 
 ## MVP and demo checks
 
-The core scope is the three apps, configuration sync, one-circle Watch UI with guarded Stop and duress hold, working touch and supported Apple-gesture dismissal, permanent and one-hour phone contacts with tiers and location permissions, a real phone-to-phone messaging path, the acknowledge link with Tier 2 escalation, "okay now" follow-up texts, and the backend backup sender. Voice dismissal is a desired input to validate; help card, physical-button dismissal, and Watch invitations are conditional extras. The Parkinson's-aware check-ins (medication timing, walk-session step stops, the alert context line, and the rhythmic haptic) are extras that build on the core alarm; simulated tremor context is presentation only.
+The core scope is the three apps, configuration sync, one-circle Watch UI with guarded Stop and duress hold, working touch and supported Apple-gesture dismissal, permanent and one-hour phone contacts with tiers and location permissions, a real phone-to-phone messaging path, reply acknowledgement with Tier 2 escalation, "okay now" follow-up texts, and the backend backup sender. Voice dismissal is a desired input to validate; help card, physical-button dismissal, and Watch invitations are conditional extras. The Parkinson's-aware check-ins (medication timing, walk-session step stops, the alert context line, and the rhythmic haptic) are extras that build on the core alarm; simulated tremor context is presentation only.
 
 Demonstrate all seven Kaze scenarios with 15 second demo timers:
 
@@ -200,7 +200,7 @@ Demonstrate all seven Kaze scenarios with 15 second demo timers:
 | --- | --- | --- |
 | Safe | Admin triggers an alarm. Wearer taps. Trigger again; wearer double taps. | Watch returns to green. No texts sent. |
 | No response | Trigger and let it expire. | Tier 1 teammate's phone receives the alert with a location link. |
-| Unacknowledged alert | Tier 1 ignores the link. | Tier 2 teammate receives the escalation text after the acknowledge window. |
+| Unacknowledged alert | Tier 1 does not reply. | Tier 2 teammate receives the escalation text after the acknowledge window. |
 | False alarm | After texts go out, wearer taps "I'm okay now." | Everyone already texted receives "okay now." |
 | Duress | Trigger; wearer holds the circle 2 seconds. | Watch shows a normal "Dismissed" screen. Tier 1 still receives the alert. |
 | Connectivity failure | Trigger, then admin cuts the phone connection. | Backend sends the alert by SMS after the grace period. |
@@ -214,7 +214,7 @@ Present this honesty table:
 
 | Category | What to report |
 | --- | --- |
-| Demonstrated | Watch input, alarms, real texts to teammates, tiers, acknowledge link, duress, okay now texts, backup SMS, location permissions, contact expiry. If built: medication-timed check-ins, step-stop check-ins from real step data, the alert context line. |
+| Demonstrated | Watch input, alarms, real texts to teammates, tiers, reply acknowledgements, duress, okay now texts, backup SMS, location permissions, contact expiry. If built: medication-timed check-ins, step-stop check-ins from real step data, the alert context line. |
 | Simulated | Alarm triggers, the wearer being unable to respond, phone failure, tremor and dyskinesia data. |
 | Assumed | Contacts read texts and act on them. The wearer keeps the phone charged and nearby. The wearer enters accurate medication times. |
 | Needs validation | Locked-phone sending, gestures and voice with Parkinson's tremor, accidental duress rate, false alarm rate, battery use, real response times, step-stop thresholds and background step updates, whether rhythmic haptics feel comforting. |

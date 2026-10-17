@@ -307,7 +307,6 @@ final class WearerStore {
             coordinator.reset(runId: response.runId)
             banner = Banner(text: "The demo was reset.", ok: true)
         }
-        coordinator.serverBaseURL = response.publicBaseURL
         if pairingCode != response.pairingCode {
             pairingCode = response.pairingCode
             UserDefaults.standard.set(pairingCode, forKey: Keys.pairing)
@@ -430,15 +429,15 @@ final class WearerStore {
         show(coordinator.dismiss(alarmId: coordinator.visibleAlarm?.id))
     }
 
-    /// "Call for Help" on the iPhone: the same request as the Watch's swipe-up
-    /// combo, so it texts contacts straight away, even with monitoring off.
+    /// The confirmed iPhone help action texts both tiers and active one-hour
+    /// contacts straight away, even with monitoring off.
     func requestHelpFromPhone() {
         let hasContact = !config.contacts.isEmpty || temporaryContacts.contains { $0.isEligible(at: Date()) }
         guard hasContact else {
             banner = Banner(text: "Add a contact first, so Ripple has someone to text.", ok: false)
             return
         }
-        show(coordinator.requestHelp())
+        show(coordinator.requestHelpForAllContacts())
     }
 
     func sendTestMessage(to contact: PermanentContact) {
@@ -499,7 +498,7 @@ final class WearerStore {
         acceptReply(text: text, from: from?.isEmpty == false ? from : nil)
     }
 
-    /// Counts a text reply like a tap on the acknowledge link. The backend
+    /// Records a contact's text reply. The backend
     /// learns about it on the next sync, which stops its Tier 2 backup.
     func acceptReply(text: String, from sender: String?) {
         // A phone in simulated failure does nothing.

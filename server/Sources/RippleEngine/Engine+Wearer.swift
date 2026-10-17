@@ -106,7 +106,11 @@ extension Engine {
         if var record = db.alarms[alarm.id] {
             guard record.userId == userId else { return }
             let previous = record.snapshot
-            record.snapshot = alarm
+            var snapshot = alarm
+            // A stale phone snapshot must not erase a response already saved
+            // by the server, including one migrated from an older database.
+            snapshot.acknowledgment = previous.acknowledgment ?? snapshot.acknowledgment
+            record.snapshot = snapshot
             record.updatedAt = t
             if previous.isOpen && !alarm.isOpen {
                 record.closedAt = t
@@ -120,19 +124,13 @@ extension Engine {
         } else {
             db.alarms[alarm.id] = AlarmRecord(
                 id: alarm.id, userId: userId, runId: alarm.runId, snapshot: alarm, firstSeenAt: t, updatedAt: t,
-                acknowledgment: nil, closedByAdmin: false, closedAt: alarm.isOpen ? nil : t
+                closedByAdmin: false, closedAt: alarm.isOpen ? nil : t
             )
             log(userId, "Alarm registered by the iPhone (\(alarm.source.rawValue)). Response countdown ends \(timeText(alarm.deadline)).")
             if alarm.duress {
                 log(userId, "Duress hold on the Watch. The wearer's screens show a normal dismissal; escalation continues.")
             }
             logMessageChanges(from: nil, to: alarm, userId: userId)
-        }
-        for recipient in alarm.recipients {
-            let hash = Secrets.hash(recipient.ackToken)
-            if db.ackTokens[hash] == nil {
-                db.ackTokens[hash] = AckTokenRecord(alarmId: alarm.id, recipientId: recipient.id, userId: userId, runId: alarm.runId)
-            }
         }
         dirty = true
     }
@@ -152,7 +150,7 @@ extension Engine {
             .filter { $0.message.alarmId == alarmId }
             .map { $0.message }
             .sorted { $0.createdAt < $1.createdAt }
-        return AlarmFeedback(alarmId: alarmId, acknowledgment: record.acknowledgment, backupMessages: backups, closedByAdmin: record.closedByAdmin)
+        return AlarmFeedback(alarmId: alarmId, acknowledgment: record.snapshot.acknowledgment, backupMessages: backups, closedByAdmin: record.closedByAdmin)
     }
 
     // MARK: Temporary contacts

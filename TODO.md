@@ -11,3 +11,12 @@
 
 
 [Demo Photos]([url](https://drive.google.com/drive/folders/1HuXoaYTzwrxl_IqGnw3iEyiH_kPRZIj7?usp=drive_link))
+
+## Links to all Apple Shortcuts
+
+[https://www.icloud.com/shortcuts/69cc14383aed4f128013a9fac150d389](https://www.icloud.com/shortcuts/69cc14383aed4f128013a9fac150d389) Ripple Accept
+[https://www.icloud.com/shortcuts/dec3df19e3dc4c68a4ea8f81cdfce08d](https://www.icloud.com/shortcuts/dec3df19e3dc4c68a4ea8f81cdfce08d) Ripple Clench
+[https://www.icloud.com/shortcuts/ebecc0b53293487a8e4c53fa48335ca1](https://www.icloud.com/shortcuts/ebecc0b53293487a8e4c53fa48335ca1) Ripple Double Clench
+[https://www.icloud.com/shortcuts/c0fe85f2d4c149ef89fd3983aeefb13e](https://www.icloud.com/shortcuts/c0fe85f2d4c149ef89fd3983aeefb13e) Ripple Double Pinch
+[https://www.icloud.com/shortcuts/c49530e9b4d541db85853a60b5714a12](https://www.icloud.com/shortcuts/c49530e9b4d541db85853a60b5714a12) Ripple Pinch
+[https://www.icloud.com/shortcuts/ce7d1d4be2e1437f95f3631733ebbb2d](https://www.icloud.com/shortcuts/ce7d1d4be2e1437f95f3631733ebbb2d) Ripple Alert

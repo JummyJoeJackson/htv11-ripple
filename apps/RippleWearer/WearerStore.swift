@@ -60,6 +60,7 @@ final class WearerStore {
     let connectivity = PhoneConnectivity()
     let location = LocationProvider()
     let speech = SpeechListener()
+    let health = HealthAlerts()
     private let bridge = CoordinatorBridge()
 
     @ObservationIgnored private var api: RippleAPI?
@@ -108,6 +109,10 @@ final class WearerStore {
         sender.shortcutName = initialConfig.shortcutName
         rebuildAPI()
         wire()
+        // Registered at launch, so Apple Health can wake Ripple for new alerts.
+        Task { [health = self.health, kinds = initialConfig.healthAlerts] in
+            await health.update(kinds, askPermission: false)
+        }
     }
 
     private func wire() {
@@ -162,6 +167,9 @@ final class WearerStore {
         }
         speech.onHeard = { [weak self] heard in
             self?.connectivity.send(heard)
+        }
+        health.onAlert = { [weak self] kind in
+            self?.healthAlertArrived(kind)
         }
     }
 
@@ -234,6 +242,9 @@ final class WearerStore {
         if next.voiceEnabled {
             speech.requestPermission()
         }
+        Task { [health = self.health, kinds = next.healthAlerts] in
+            await health.update(kinds, askPermission: true)
+        }
         pushToWatch(force: true)
     }
 
@@ -287,6 +298,7 @@ final class WearerStore {
         guard !inOutage, !waitingForSyncAfterOutage else { return }
         coordinator.tick()
         sender.tick()
+        health.checkNow()
     }
 
     func sync() async {
@@ -354,11 +366,36 @@ final class WearerStore {
                 outageUntil = Date().addingTimeInterval(TimeInterval(seconds))
                 pushToWatch(force: true)
                 return ActionResult(ok: true, feedback: "Simulated phone failure for \(seconds) s")
+            case .simulateHealthAlert:
+                return healthAlertArrived(command.healthAlert ?? .fall, simulated: true)
             }
         }
         if !commandResults.contains(where: { $0.commandId == command.id }) {
             commandResults.append(CommandResult(commandId: command.id, ok: result.ok, message: result.feedback))
         }
+    }
+
+    // MARK: Apple Health alerts
+
+    /// Apple Watch recorded a fall or a heart alert in Apple Health, or the
+    /// demo admin simulated one. A real alert starts a check-in only if the
+    /// wearer turned that alert on. A simulated one always does, like
+    /// "Trigger alarm", so the demo doesn't depend on a setting.
+    /// Ripple adds the people; Apple did the detecting.
+    @discardableResult
+    private func healthAlertArrived(_ kind: HealthAlertKind, simulated: Bool = false) -> ActionResult {
+        guard !inOutage else {
+            return ActionResult(ok: false, feedback: "iPhone unavailable")
+        }
+        guard simulated || config.healthAlerts.contains(kind) else {
+            return ActionResult(ok: false, feedback: "\(kind.label) check-ins are off in Ripple's settings.")
+        }
+        let result = coordinator.healthAlert(kind)
+        // Empty feedback means a duress alarm is open: show nothing.
+        if !simulated && !result.feedback.isEmpty {
+            show(result)
+        }
+        return result
     }
 
     /// Ends the simulated phone failure early.

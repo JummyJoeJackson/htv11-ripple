@@ -224,8 +224,8 @@ python3 scripts/build_ripple_shortcuts.py --sign
 
 ## Set up on the wearer's iPhone
 
-1. AirDrop both signed files to the iPhone and tap **Add Shortcut** for each. Keep their names.
-2. In Ripple, open **Settings → Messaging shortcuts** and send a test message. Approve anything Shortcuts asks for.
+1. In Ripple, open **Settings → Set up all Ripple shortcuts**. In the iPhone section, tap **Install** for **Ripple Alert** and **Ripple Accept**, then **Add Shortcut** for each. Keep their names. If links have not been published for your build, AirDrop the signed files instead.
+2. Expand **Test and troubleshoot** and send a test message. Approve anything Shortcuts asks for.
 3. In Shortcuts, open **Automation**, tap **+**, choose **Message**, set **Message Contains** to `Ripple accept`, choose **Run Immediately**, tap **Next**, and pick **Ripple Accept**.
 4. Add another **Message** automation for `Ripple join`, also **Run Immediately** and using the same **Ripple Accept** shortcut. Keep the accept automation.
 

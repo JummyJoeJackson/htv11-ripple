@@ -196,6 +196,20 @@ public final class AlarmCoordinator {
         return requested
     }
 
+    /// Apple Watch recorded a fall or a heart alert in Apple Health. A normal
+    /// check-in: the wearer can answer it, and only no answer sends texts,
+    /// which then say which Apple alert it was. An open alarm is enough, so a
+    /// second alert while one is open changes nothing. During a duress alarm
+    /// the feedback is empty, so nothing on screen hints that it's open.
+    @discardableResult
+    public func healthAlert(_ kind: HealthAlertKind) -> ActionResult {
+        if let alarm, alarm.isOpen {
+            return ActionResult(ok: true, feedback: alarm.duress ? "" : "Already checking in")
+        }
+        let result = startAlarm(source: kind.source)
+        return result.ok ? ActionResult(ok: true, feedback: "\(kind.label) from Apple Watch. Checking in.") : result
+    }
+
     /// The confirmed iPhone help action notifies both tiers immediately, using
     /// the normal alert and escalation paths so reply codes and backup agree.
     @discardableResult
@@ -527,7 +541,7 @@ public final class AlarmCoordinator {
         let t = now()
         if let current = visibleAlarm {
             if current.phase == .countdown {
-                return WatchDisplay(mode: .checkIn, circleLabel: "I'm okay", status: "Check in", alarmId: current.id,
+                return WatchDisplay(mode: .checkIn, circleLabel: "I'm okay", status: current.source.checkInStatus, alarmId: current.id,
                                     deadline: current.deadline, phoneAvailable: phoneAvailable, updatedAt: t)
             }
             if let ack = current.acknowledgment {
@@ -675,10 +689,12 @@ public final class AlarmCoordinator {
                 continue
             }
             alarm.recipients[index].alertText = MessageTemplates.alert(
-                name: alarm.wearerName, checkInTime: time, locationURL: location, helpCard: helpCard, acceptCode: code
+                name: alarm.wearerName, checkInTime: time, locationURL: location, helpCard: helpCard, acceptCode: code,
+                reason: alarm.source.alertReason
             )
             alarm.recipients[index].escalationText = MessageTemplates.escalation(
-                name: alarm.wearerName, checkInTime: time, locationURL: location, acceptCode: code
+                name: alarm.wearerName, checkInTime: time, locationURL: location, acceptCode: code,
+                reason: alarm.source.alertReason
             )
         }
     }

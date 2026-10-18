@@ -2,14 +2,6 @@
   <img src="apps/RippleWearer/Assets.xcassets/RippleLogo.imageset/RippleLogo.png" alt="Ripple logo" width="240" />
 </p>
 
-<p align="center">
-  <a href="https://www.youtube.com/watch?v=gZr-bM_Hm6A" target="_blank">
-    <img src="https://img.youtube.com/vi/gZr-bM_Hm6A/hqdefault.jpg" alt="Ripple demo video" width="720" />
-  </a>
-  <br/>
-  <a href="https://www.youtube.com/watch?v=gZr-bM_Hm6A" target="_blank"><strong>Watch the Ripple demo on YouTube</strong></a>
-</p>
-
 # Ripple
 
 **Help when you can't ask for it.**
@@ -17,6 +9,14 @@
 An Apple Watch safety companion that turns an unanswered check-in into a request for help from people you trust.
 
 *Built for Hack the Valley 11 · Project KAZE*
+
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=gZr-bM_Hm6A" target="_blank">
+    <img src="https://img.youtube.com/vi/gZr-bM_Hm6A/hqdefault.jpg" alt="Ripple demo video" width="720" />
+  </a>
+  <br/>
+  <a href="https://www.youtube.com/watch?v=gZr-bM_Hm6A" target="_blank"><Demo</strong></a>
+</p>
 
 ## Quick Glance
 
